@@ -3,7 +3,8 @@ STD=-std=c++17
 CFLAGS=-Wall -Wextra
 INC_PATH=-I"./libs/"
 SRC=src/*.cpp \
-	src/Game/*.cpp
+	src/Game/*.cpp \
+	src/ECS/*.cpp
 LFLAGS=-lSDL2 -lSDL2_image -lSDL2_ttf -llua5.3
 
 build: 
