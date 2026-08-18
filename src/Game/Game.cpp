@@ -77,12 +77,19 @@ void Game::update() {
 void Game::run() {
     while(this->isRunning) {
         this->processInput();
-        // this->update();
+        this->update();
         this->render();
     }
 }
 
 void Game::destroy() {
+    SDL_DestroyRenderer(this->renderer);
+    SDL_DestroyWindow(this->window);
     TTF_Quit();
     SDL_Quit();
+}
+
+Game& Game::getInstance() {
+    static Game game;
+    return game;
 }

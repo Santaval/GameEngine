@@ -15,14 +15,14 @@ class Game {
 
     
     private: 
+        Game();
+        ~Game();
         void processInput();
         void render();
         void update();
     
     public:
-     Game();
-     ~Game();
-
+    static Game& getInstance();
      void init();
      void run();
      void destroy();
