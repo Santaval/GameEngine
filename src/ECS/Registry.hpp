@@ -32,7 +32,7 @@ class Registry {
     // components managment
 
     template <typename TComponent, typename... TArgs>
-    void AddComponent(Entity Entity, TArgs&&... args);
+    void addComponent(Entity Entity, TArgs&&... args);
 
     template <typename TComponent>
     void removeComponent(Entity entity);
@@ -46,7 +46,7 @@ class Registry {
     // systems managment
 
     template <typename TSystem, typename... TArgs>
-    void AddSystem(TArgs&&... args);
+    void addSystem(TArgs&&... args);
 
     template <typename TSystem>
     void removeSystem();
@@ -65,7 +65,7 @@ class Registry {
 
 
 template <typename TComponent, typename... TArgs>
-void Registry::AddComponent(Entity entity, TArgs&&... args) {
+void Registry::addComponent(Entity entity, TArgs&&... args) {
   const int componentId = Component<TComponent>::getid();
   const int entityId = entity.getId();
 
@@ -88,4 +88,61 @@ void Registry::AddComponent(Entity entity, TArgs&&... args) {
   TComponent newComponent(std::forward<TArgs>(args)...);
   componentPool->Set(entityId, newComponent);
   this->entityComponentSignature[entityId].set(componentId);
+}
+
+
+template <typename TComponent>
+void Registry::removeComponent(Entity entity) {
+  const int componentId = Component<TComponent>::getid();
+  const int entityId = entity.getId();
+
+  this->entityComponentSignature[entityId].set(componentId, false);
+}
+
+template <typename TComponent>
+bool Registry::hasComponent(Entity entity) const {
+  const int componentId = Component<TComponent>::getid();
+  const int entityId = entity.getId();
+
+  return this->entityComponentSignature[entityId].test(componentId);
+}
+
+template <typename TComponent>
+TComponent& Registry::getComponent(Entity entity) const {
+  const int componentId = Component<TComponent>::getid();
+  const int entityId = entity.getId();
+
+  auto componentPool = 
+    std::static_pointer_cast<Pool<TComponent>>(this->componentsPool[componentId]);
+
+  return componentPool->Get(entityId);
+}
+
+
+template <typename TSystem, typename... TArgs>
+void Registry::addSystem(TArgs&&... args) {
+  std::shared_ptr<TSystem> newSystem =
+    std::make_shared<TSystem>(std::forward<TArgs>(args) ...);
+
+  this->systems.insert(std::make_pair(std::type_index(typeid(TSystem)), newSystem));
+}
+
+
+template <typename TSystem>
+void Registry::removeSystem() {
+  auto system = this->systems.find(std::type_index(typeid(TSystem)));
+  this->systems.erase(system);
+}
+
+
+template <typename TSystem>
+bool Registry::hasSystem() const {
+  return this->systems.find(std::type_index(typeid(TSystem))) != this->systems.end();
+}
+
+
+template <typename TSystem>
+TSystem& Registry::getSystem() const {
+  auto system = this->systems.find(std::type_index(typeid(TSystem)));
+  return *(std::static_pointer_cast<TSystem>(system->second));
 }
