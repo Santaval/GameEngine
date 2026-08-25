@@ -27,3 +27,44 @@ Entity Registry::createEntity() {
 void Registry::killEntity(Entity entity) {
   this->entitiesToBeKilled.insert(entity);
 }
+
+
+void Registry::addEntityToSystems(Entity entity) {
+  const int entityId = entity.getId();
+  const Signature& entityComponentSignature 
+    = this->entityComponentSignature[entityId];
+
+  for(auto system : systems) {
+    const auto& systemComponentSignature = system.second->getComponentSignature();
+
+    bool isInterested = (entityComponentSignature & systemComponentSignature)
+      == systemComponentSignature;
+
+    if(isInterested) {
+      system.second->addEntity(entity);
+    }
+  }
+}
+
+
+void Registry::removeEntityFromSystem(Entity entity) {
+  for(auto system : systems) {
+    system.second->removeEntity(entity);
+  }
+}
+
+void Registry::update() {
+  for(auto entity : this->entitiesToBeAdded) {
+    this->addEntityToSystems(entity);
+  }
+  this->entitiesToBeAdded.clear();
+
+  for(auto entity : this->entitiesToBeKilled) {
+    this->removeEntityFromSystem(entity);
+    this->entityComponentSignature[entity.getId()].reset();
+
+    //  TOD: add id to deque of free ids
+  }
+  this->entitiesToBeKilled.clear();
+
+}
