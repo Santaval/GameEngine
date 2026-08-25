@@ -9,11 +9,18 @@ Registry::~Registry() {
 }
 
 Entity Registry::createEntity() {
-  int entityId = numEntity++;
+  int entityId;
 
-  if (entityId >= this->entityComponentSignature.size()) {
-    this->entityComponentSignature.resize(entityId + 100);
+  if(this->freeIds.empty()) {
+    entityId = numEntity++;
+    if (entityId >= this->entityComponentSignature.size()) {
+      this->entityComponentSignature.resize(entityId + 100);
+    }
+  } else {
+    entityId = this->freeIds.front();
+    this->freeIds.pop_front();
   }
+
 
   Entity entity(entityId);
   this->entitiesToBeAdded.insert(entity);
@@ -63,7 +70,7 @@ void Registry::update() {
     this->removeEntityFromSystem(entity);
     this->entityComponentSignature[entity.getId()].reset();
 
-    //  TOD: add id to deque of free ids
+    this->freeIds.push_back(entity.getId());
   }
   this->entitiesToBeKilled.clear();
 

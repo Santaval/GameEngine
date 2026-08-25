@@ -19,6 +19,7 @@ class Registry {
     std::unordered_map<std::type_index, std::shared_ptr<System>> systems;
     std::set<Entity> entitiesToBeAdded;
     std::set<Entity> entitiesToBeKilled;
+    std::deque<int> freeIds;
 
   public:
     Registry();
