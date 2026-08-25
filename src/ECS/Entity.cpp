@@ -1,6 +1,4 @@
-#include "ECS.hpp"
-
-int IComponent::nextId = 0;
+#include "Entity.hpp"
 
 int Entity::getId() const {
     return this->id;
