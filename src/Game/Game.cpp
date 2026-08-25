@@ -1,12 +1,15 @@
 #include "Game.hpp"
 #include <iostream>
+#include "../Components/TransformComponent.hpp"
 
 
 Game::Game() {
+    this->registry = std::make_unique<Registry>(); 
     std::cout << "[Game] Game init" << std::endl;
 }
 
 Game::~Game() {
+    this->registry.reset();
     std::cout << "[Game] Game destroy" << std::endl;
 }
 
@@ -37,7 +40,7 @@ void Game::init() {
         std::cout << "[Game] Error creating window" << std::endl;
         return;
     }
-
+    
     renderer = SDL_CreateRenderer(this->window,-1,0);
 
     if (!this->renderer) {
@@ -47,6 +50,12 @@ void Game::init() {
 
     this->isRunning = true;
 }
+
+void Game::setup() {
+    Entity e = this->registry->createEntity();
+    e.addComponent<TransformComponent>(glm::vec2(100.0, 100.0), glm::vec2(1.0, 1.0), 0.0);
+}
+
 
 void Game::processInput() {
     SDL_Event sdlEvent;
@@ -74,7 +83,10 @@ void Game::update() {
     
 }
 
+
 void Game::run() {
+    this->setup();
+
     while(this->isRunning) {
         this->processInput();
         this->update();

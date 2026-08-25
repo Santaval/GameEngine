@@ -6,6 +6,7 @@
 #include <set>
 #include <typeindex>
 #include <deque>
+#include <utility>
 #include <iostream>
 #include "../Util/Pool.hpp"
 #include "System.hpp"
@@ -33,7 +34,7 @@ class Registry {
     // components managment
 
     template <typename TComponent, typename... TArgs>
-    void addComponent(Entity Entity, TArgs&&... args);
+    void addComponent(Entity entity, TArgs&&... args);
 
     template <typename TComponent>
     void removeComponent(Entity entity);
@@ -67,10 +68,10 @@ class Registry {
 
 template <typename TComponent, typename... TArgs>
 void Registry::addComponent(Entity entity, TArgs&&... args) {
-  const int componentId = Component<TComponent>::getid();
+  const int componentId = Component<TComponent>::getId();
   const int entityId = entity.getId();
 
-  if(componentId >= this->componentsPool.size()) {
+  if(componentId >= static_cast<int>(this->componentsPool.size())) {
     this->componentsPool.resize(componentId + 10, nullptr);
   }
 
@@ -82,19 +83,19 @@ void Registry::addComponent(Entity entity, TArgs&&... args) {
   std::shared_ptr<Pool<TComponent>> componentPool 
     = std::static_pointer_cast<Pool<TComponent>> (this->componentsPool[componentId]);
 
-  if(entityId >= componentPool->GetSize()) {
-    componentPool->Resize(numEntity + 100);
+  if(entityId >= componentPool->getSize()) {
+    componentPool->resize(numEntity + 100);
   }
 
   TComponent newComponent(std::forward<TArgs>(args)...);
-  componentPool->Set(entityId, newComponent);
+  componentPool->set(entityId, newComponent);
   this->entityComponentSignature[entityId].set(componentId);
 }
 
 
 template <typename TComponent>
 void Registry::removeComponent(Entity entity) {
-  const int componentId = Component<TComponent>::getid();
+  const int componentId = Component<TComponent>::getId();
   const int entityId = entity.getId();
 
   this->entityComponentSignature[entityId].set(componentId, false);
@@ -102,7 +103,7 @@ void Registry::removeComponent(Entity entity) {
 
 template <typename TComponent>
 bool Registry::hasComponent(Entity entity) const {
-  const int componentId = Component<TComponent>::getid();
+  const int componentId = Component<TComponent>::getId();
   const int entityId = entity.getId();
 
   return this->entityComponentSignature[entityId].test(componentId);
@@ -110,13 +111,13 @@ bool Registry::hasComponent(Entity entity) const {
 
 template <typename TComponent>
 TComponent& Registry::getComponent(Entity entity) const {
-  const int componentId = Component<TComponent>::getid();
+  const int componentId = Component<TComponent>::getId();
   const int entityId = entity.getId();
 
   auto componentPool = 
     std::static_pointer_cast<Pool<TComponent>>(this->componentsPool[componentId]);
 
-  return componentPool->Get(entityId);
+  return componentPool->get(entityId);
 }
 
 
@@ -146,4 +147,26 @@ template <typename TSystem>
 TSystem& Registry::getSystem() const {
   auto system = this->systems.find(std::type_index(typeid(TSystem)));
   return *(std::static_pointer_cast<TSystem>(system->second));
+}
+
+// Entity template methods, defined here because they need a complete Registry
+
+template <typename TComponent, typename... TArgs>
+void Entity::addComponent(TArgs&&... args) {
+  this->registry->addComponent<TComponent>(*this, std::forward<TArgs>(args)...);
+}
+
+template <typename TComponent>
+void Entity::removeComponent() {
+  this->registry->removeComponent<TComponent>(*this);
+}
+
+template <typename TComponent>
+bool Entity::hasComponent() const {
+  return this->registry->hasComponent<TComponent>(*this);
+}
+
+template <typename TComponent>
+TComponent& Entity::getComponent() const {
+  return this->registry->getComponent<TComponent>(*this);
 }

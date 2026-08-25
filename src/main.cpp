@@ -1,7 +1,7 @@
 #include <iostream>
 #include "Game/Game.hpp"
 
-int main(int argc, char* argv[]) {
+int main() {
     std::cout << "Hello from Engine" << std::endl;
 
     Game& game = Game::getInstance();

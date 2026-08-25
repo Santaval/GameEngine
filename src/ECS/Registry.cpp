@@ -13,7 +13,7 @@ Entity Registry::createEntity() {
 
   if(this->freeIds.empty()) {
     entityId = numEntity++;
-    if (entityId >= this->entityComponentSignature.size()) {
+    if (entityId >= static_cast<int>(this->entityComponentSignature.size())) {
       this->entityComponentSignature.resize(entityId + 100);
     }
   } else {
@@ -23,6 +23,7 @@ Entity Registry::createEntity() {
 
 
   Entity entity(entityId);
+  entity.registry = this;
   this->entitiesToBeAdded.insert(entity);
 
   std::cout << "[Registry] Entity created" << std::endl;

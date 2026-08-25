@@ -14,41 +14,41 @@ class Pool : public IPool {
 
   public:
     Pool(int size = 1000) {
-      this.data.rend(size);
+      this->data.resize(size);
     }
   
     virtual ~Pool() = default;
 
     bool isEmpty() const {
-      return this.data.empty();
+      return this->data.empty();
     }
 
     int getSize() const {
-      return this.data.size();
+      return this->data.size();
     }
 
     void resize(int n) {
-      this.data.resize(n);
+      this->data.resize(n);
     }
 
     void clear() {
-      this.data.clear();
+      this->data.clear();
     }
 
     void add(TComponent object) {
-      this.data.push_back(object);
+      this->data.push_back(object);
     }
 
     void set(unsigned  index, TComponent object) {
-      this.data[index] = object;
+      this->data[index] = object;
     }
 
     TComponent& get(unsigned int index) {
-      return static_cast<TComponent&>(this.data[index]);
+      return static_cast<TComponent&>(this->data[index]);
     }
 
     TComponent& operator[](unsigned int index) {
-      return static_cast<TComponent&>(this.data[index]);
+      return static_cast<TComponent&>(this->data[index]);
     }
 
 };
