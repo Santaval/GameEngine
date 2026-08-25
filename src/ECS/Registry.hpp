@@ -17,7 +17,7 @@ class Registry {
     std::vector<std::shared_ptr<IPool>> componentsPool;
     std::vector<Signature> entityComponentSignature;
     std::unordered_map<std::type_index, std::shared_ptr<System>> systems;
-    std::set<Entity> entitiesAdded;
+    std::set<Entity> entitiesToBeAdded;
     std::set<Entity> entitiesToBeKilled;
 
   public:
@@ -61,6 +61,31 @@ class Registry {
     // Add system entities
     void addEntityToSystems(Entity entity);
     void removeEntityFromSystem(Entity entity);
-
-
 };
+
+
+template <typename TComponent, typename... TArgs>
+void Registry::AddComponent(Entity entity, TArgs&&... args) {
+  const int componentId = Component<TComponent>::getid();
+  const int entityId = entity.getId();
+
+  if(componentId >= this->componentsPool.size()) {
+    this->componentsPool.resize(componentId + 10, nullptr);
+  }
+
+  if(!this->componentsPool[componentId]) {
+    std::shared_ptr<Pool<TComponent>> newComponentPool = std::make_shared<Pool<TComponent>>();
+    this->componentsPool[componentId] = newComponentPool;
+  }
+
+  std::shared_ptr<Pool<TComponent>> componentPool 
+    = std::static_pointer_cast<Pool<TComponent>> (this->componentsPool[componentId]);
+
+  if(entityId >= componentPool->GetSize()) {
+    componentPool->Resize(numEntity + 100);
+  }
+
+  TComponent newComponent(std::forward<TArgs>(args)...);
+  componentPool->Set(entityId, newComponent);
+  this->entityComponentSignature[entityId].set(componentId);
+}
