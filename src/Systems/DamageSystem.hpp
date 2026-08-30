@@ -21,5 +21,8 @@ class DamageSystem : public System {
     void onCollision(CollisionEvent&  e) {
       std::cout << "[DamageSystem] Callback on collision " << e.a.getId() 
         << " and " << e.b.getId() << std::endl;
+      
+      e.a.kill();
+      e.b.kill();
     }
 };

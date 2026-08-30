@@ -1,13 +1,13 @@
 #pragma once
 
-class Entity
-{
+class Entity {
 private:
   int id;
 
 public:
   Entity(int id) : id(id) {}
   int getId() const;
+  void kill();
 
   bool operator==(const Entity& other) const { return this->id == other.id; }
   bool operator!=(const Entity& other) const { return this->id != other.id; }
