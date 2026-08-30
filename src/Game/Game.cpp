@@ -4,11 +4,13 @@
 
 
 Game::Game() {
+    this->assetManager = srd::make_unique<AssetManager>();
     this->registry = std::make_unique<Registry>(); 
     std::cout << "[Game] Game init" << std::endl;
 }
 
 Game::~Game() {
+    this->assetManager.reset();
     this->registry.reset();
     std::cout << "[Game] Game destroy" << std::endl;
 }

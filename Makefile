@@ -4,7 +4,8 @@ CFLAGS=-Wall -Wextra
 INC_PATH=-I"./libs/"
 SRC=src/*.cpp \
 	src/Game/*.cpp \
-	src/ECS/*.cpp
+	src/ECS/*.cpp \
+	src/AssetManager/*.cpp
 LFLAGS=-lSDL2 -lSDL2_image -lSDL2_ttf -llua5.3
 
 build: 

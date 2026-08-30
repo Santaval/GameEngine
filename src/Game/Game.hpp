@@ -5,6 +5,7 @@
 #include <memory>
 
 #include "../ECS/Registry.hpp"
+#include "../AssetManager/AssetManager.hpp"
 
 class Game {
     private:
@@ -14,6 +15,7 @@ class Game {
         int windowWidth = 0;
         int windowHeight = 0;
 
+        std::unique_ptr<AssetManager> assetManager;
         std::unique_ptr<Registry> registry;
 
         bool isRunning = false;
