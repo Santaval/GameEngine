@@ -7,6 +7,9 @@
 #include "../ECS/Registry.hpp"
 #include "../AssetManager/AssetManager.hpp"
 
+const int FPS = 30;
+const int MILISECS_PER_FRAMES = 1000 / FPS;
+
 class Game {
     private:
         SDL_Window* window = nullptr;
@@ -14,6 +17,8 @@ class Game {
 
         int windowWidth = 0;
         int windowHeight = 0;
+
+        int milisecsPreviousFrame = 0;
 
         std::unique_ptr<AssetManager> assetManager;
         std::unique_ptr<Registry> registry;

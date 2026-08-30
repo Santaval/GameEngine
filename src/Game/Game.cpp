@@ -1,7 +1,10 @@
 #include "Game.hpp"
 #include <iostream>
 #include "../Components/TransformComponent.hpp"
+#include "../Components/SpriteComponent.hpp"
+#include "../Components/RigidBodyComponent.hpp"
 #include "../Systems/RenderSystem.hpp"
+#include "../Systems/MovementSystem.hpp"
 
 Game::Game() {
     this->assetManager = std::make_unique<AssetManager>();
@@ -55,10 +58,12 @@ void Game::init() {
 
 void Game::setup() {
     this->registry->addSystem<RenderSystem>();
+    this->registry->addSystem<MovementSystem>();
     this->assetManager->addTexture(this->renderer, "enemy_allan", "./assets/images/enemy_allan.png");
     
     Entity enemy = this->registry->createEntity();
 
+    enemy.addComponent<RigidBodyComponent>(glm::vec2(50.0, 0));
     enemy.addComponent<SpriteComponent>("enemy_allan", 16, 16, 0, 0);
     enemy.addComponent<TransformComponent>(glm::vec2(100.0, 100.0), glm::vec2(2.0, 2.0), 0.0);
 }
@@ -94,7 +99,18 @@ void Game::render() {
 }
 
 void Game::update() {
+    int timeToWait = MILISECS_PER_FRAMES - (SDL_GetTicks() - this->milisecsPreviousFrame);
+
+    if(timeToWait > 0 &&   MILISECS_PER_FRAMES >= timeToWait) {
+        SDL_Delay(timeToWait);
+    }
+
+    double deltaTime = (SDL_GetTicks() - this->milisecsPreviousFrame) / 1000.0;
+
+    this->milisecsPreviousFrame = SDL_GetTicks();
+
     this->registry->update();
+    this->registry->getSystem<MovementSystem>().update(deltaTime);
 }
 
 
