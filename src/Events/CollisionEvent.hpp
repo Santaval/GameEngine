@@ -3,10 +3,10 @@
 #include "../EventManager/Event.hpp"
 #include "../ECS/Entity.hpp"
 
-class CollisionEvenet : public Event {
+class CollisionEvent : public Event {
   public:
     Entity a;
     Entity b;
 
-    CollisionEvenet(Entity a, Entity b) : a(a), b(b) {}
+    CollisionEvent(Entity a, Entity b) : a(a), b(b) {}
 };

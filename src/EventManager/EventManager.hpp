@@ -29,12 +29,12 @@ class EventManager {
     }
     
     template <typename TEvent, typename TOwner>
-    void subscribeToEvent(TOwner* ownerInstance, void (TOwner::*callbackFunction)(TEvent&)) {
+    void subscribe(TOwner* ownerInstance, void (TOwner::*callbackFunction)(TEvent&)) {
 
-      const auto subsIndex = typeid(TEvent);
+      const std::type_index subsIndex = typeid(TEvent);
 
       if (!this->subscribers[subsIndex].get()) {
-        this->subscribers[subsIndex] = std::unique_ptr<HandlerList>();
+        this->subscribers[subsIndex] = std::make_unique<HandlerList>();
       }
 
       auto subscriber = std::make_unique<EventCallback<TOwner, TEvent>>(ownerInstance, callbackFunction);

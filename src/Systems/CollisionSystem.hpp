@@ -1,9 +1,13 @@
 #pragma once 
 
 #include <iostream>
+#include <memory>
+
 #include "../ECS/System.hpp"
 #include "../Components/CircleColliderComponent.hpp"
 #include "../Components/TransformComponent.hpp"
+#include "../EventManager/EventManager.hpp"
+#include "../Events/CollisionEvent.hpp"
 
 class CollisionSystem : public System {
 
@@ -13,7 +17,7 @@ class CollisionSystem : public System {
       this->requireComponent<TransformComponent>();
     }
 
-    void update() {
+    void update(std::unique_ptr<EventManager>& eventManager) {
       auto entities = this->getEntities();
 
       for (auto i = entities.begin(); i != entities.end(); i++) {
@@ -47,8 +51,7 @@ class CollisionSystem : public System {
               bRadius, aCenterPos, bCenterPos);
 
           if (collision) {
-            std::cout << "[CollisionSystem] Collision between "
-              << a.getId() << "y" << b.getId() << std::endl;
+            eventManager->emit<CollisionEvent>(a, b);
           }
 
         };

@@ -11,7 +11,7 @@ class EventCallback : public IEventCallback {
     CallbackFunction callbackFunction;
 
     virtual void call(Event& e) override {
-      std::invoke(callbackFunction, ownerInstance, static_cast<TEvent&>(E));
+      std::invoke(callbackFunction, ownerInstance, static_cast<TEvent&>(e));
     }
 
   public: 

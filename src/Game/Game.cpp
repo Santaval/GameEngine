@@ -1,5 +1,7 @@
 #include "Game.hpp"
+
 #include <iostream>
+
 #include "../Components/TransformComponent.hpp"
 #include "../Components/SpriteComponent.hpp"
 #include "../Components/RigidBodyComponent.hpp"
@@ -8,9 +10,11 @@
 #include "../Systems/CollisionSystem.hpp"
 #include "../Systems/RenderSystem.hpp"
 #include "../Systems/MovementSystem.hpp"
+#include "../Systems/DamageSystem.hpp"
 
 Game::Game() {
     this->assetManager = std::make_unique<AssetManager>();
+    this->eventManager = std::make_unique<EventManager>();
     this->registry = std::make_unique<Registry>(); 
     std::cout << "[Game] Game init" << std::endl;
 }
@@ -63,6 +67,7 @@ void Game::setup() {
     this->registry->addSystem<RenderSystem>();
     this->registry->addSystem<MovementSystem>();
     this->registry->addSystem<CollisionSystem>();
+    this->registry->addSystem<DamageSystem>();
     this->assetManager->addTexture(this->renderer, "enemy_allan", "./assets/images/enemy_allan.png");
     
     Entity enemy1 = this->registry->createEntity();
@@ -120,9 +125,13 @@ void Game::update() {
 
     this->milisecsPreviousFrame = SDL_GetTicks();
 
+    // Reset events subscriptions
+    this->eventManager->reset();
+    this->registry->getSystem<DamageSystem>().subscribeToCollisionEvent(this->eventManager);
+
     this->registry->update();
+    this->registry->getSystem<CollisionSystem>().update(this->eventManager);
     this->registry->getSystem<MovementSystem>().update(deltaTime);
-    this->registry->getSystem<CollisionSystem>().update();
 }
 
 
