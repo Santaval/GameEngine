@@ -6,11 +6,13 @@
 #include "../Components/SpriteComponent.hpp"
 #include "../Components/RigidBodyComponent.hpp"
 #include "../Components/CircleColliderComponent.hpp"
+#include "../Components/AnimationComponent.hpp"
 
 #include "../Systems/CollisionSystem.hpp"
 #include "../Systems/RenderSystem.hpp"
 #include "../Systems/MovementSystem.hpp"
 #include "../Systems/DamageSystem.hpp"
+#include "../Systems/AnimationSystem.hpp"
 
 Game::Game() {
     this->assetManager = std::make_unique<AssetManager>();
@@ -68,15 +70,18 @@ void Game::setup() {
     this->registry->addSystem<MovementSystem>();
     this->registry->addSystem<CollisionSystem>();
     this->registry->addSystem<DamageSystem>();
+    this->registry->addSystem<AnimationSystem>();
     this->assetManager->addTexture(this->renderer, "enemy_allan", "./assets/images/enemy_allan.png");
     
     Entity enemy1 = this->registry->createEntity();
+    enemy1.addComponent<AnimationComponent>(6, 30);
     enemy1.addComponent<RigidBodyComponent>(glm::vec2(50.0, 0));
     enemy1.addComponent<SpriteComponent>("enemy_allan", 16, 16, 0, 0);
     enemy1.addComponent<TransformComponent>(glm::vec2(200.0, 100.0), glm::vec2(2.0, 2.0), 0.0);
     enemy1.addComponent<CircleColliderComponent>(8, 16, 16);
 
     Entity enemy2 = this->registry->createEntity();
+    enemy2.addComponent<AnimationComponent>(6, 30);
     enemy2.addComponent<RigidBodyComponent>(glm::vec2(-50.0, 0));
     enemy2.addComponent<SpriteComponent>("enemy_allan", 16, 16, 0, 0);
     enemy2.addComponent<TransformComponent>(glm::vec2(600.0, 100.0), glm::vec2(2.0, 2.0), 0.0);
@@ -132,6 +137,7 @@ void Game::update() {
     this->registry->update();
     this->registry->getSystem<CollisionSystem>().update(this->eventManager);
     this->registry->getSystem<MovementSystem>().update(deltaTime);
+    this->registry->getSystem<AnimationSystem>().update();
 }
 
 
