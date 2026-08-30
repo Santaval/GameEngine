@@ -5,7 +5,7 @@
 
 class AssetManager {
   private:
-    std::map<string, SDL_Texture*> textures;
+    std::map<std::string, SDL_Texture*> textures;
   public:
     AssetManager();
     ~AssetManager();
@@ -18,4 +18,4 @@ class AssetManager {
     SDL_Texture* getTexture(const std::string& textureId);
 
 
-}
+};

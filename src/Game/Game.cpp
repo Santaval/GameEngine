@@ -4,7 +4,7 @@
 
 
 Game::Game() {
-    this->assetManager = srd::make_unique<AssetManager>();
+    this->assetManager = std::make_unique<AssetManager>();
     this->registry = std::make_unique<Registry>(); 
     std::cout << "[Game] Game init" << std::endl;
 }
@@ -54,8 +54,10 @@ void Game::init() {
 }
 
 void Game::setup() {
-    Entity e = this->registry->createEntity();
-    e.addComponent<TransformComponent>(glm::vec2(100.0, 100.0), glm::vec2(1.0, 1.0), 0.0);
+    this->assetManager->addTexture(this->renderer, "allan", "./assets/images/enemy_allan.png");
+    
+    Entity enemy = this->registry->createEntity();
+    enemy.addComponent<TransformComponent>(glm::vec2(100.0, 100.0), glm::vec2(1.0, 1.0), 0.0);
 }
 
 
@@ -67,7 +69,10 @@ void Game::processInput() {
 
             case SDL_QUIT:
                 this->isRunning = false;
-
+            case SDL_KEYDOWN:
+                if(sdlEvent.key.keysym.sym == SDLK_ESCAPE) {
+                    this->isRunning = false;
+                }
             default:
                 break;
         }
