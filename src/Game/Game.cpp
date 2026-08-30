@@ -1,7 +1,7 @@
 #include "Game.hpp"
 #include <iostream>
 #include "../Components/TransformComponent.hpp"
-
+#include "../Systems/RenderSystem.hpp"
 
 Game::Game() {
     this->assetManager = std::make_unique<AssetManager>();
@@ -54,10 +54,13 @@ void Game::init() {
 }
 
 void Game::setup() {
-    this->assetManager->addTexture(this->renderer, "allan", "./assets/images/enemy_allan.png");
+    this->registry->addSystem<RenderSystem>();
+    this->assetManager->addTexture(this->renderer, "enemy_allan", "./assets/images/enemy_allan.png");
     
     Entity enemy = this->registry->createEntity();
-    enemy.addComponent<TransformComponent>(glm::vec2(100.0, 100.0), glm::vec2(1.0, 1.0), 0.0);
+
+    enemy.addComponent<SpriteComponent>("enemy_allan", 16, 16, 0, 0);
+    enemy.addComponent<TransformComponent>(glm::vec2(100.0, 100.0), glm::vec2(2.0, 2.0), 0.0);
 }
 
 
@@ -69,10 +72,12 @@ void Game::processInput() {
 
             case SDL_QUIT:
                 this->isRunning = false;
+                break;
             case SDL_KEYDOWN:
                 if(sdlEvent.key.keysym.sym == SDLK_ESCAPE) {
                     this->isRunning = false;
                 }
+                break;
             default:
                 break;
         }
@@ -83,11 +88,13 @@ void Game::render() {
     SDL_SetRenderDrawColor(this->renderer, 31, 31, 31, 255);
     SDL_RenderClear(this->renderer);
 
+    this->registry->getSystem<RenderSystem>().update(this->renderer, this->assetManager);
+
     SDL_RenderPresent(this->renderer);
 }
 
 void Game::update() {
-    
+    this->registry->update();
 }
 
 
