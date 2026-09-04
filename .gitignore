@@ -1,3 +1,4 @@
 engine
-/libs
+luatest
+libs
 .vscode

@@ -74,14 +74,14 @@ void Game::setup() {
     this->assetManager->addTexture(this->renderer, "enemy_allan", "./assets/images/enemy_allan.png");
     
     Entity enemy1 = this->registry->createEntity();
-    enemy1.addComponent<AnimationComponent>(6, 30);
+    enemy1.addComponent<AnimationComponent>(6, 5);
     enemy1.addComponent<RigidBodyComponent>(glm::vec2(50.0, 0));
     enemy1.addComponent<SpriteComponent>("enemy_allan", 16, 16, 0, 0);
     enemy1.addComponent<TransformComponent>(glm::vec2(200.0, 100.0), glm::vec2(2.0, 2.0), 0.0);
     enemy1.addComponent<CircleColliderComponent>(8, 16, 16);
 
     Entity enemy2 = this->registry->createEntity();
-    enemy2.addComponent<AnimationComponent>(6, 30);
+    enemy2.addComponent<AnimationComponent>(6, 5);
     enemy2.addComponent<RigidBodyComponent>(glm::vec2(-50.0, 0));
     enemy2.addComponent<SpriteComponent>("enemy_allan", 16, 16, 0, 0);
     enemy2.addComponent<TransformComponent>(glm::vec2(600.0, 100.0), glm::vec2(2.0, 2.0), 0.0);
