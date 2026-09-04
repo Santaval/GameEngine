@@ -11,5 +11,18 @@ table_config = {
     }
 }
 
+function factorial(n)
+    if n == 0 then
+        return 1
+    else
+        return n * factorial(n - 1)
+    end
+end
+
 print("[LUA] Nombre: " .. var_nombre)
 print("[LUA] Edad: " .. var_edad)
+
+
+var_pow = pow(2, 4)
+
+print("[LUA] 2^4 = " .. var_pow)
