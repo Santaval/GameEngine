@@ -2,10 +2,11 @@
 
 #include <memory>
 #include <sol/sol.hpp>
+#include <iostream>
 
 #include "../ECS/System.hpp"
-
 #include "../Components/ScriptComponent.hpp"
+#include "../Binding/LuaBinding.hpp"
 
 class ScriptSystem : public System {
  public:
@@ -18,8 +19,12 @@ class ScriptSystem : public System {
     const auto& script = entity.getComponent<ScriptComponent>();
 
     if(script.update != sol::lua_nil) {
-     script.update;
+     script.update();
     }
    }
+  }
+
+  void createLuaBiding(sol::state& lua) {
+    lua.set_function("is_action_activated", isActionActivated);
   }
 };

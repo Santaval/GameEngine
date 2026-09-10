@@ -7,12 +7,14 @@
 #include "../Components/RigidBodyComponent.hpp"
 #include "../Components/CircleColliderComponent.hpp"
 #include "../Components/AnimationComponent.hpp"
+#include "../Components/ScriptComponent.hpp"
 
 #include "../Systems/CollisionSystem.hpp"
 #include "../Systems/RenderSystem.hpp"
 #include "../Systems/MovementSystem.hpp"
 #include "../Systems/DamageSystem.hpp"
 #include "../Systems/AnimationSystem.hpp"
+#include "../Systems/ScriptSystem.hpp"
 
 Game::Game() {
     this->assetManager = std::make_unique<AssetManager>();
@@ -74,19 +76,24 @@ void Game::setup() {
     this->registry->addSystem<CollisionSystem>();
     this->registry->addSystem<DamageSystem>();
     this->registry->addSystem<AnimationSystem>();
+    this->registry->addSystem<ScriptSystem>();
 
     this->lua.open_libraries(sol::lib::base);
-
+    this->registry->getSystem<ScriptSystem>().createLuaBiding(this->lua);
     this->assetManager->addTexture(this->renderer, "spaceship-idle", "./assets/images/spaceship-idle-ss.png");
 
-    this->controllerManager->mapAction("acelerar", 119); // SDL_w
-    this->controllerManager->mapAction("acelerar", 115); // SDL_S
+    this->controllerManager->mapAction("accelerate", 119); // SDL_w
+    this->controllerManager->mapAction("brake", 115); // SDL_S
 
     
     Entity player = this->registry->createEntity();
+    this->lua.script_file("./assets/scripts/player.lua");
+    sol::function update = this->lua["update"];
+
     player.addComponent<AnimationComponent>(4, 10);
     player.addComponent<RigidBodyComponent>(glm::vec2(0.0, 0));
     player.addComponent<SpriteComponent>("spaceship-idle", 443.5, 530, 0, 165);
+    player.addComponent<ScriptComponent>(update);
     player.addComponent<TransformComponent>(glm::vec2(200.0, 100.0), glm::vec2(0.2, 0.2), 0.0);
     player.addComponent<CircleColliderComponent>(8, 16, 16);
 
@@ -143,9 +150,10 @@ void Game::update() {
     this->registry->getSystem<DamageSystem>().subscribeToCollisionEvent(this->eventManager);
 
     this->registry->update();
-    this->registry->getSystem<CollisionSystem>().update(this->eventManager);
-    this->registry->getSystem<MovementSystem>().update(deltaTime);
+    this->registry->getSystem<ScriptSystem>().update(this->lua);
     this->registry->getSystem<AnimationSystem>().update();
+    this->registry->getSystem<MovementSystem>().update(deltaTime);
+    this->registry->getSystem<CollisionSystem>().update(this->eventManager);
 }
 
 

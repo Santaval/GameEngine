@@ -25,12 +25,14 @@ class Game {
 
         std::unique_ptr<AssetManager> assetManager;
         std::unique_ptr<EventManager> eventManager;
-        std::unique_ptr<ControllerManager> controllerManager;
         std::unique_ptr<Registry> registry;
-
         sol::state lua;
 
         bool isRunning = false;
+    public:
+        std::unique_ptr<ControllerManager> controllerManager;
+
+
 
     
     private: 
