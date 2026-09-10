@@ -84,6 +84,8 @@ void Game::setup() {
 
     this->controllerManager->mapAction("accelerate", 119); // SDL_w
     this->controllerManager->mapAction("brake", 115); // SDL_S
+    this->controllerManager->mapAction("rotate_left", 97); // SDL_A
+    this->controllerManager->mapAction("rotate_right", 100); // SDL_D
 
     
     Entity player = this->registry->createEntity();
