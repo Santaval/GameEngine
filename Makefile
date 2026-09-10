@@ -6,7 +6,8 @@ SRC=src/*.cpp \
 	src/Game/*.cpp \
 	src/ECS/*.cpp \
 	src/AssetManager/*.cpp \
-	src/ControllerManager/*.cpp
+	src/ControllerManager/*.cpp \
+	src/SceneManager/*.cpp
 LFLAGS=-lSDL2 -lSDL2_image -lSDL2_ttf -llua5.3
 
 build: 
