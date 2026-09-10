@@ -21,6 +21,8 @@ Game::Game() {
     this->eventManager = std::make_unique<EventManager>();
     this->controllerManager = std::make_unique<ControllerManager>();
     this->registry = std::make_unique<Registry>(); 
+
+    this->sceneLoader = std::make_unique<SceneLoader>(); 
     std::cout << "[Game] Game init" << std::endl;
 }
 
@@ -80,24 +82,9 @@ void Game::setup() {
 
     this->lua.open_libraries(sol::lib::base);
     this->registry->getSystem<ScriptSystem>().createLuaBiding(this->lua);
-    this->assetManager->addTexture(this->renderer, "spaceship-attack", "./assets/images/spaceship-attack-ss.png");
-
-    this->controllerManager->mapAction("accelerate", 119); // SDL_w
-    this->controllerManager->mapAction("brake", 115); // SDL_S
-    this->controllerManager->mapAction("rotate_left", 97); // SDL_A
-    this->controllerManager->mapAction("rotate_right", 100); // SDL_D
-
     
-    Entity player = this->registry->createEntity();
-    this->lua.script_file("./assets/scripts/player.lua");
-    sol::function update = this->lua["update"];
-
-    player.addComponent<AnimationComponent>(4, 10);
-    player.addComponent<RigidBodyComponent>(glm::vec2(0.0, 0));
-    player.addComponent<SpriteComponent>("spaceship-attack", 443.5, 530, 0, 165);
-    player.addComponent<ScriptComponent>(update);
-    player.addComponent<TransformComponent>(glm::vec2(200.0, 100.0), glm::vec2(0.2, 0.2), 0.0);
-    player.addComponent<CircleColliderComponent>(8, 16, 16);
+    this->sceneLoader->load("./assets/scripts/scenes/scene_01.lua", this->lua, this->assetManager,
+        this->controllerManager, this->registry, this->renderer);
 
 }
 

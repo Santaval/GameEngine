@@ -9,6 +9,7 @@
 #include "../AssetManager/AssetManager.hpp"
 #include "../EventManager/EventManager.hpp"
 #include "../ControllerManager/ControllerManager.hpp"
+#include "../SceneManager/SceneLoader.hpp"
 
 const int FPS = 30;
 const int MILISECS_PER_FRAMES = 1000 / FPS;
@@ -23,13 +24,15 @@ class Game {
 
         int milisecsPreviousFrame = 0;
         double deltaTime = 0.0;
+        bool isRunning = false;
 
         std::unique_ptr<AssetManager> assetManager;
         std::unique_ptr<EventManager> eventManager;
         std::unique_ptr<Registry> registry;
         sol::state lua;
 
-        bool isRunning = false;
+        std::unique_ptr<SceneLoader> sceneLoader;
+
     public:
         std::unique_ptr<ControllerManager> controllerManager;
 

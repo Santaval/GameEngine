@@ -1,5 +1,8 @@
 #include "SceneLoader.hpp"
 
+#include <glm/glm.hpp>
+#include <iostream>
+
 #include "../Components/CircleColliderComponent.hpp"
 #include "../Components/RigidBodyComponent.hpp"
 #include "../Components/SpriteComponent.hpp"
@@ -7,8 +10,6 @@
 #include "../Components/AnimationComponent.hpp"
 #include "../Components/ScriptComponent.hpp"
 
-#include <glm/glm.hpp>
-#include <iostream>
 
 namespace {
   glm::vec2 getVec2(const sol::table& table, const std::string& key, glm::vec2 defaultValue) {
@@ -91,8 +92,8 @@ void SceneLoader::addSpriteComponent(Entity entity, const sol::table& components
 
   sol::table sprite = *hasSprite;
   std::string assetId = sprite["assetId"];
-  int width = sprite["width"];
-  int height = sprite["height"];
+  int width = static_cast<int>(sprite["width"].get<double>());
+  int height = static_cast<int>(sprite["height"].get<double>());
 
   sol::optional<sol::table> hasSrcRect = sprite["src_rect"];
   int srcRectX = 0;
@@ -170,5 +171,22 @@ void SceneLoader::loadEntities(sol::state& lua, const sol::table& entities, std:
 
 void SceneLoader::load(const std::string& scenePath, sol::state& lua,  std::unique_ptr<AssetManager>& assetManager, 
   std::unique_ptr<ControllerManager>& controllerManager, std::unique_ptr<Registry>& registry, SDL_Renderer* renderer) {
+    sol::load_result script_result = lua.load_file(scenePath);
+    if(!script_result.valid()) {
+      sol::error err = script_result;
+      std::string eMessage = err.what();
+      std::cerr << "[SceneLoader]" << eMessage << std::endl;
+      return;
+    }
+    lua.script_file(scenePath);
+    sol::table scene = lua["scene"];
+    sol::table sprites = scene["sprites"];
 
+    this->loadSprites(renderer, sprites, assetManager);
+
+    sol::table keys = scene["keys"];
+    this->loadKeys(keys, controllerManager);
+
+    sol::table entities = scene["entities"];
+    this->loadEntities(lua, entities, registry);
   }
