@@ -22,6 +22,7 @@ class Game {
         int windowHeight = 0;
 
         int milisecsPreviousFrame = 0;
+        double deltaTime = 0.0;
 
         std::unique_ptr<AssetManager> assetManager;
         std::unique_ptr<EventManager> eventManager;
@@ -48,4 +49,5 @@ class Game {
      void init();
      void run();
      void destroy();
+     double getDeltaTime() const { return deltaTime; }
 };

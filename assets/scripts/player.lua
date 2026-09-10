@@ -1,4 +1,4 @@
-player_velocity = 150;
+player_velocity = 300;
 player_rotation_delta = 5;
 
 function update()

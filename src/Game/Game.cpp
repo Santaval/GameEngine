@@ -144,6 +144,7 @@ void Game::update() {
     }
 
     double deltaTime = (SDL_GetTicks() - this->milisecsPreviousFrame) / 1000.0;
+    this->deltaTime = deltaTime;
 
     this->milisecsPreviousFrame = SDL_GetTicks();
 

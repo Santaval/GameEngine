@@ -1,5 +1,6 @@
 #pragma once
 #include <SDL2/SDL.h>
+#include <cmath>
 #include <memory>
 #include "../AssetManager/AssetManager.hpp"
 #include "../ECS/System.hpp"
@@ -26,12 +27,14 @@ class RenderSystem : public System{
                 static_cast<int>(sprite.height * transform.scale.y),
             };
 
+            double rotationDegrees = transform.rotation * 180.0 / M_PI;
+
             SDL_RenderCopyEx(
                 renderer,
                 assetManager->getTexture(sprite.teaxtureId),
                 &srcRec,
                 &dstRec,
-                transform.rotation,
+                rotationDegrees,
                 NULL,
                 SDL_FLIP_NONE
             );

@@ -19,5 +19,5 @@ void setVelocity(Entity e, float x, float y) {
 
 void setRotation(Entity e, float rotation) {
   auto& transform = e.getComponent<TransformComponent>();
-  transform.rotation += rotation;
+  transform.rotation += rotation * Game::getInstance().getDeltaTime();
 }
