@@ -19,12 +19,18 @@ class ScriptSystem : public System {
     const auto& script = entity.getComponent<ScriptComponent>();
 
     if(script.update != sol::lua_nil) {
+      lua["this"] = entity;
      script.update();
     }
    }
   }
 
   void createLuaBiding(sol::state& lua) {
+    // classes
+    lua.new_usertype<Entity>("entity");
+
+    // functions
     lua.set_function("is_action_activated", isActionActivated);
+    lua.set_function("set_velocity", setVelocity);
   }
 };

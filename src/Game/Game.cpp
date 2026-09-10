@@ -80,7 +80,7 @@ void Game::setup() {
 
     this->lua.open_libraries(sol::lib::base);
     this->registry->getSystem<ScriptSystem>().createLuaBiding(this->lua);
-    this->assetManager->addTexture(this->renderer, "spaceship-idle", "./assets/images/spaceship-idle-ss.png");
+    this->assetManager->addTexture(this->renderer, "spaceship-attack", "./assets/images/spaceship-attack-ss.png");
 
     this->controllerManager->mapAction("accelerate", 119); // SDL_w
     this->controllerManager->mapAction("brake", 115); // SDL_S
@@ -92,7 +92,7 @@ void Game::setup() {
 
     player.addComponent<AnimationComponent>(4, 10);
     player.addComponent<RigidBodyComponent>(glm::vec2(0.0, 0));
-    player.addComponent<SpriteComponent>("spaceship-idle", 443.5, 530, 0, 165);
+    player.addComponent<SpriteComponent>("spaceship-attack", 443.5, 530, 0, 165);
     player.addComponent<ScriptComponent>(update);
     player.addComponent<TransformComponent>(glm::vec2(200.0, 100.0), glm::vec2(0.2, 0.2), 0.0);
     player.addComponent<CircleColliderComponent>(8, 16, 16);
