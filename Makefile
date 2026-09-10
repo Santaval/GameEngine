@@ -1,7 +1,7 @@
 CC=g++
 STD=-std=c++17
-CFLAGS=-Wall -Wextra
-INC_PATH=-I"./libs/"
+CFLAGS=-Wall -Wextra -Wno-template-body
+INC_PATH=-I"./libs/" -I"./libs/lua/"
 SRC=src/*.cpp \
 	src/Game/*.cpp \
 	src/ECS/*.cpp \

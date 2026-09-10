@@ -3,6 +3,7 @@
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_ttf.h>
 #include <memory>
+#include <sol/sol.hpp>
 
 #include "../ECS/Registry.hpp"
 #include "../AssetManager/AssetManager.hpp"
@@ -26,6 +27,8 @@ class Game {
         std::unique_ptr<EventManager> eventManager;
         std::unique_ptr<ControllerManager> controllerManager;
         std::unique_ptr<Registry> registry;
+
+        sol::state lua;
 
         bool isRunning = false;
 
