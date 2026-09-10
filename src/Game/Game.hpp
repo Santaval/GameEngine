@@ -7,6 +7,7 @@
 #include "../ECS/Registry.hpp"
 #include "../AssetManager/AssetManager.hpp"
 #include "../EventManager/EventManager.hpp"
+#include "../ControllerManager/ControllerManager.hpp"
 
 const int FPS = 30;
 const int MILISECS_PER_FRAMES = 1000 / FPS;
@@ -23,6 +24,7 @@ class Game {
 
         std::unique_ptr<AssetManager> assetManager;
         std::unique_ptr<EventManager> eventManager;
+        std::unique_ptr<ControllerManager> controllerManager;
         std::unique_ptr<Registry> registry;
 
         bool isRunning = false;

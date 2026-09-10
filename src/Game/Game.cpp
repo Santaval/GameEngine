@@ -17,12 +17,15 @@
 Game::Game() {
     this->assetManager = std::make_unique<AssetManager>();
     this->eventManager = std::make_unique<EventManager>();
+    this->controllerManager = std::make_unique<ControllerManager>();
     this->registry = std::make_unique<Registry>(); 
     std::cout << "[Game] Game init" << std::endl;
 }
 
 Game::~Game() {
     this->assetManager.reset();
+    this->controllerManager.reset();
+    this->eventManager.reset();
     this->registry.reset();
     std::cout << "[Game] Game destroy" << std::endl;
 }
@@ -74,6 +77,10 @@ void Game::setup() {
     this->assetManager->addTexture(this->renderer, "spaceship-idle", "./assets/images/spaceship-idle-ss.png");
     this->assetManager->addTexture(this->renderer, "spaceship-attack", "./assets/images/spaceship-attack-ss.png");
     this->assetManager->addTexture(this->renderer, "spaceship-recollection", "./assets/images/spaceship-recollection-ss.png");
+
+    this->controllerManager->mapAction("acelerar", 119); // SDL_w
+    this->controllerManager->mapAction("acelerar", 115); // SDL_S
+
     
     Entity enemy1 = this->registry->createEntity();
     enemy1.addComponent<AnimationComponent>(4, 10);
@@ -111,7 +118,12 @@ void Game::processInput() {
             case SDL_KEYDOWN:
                 if(sdlEvent.key.keysym.sym == SDLK_ESCAPE) {
                     this->isRunning = false;
+                    break;
                 }
+                this->controllerManager->keyDown(sdlEvent.key.keysym.sym);
+                break;
+            case SDL_KEYUP:
+                this->controllerManager->keyUp(sdlEvent.key.keysym.sym);
                 break;
             default:
                 break;
