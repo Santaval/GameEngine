@@ -5,6 +5,7 @@
 #include <iostream>
 
 #include "../ECS/System.hpp"
+#include "../ECS/Entity.hpp"
 #include "../Components/ScriptComponent.hpp"
 #include "../Binding/LuaBinding.hpp"
 
@@ -29,10 +30,9 @@ class ScriptSystem : public System {
     // classes
     lua.new_usertype<Entity>("entity");
 
-    // functions
-    lua.set_function("is_action_activated", isActionActivated);
-    lua.set_function("set_acceleration", setAcceleration);
-    lua.set_function("set_rotation", setRotation);
-    lua.set_function("set_sprite", setSprite);
+    // bindings por dominio
+    registerInputBindings(lua);
+    registerMovementBindings(lua);
+    registerSpriteBindings(lua);
   }
 };
