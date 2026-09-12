@@ -10,23 +10,26 @@ class MovementSystem : public System {
             this->requireComponent<TransformComponent>();
         }
 
-void update(double dt) {
+    void update(double dt) {
+        for (auto entity : this->getEntities()) {
+            auto& transform = entity.getComponent<TransformComponent>();
+            auto& rigidBody = entity.getComponent<RigidBodyComponent>(); // ya no puede ser const&
 
-    for (auto entity : this->getEntities()) {
+            double rotation = transform.rotation;
+            double cosR = std::cos(rotation);
+            double sinR = std::sin(rotation);
 
-        auto& transform = entity.getComponent<TransformComponent>();
-        const auto& rigidBody = entity.getComponent<RigidBodyComponent>();
+            // 1) Rotar la ACELERACIÓN local (dirección del empuje) al espacio mundo
+            double worldAccelX = rigidBody.acceleration.x * cosR - rigidBody.acceleration.y * sinR;
+            double worldAccelY = rigidBody.acceleration.x * sinR + rigidBody.acceleration.y * cosR;
 
-        double rotation = transform.rotation;
+            // 2) Integrar velocidad: se ACUMULA, nunca se resetea ni se re-rota
+            rigidBody.velocity.x += worldAccelX * dt;
+            rigidBody.velocity.y += worldAccelY * dt;
 
-        double cosR = std::cos(rotation);
-        double sinR = std::sin(rotation);
-
-        double worldVelocityX = rigidBody.velocity.x * cosR - rigidBody.velocity.y * sinR;
-        double worldVelocityY = rigidBody.velocity.x * sinR + rigidBody.velocity.y * cosR;
-
-        transform.position.x += worldVelocityX * dt;
-        transform.position.y += worldVelocityY * dt;
+            // 3) Integrar posición desde la velocidad ya acumulada (espacio mundo)
+            transform.position.x += rigidBody.velocity.x * dt;
+            transform.position.y += rigidBody.velocity.y * dt;
     }
-}
+    }
 };

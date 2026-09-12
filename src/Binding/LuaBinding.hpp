@@ -12,10 +12,10 @@ bool isActionActivated(const std::string& action) {
   return Game::getInstance().controllerManager->isActionActivated(action);
 }
 
-void setVelocity(Entity e, float x, float y) {
+void setAcceleration(Entity e, float x, float y) {
   auto& rigidBody = e.getComponent<RigidBodyComponent>();
-  rigidBody.velocity.x = x;
-  rigidBody.velocity.y = y;
+  rigidBody.acceleration.x = x;
+  rigidBody.acceleration.y = y;
 }
 
 void setRotation(Entity e, float rotation) {

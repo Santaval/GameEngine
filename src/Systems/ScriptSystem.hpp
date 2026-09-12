@@ -31,7 +31,7 @@ class ScriptSystem : public System {
 
     // functions
     lua.set_function("is_action_activated", isActionActivated);
-    lua.set_function("set_velocity", setVelocity);
+    lua.set_function("set_acceleration", setAcceleration);
     lua.set_function("set_rotation", setRotation);
     lua.set_function("set_sprite", setSprite);
   }

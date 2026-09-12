@@ -1,20 +1,23 @@
-player_velocity = 300;
-player_rotation_delta = 5;
+player_thrust = 50
+player_rotation_delta = 5
 
 function update()
-   set_velocity(this, 0, 0)
-   vel_y = 0;
-   rotation_delta = 0
+  rotation_delta = 0
+  accel_y = 0
 
   if is_action_activated("accelerate") then
-   vel_y = vel_y + -1
-   set_sprite(this, "spaceship-attack")
+    accel_y = accel_y + -1
+    set_sprite(this, "spaceship-attack")
   end
+
   if is_action_activated("brake") then
-    vel_y = vel_y + 1
-    set_sprite(this, "spaceship-idle")
-    
+    accel_y = accel_y + 1
   end
+
+  if not is_action_activated("accelerate") then
+    set_sprite(this, "spaceship-idle")
+  end
+
   if is_action_activated("rotate_left") then
     rotation_delta = -1 * player_rotation_delta
   end
@@ -23,9 +26,8 @@ function update()
     rotation_delta = player_rotation_delta
   end
 
-  vel_y = vel_y * player_velocity
+  accel_y = accel_y * player_thrust
 
-   set_velocity(this, 0, vel_y)
-   set_rotation(this, rotation_delta)
-
+  set_acceleration(this, 0, accel_y)
+  set_rotation(this, rotation_delta)
 end
