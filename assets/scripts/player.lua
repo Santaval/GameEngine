@@ -8,9 +8,12 @@ function update()
 
   if is_action_activated("accelerate") then
    vel_y = vel_y + -1
+   set_sprite(this, "spaceship-attack")
   end
   if is_action_activated("brake") then
     vel_y = vel_y + 1
+    set_sprite(this, "spaceship-idle")
+    
   end
   if is_action_activated("rotate_left") then
     rotation_delta = -1 * player_rotation_delta
