@@ -39,6 +39,10 @@ inline std::tuple<float, float> getAcceleration(Entity e) {
   return { rigidBody.acceleration.x, rigidBody.acceleration.y };
 }
 
+inline double getDeltaTime() {
+  return Game::getInstance().getDeltaTime();
+}
+
 inline void registerMovementBindings(sol::state& lua) {
   lua.set_function("set_acceleration", setAcceleration);
   lua.set_function("set_rotation", setRotation);
@@ -46,4 +50,5 @@ inline void registerMovementBindings(sol::state& lua) {
   lua.set_function("add_rigid_body", addRigidBody);
   lua.set_function("get_velocity", getVelocity);
   lua.set_function("get_acceleration", getAcceleration);
+  lua.set_function("get_delta_time", getDeltaTime);
 }

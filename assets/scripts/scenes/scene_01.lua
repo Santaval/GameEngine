@@ -83,6 +83,9 @@ scene = {
         transform = {
           position = {x = 500, y = 300},
           scale = { x = 0.2, y = 0.2}
+        },
+        script = {
+          path = "./assets/scripts/enemy.lua"
         }
       },
     },

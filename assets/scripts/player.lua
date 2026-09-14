@@ -2,6 +2,8 @@ player_thrust = 50
 player_rotation_delta = 5
 
 function update()
+  player_entity = this
+
   rotation_delta = 0
   accel_y = 0
 
