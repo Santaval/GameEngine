@@ -33,7 +33,15 @@ class CollisionSystem : public System {
 
           auto bCollider = b.getComponent<CircleColliderComponent>();
           auto bTransform = b.getComponent<TransformComponent>();
-          
+
+          bool ownedByOther =
+            (aCollider.ownerId != -1 && aCollider.ownerId == b.getId()) ||
+            (bCollider.ownerId != -1 && bCollider.ownerId == a.getId());
+
+          if (ownedByOther) {
+            continue;
+          }
+
          glm::vec2 aCenterPos = glm::vec2(
           aTransform.position.x - (aCollider.width / 2) * aTransform.scale.x,
           aTransform.position.y - (aCollider.height / 2) * aTransform.scale.y

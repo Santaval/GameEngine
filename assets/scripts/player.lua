@@ -41,11 +41,11 @@ function update()
     local b_vx = math.cos(rotation - 1.5) * speed
     local b_vy = math.sin(rotation - 1.5) * speed
 
-    add_transform(bullet, px + 10, py + 10, 0.5, 0.5, rotation - 1.5)
+    add_transform(bullet, px, py, 0.5, 0.5, rotation - 1.5)
     add_rigid_body(bullet, b_vx, b_vy, 0, 0)
     add_sprite(bullet, "bullet", 64, 32, 0, 192)
     add_animation(bullet, 8, 5, true)
-    add_circle_collider(bullet, 30, 64, 32)
+    add_circle_collider(bullet, 30, 64, 32, this)
   end
 
   accel_y = accel_y * player_thrust
