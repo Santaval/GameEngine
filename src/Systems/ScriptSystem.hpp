@@ -31,8 +31,11 @@ class ScriptSystem : public System {
     lua.new_usertype<Entity>("entity");
 
     // bindings por dominio
+    registerEntityBindings(lua);
     registerInputBindings(lua);
     registerMovementBindings(lua);
     registerSpriteBindings(lua);
+    registerColliderBindings(lua);
+    registerScriptBindings(lua);
   }
 };

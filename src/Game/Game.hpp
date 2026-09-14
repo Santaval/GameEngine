@@ -53,4 +53,5 @@ class Game {
      void run();
      void destroy();
      double getDeltaTime() const { return deltaTime; }
+     Registry* getRegistry() const { return registry.get(); }
 };

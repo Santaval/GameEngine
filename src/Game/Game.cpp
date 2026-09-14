@@ -80,7 +80,7 @@ void Game::setup() {
     this->registry->addSystem<AnimationSystem>();
     this->registry->addSystem<ScriptSystem>();
 
-    this->lua.open_libraries(sol::lib::base);
+    this->lua.open_libraries(sol::lib::base, sol::lib::math);
     this->registry->getSystem<ScriptSystem>().createLuaBiding(this->lua);
     
     this->sceneLoader->load("./assets/scripts/scenes/scene_01.lua", this->lua, this->assetManager,
