@@ -35,10 +35,40 @@ void ControllerManager::keyUp(int keyCode) {
   }
 }
 
+void ControllerManager::mapMouseAction(const std::string& action, int button) {
+  this->actionMouseButtonName.emplace(action, button);
+  this->mouseButtonPressed.emplace(button, false);
+}
+
+void ControllerManager::mouseButtonDown(int button) {
+  auto it = this->mouseButtonPressed.find(button);
+  if(it != this->mouseButtonPressed.end()) {
+    this->mouseButtonPressed[button] = true;
+  }
+}
+
+void ControllerManager::mouseButtonUp(int button) {
+  auto it = this->mouseButtonPressed.find(button);
+  if(it != this->mouseButtonPressed.end()) {
+    this->mouseButtonPressed[button] = false;
+  }
+}
+
 bool ControllerManager::isActionActivated(const std::string& action) {
   auto it = this->actionKeyName.find(action);
   if(it != this->actionKeyName.end()) {
     return this->keyPressed[this->actionKeyName[action]];
   }
+
+  auto mouseIt = this->actionMouseButtonName.find(action);
+  if(mouseIt != this->actionMouseButtonName.end()) {
+    return this->mouseButtonPressed[this->actionMouseButtonName[action]];
+  }
+
   return false;
+}
+
+void ControllerManager::setMousePosition(int x, int y) {
+  this->mouseX = x;
+  this->mouseY = y;
 }

@@ -16,12 +16,13 @@ scene = {
     [0] = 
     {name = "accelerate", key=119},
     {name = "brake", key=115},
-    {name = "rotate_left", key=97},
-    {name = "rotate_right", key=100},
-    {name = "shoot", key=102},
   },
 
   -- Mouse
+  mouse = {
+    [0] =
+    {name = "shoot", button = 1},
+  },
 
   -- Entities
   entities = {

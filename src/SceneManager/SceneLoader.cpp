@@ -65,6 +65,23 @@ void SceneLoader::loadKeys(const sol::table& keys, std::unique_ptr<ControllerMan
   }
 }
 
+void SceneLoader::loadMouseActions(const sol::table& mouse, std::unique_ptr<ControllerManager>& controllerManager) {
+  int index = 0;
+
+  while(true) {
+    sol::optional<sol::table> hasAction = mouse[index];
+
+    if(hasAction == sol::nullopt) break;
+
+    sol::table action = mouse[index];
+    std::string name = action["name"];
+    int button = action["button"];
+    controllerManager->mapMouseAction(name, button);
+    index++;
+
+  }
+}
+
 void SceneLoader::addTransformComponent(Entity entity, const sol::table& components) {
   sol::optional<sol::table> hasTransform = components["transform"];
   if (hasTransform == sol::nullopt) return;
@@ -186,6 +203,11 @@ void SceneLoader::load(const std::string& scenePath, sol::state& lua,  std::uniq
 
     sol::table keys = scene["keys"];
     this->loadKeys(keys, controllerManager);
+
+    sol::optional<sol::table> mouse = scene["mouse"];
+    if (mouse != sol::nullopt) {
+      this->loadMouseActions(*mouse, controllerManager);
+    }
 
     sol::table entities = scene["entities"];
     this->loadEntities(lua, entities, registry);

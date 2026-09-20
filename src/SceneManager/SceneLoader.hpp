@@ -14,6 +14,7 @@ class SceneLoader {
   private:
     void loadSprites(SDL_Renderer* renderer, const sol::table& sprites, std::unique_ptr<AssetManager>& assetManager);
     void loadKeys(const sol::table& keys, std::unique_ptr<ControllerManager>& controllerManager);
+    void loadMouseActions(const sol::table& mouse, std::unique_ptr<ControllerManager>& controllerManager);
     void loadEntities(sol::state& lua, const sol::table& entities, std::unique_ptr<Registry>& registry);
 
     void addTransformComponent(Entity entity, const sol::table& components);

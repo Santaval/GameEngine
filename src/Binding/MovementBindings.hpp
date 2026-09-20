@@ -25,6 +25,11 @@ inline double getRotation(Entity e) {
   return transform.rotation;
 }
 
+inline void setRotationAbsolute(Entity e, float rotation) {
+  auto& transform = e.getComponent<TransformComponent>();
+  transform.rotation = rotation;
+}
+
 inline void addRigidBody(Entity e, float vx, float vy, float ax, float ay) {
   e.addComponent<RigidBodyComponent>(glm::vec2(vx, vy), glm::vec2(ax, ay));
 }
@@ -46,6 +51,7 @@ inline double getDeltaTime() {
 inline void registerMovementBindings(sol::state& lua) {
   lua.set_function("set_acceleration", setAcceleration);
   lua.set_function("set_rotation", setRotation);
+  lua.set_function("set_rotation_absolute", setRotationAbsolute);
   lua.set_function("get_rotation", getRotation);
   lua.set_function("add_rigid_body", addRigidBody);
   lua.set_function("get_velocity", getVelocity);

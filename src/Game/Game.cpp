@@ -90,6 +90,10 @@ void Game::setup() {
 
 
 void Game::processInput() {
+    int mouseX, mouseY;
+    SDL_GetMouseState(&mouseX, &mouseY);
+    this->controllerManager->setMousePosition(mouseX, mouseY);
+
     SDL_Event sdlEvent;
     while(SDL_PollEvent(&sdlEvent)) {
 
@@ -107,6 +111,12 @@ void Game::processInput() {
                 break;
             case SDL_KEYUP:
                 this->controllerManager->keyUp(sdlEvent.key.keysym.sym);
+                break;
+            case SDL_MOUSEBUTTONDOWN:
+                this->controllerManager->mouseButtonDown(sdlEvent.button.button);
+                break;
+            case SDL_MOUSEBUTTONUP:
+                this->controllerManager->mouseButtonUp(sdlEvent.button.button);
                 break;
             default:
                 break;
