@@ -48,6 +48,8 @@ void Game::init() {
     this->windowWidth = 800;
     this->windowHeight = 600;
 
+    this->camera = { 0, 0, this->windowWidth, this->windowHeight };
+
     window = SDL_CreateWindow(
         "Engine",
         SDL_WINDOWPOS_CENTERED,
@@ -128,7 +130,7 @@ void Game::render() {
     SDL_SetRenderDrawColor(this->renderer, 31, 31, 31, 255);
     SDL_RenderClear(this->renderer);
 
-    this->registry->getSystem<RenderSystem>().update(this->renderer, this->assetManager);
+    this->registry->getSystem<RenderSystem>().update(this->renderer, this->assetManager, this->camera);
 
     SDL_RenderPresent(this->renderer);
 }

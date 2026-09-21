@@ -22,6 +22,8 @@ class Game {
         int windowWidth = 0;
         int windowHeight = 0;
 
+        SDL_Rect camera = {0, 0, 0, 0};
+
         int milisecsPreviousFrame = 0;
         double deltaTime = 0.0;
         bool isRunning = false;
@@ -54,4 +56,7 @@ class Game {
      void destroy();
      double getDeltaTime() const { return deltaTime; }
      Registry* getRegistry() const { return registry.get(); }
+     SDL_Rect& getCamera() { return camera; }
+     int getWindowWidth() const { return windowWidth; }
+     int getWindowHeight() const { return windowHeight; }
 };

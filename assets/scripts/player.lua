@@ -25,7 +25,7 @@ function update()
 
   -- La nave siempre mira hacia el mouse
   local px_aim, py_aim = get_position(this)
-  local mx, my = get_mouse_position()
+  local mx, my = get_mouse_world_position()
   local target_rotation = math.atan(my - py_aim, mx - px_aim) + 1.5
   set_rotation_absolute(this, target_rotation)
 
@@ -49,4 +49,8 @@ function update()
   accel_y = accel_y * player_thrust
 
   set_acceleration(this, 0, accel_y)
+
+  -- La cámara sigue a la nave
+  local cam_x, cam_y = get_position(this)
+  center_camera_on(cam_x, cam_y)
 end

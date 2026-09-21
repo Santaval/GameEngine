@@ -14,15 +14,15 @@ class RenderSystem : public System{
             this->requireComponent<TransformComponent>();
         }
 
-    void update(SDL_Renderer* renderer, std::unique_ptr<AssetManager>& assetManager) {
+    void update(SDL_Renderer* renderer, std::unique_ptr<AssetManager>& assetManager, const SDL_Rect& camera) {
         for(auto entity : this->getEntities()) {
             const auto sprite = entity.getComponent<SpriteComponent>();
             const auto transform = entity.getComponent<TransformComponent>();
 
             SDL_Rect srcRec = sprite.srcRect;
             SDL_Rect dstRec = {
-                static_cast<int>(transform.position.x),
-                static_cast<int>(transform.position.y),
+                static_cast<int>(transform.position.x) - camera.x,
+                static_cast<int>(transform.position.y) - camera.y,
                 static_cast<int>(sprite.width * transform.scale.x),
                 static_cast<int>(sprite.height * transform.scale.y),
             };
