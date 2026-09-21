@@ -9,6 +9,7 @@
 #include "../Components/TransformComponent.hpp"
 #include "../Components/AnimationComponent.hpp"
 #include "../Components/ScriptComponent.hpp"
+#include "../Components/TextComponent.hpp"
 
 
 namespace {
@@ -43,6 +44,26 @@ void SceneLoader::loadSprites(SDL_Renderer* renderer, const sol::table& sprites,
     std::string filePath = sprite["filePath"];
 
     assetManager->addTexture(renderer, assetId, filePath);
+    index++;
+
+  }
+}
+
+void SceneLoader::loadFonts(const sol::table& fonts, std::unique_ptr<AssetManager>& assetManager) {
+  int index = 0;
+
+  while(true) {
+    sol::optional<sol::table> hasFont = fonts[index];
+
+    if(hasFont == sol::nullopt) break;
+
+    sol::table font = fonts[index];
+
+    std::string fontId = font["fontId"];
+    std::string filePath = font["filePath"];
+    int fontSize = static_cast<int>(font["fontSize"].get<double>());
+
+    assetManager->addFont(fontId, filePath, fontSize);
     index++;
 
   }
@@ -147,6 +168,30 @@ void SceneLoader::addAnimationComponent(Entity entity, const sol::table& compone
   entity.addComponent<AnimationComponent>(numFrames, frameSpeedRate, isLoop);
 }
 
+void SceneLoader::addTextComponent(Entity entity, const sol::table& components) {
+  sol::optional<sol::table> hasText = components["text"];
+  if (hasText == sol::nullopt) return;
+
+  sol::table text = *hasText;
+  std::string content = text["content"].get_or(std::string(""));
+  std::string fontId = text["fontId"].get_or(std::string("default"));
+  bool isWorldSpace = text["is_world_space"].get_or(true);
+
+  int r = 255, g = 255, b = 255, a = 255;
+  sol::optional<sol::table> hasColor = text["color"];
+  if (hasColor != sol::nullopt) {
+    r = (*hasColor)["r"].get_or(255);
+    g = (*hasColor)["g"].get_or(255);
+    b = (*hasColor)["b"].get_or(255);
+    a = (*hasColor)["a"].get_or(255);
+  }
+
+  glm::vec2 offset = getVec2(text, "offset", glm::vec2(0.0, 0.0));
+
+  entity.addComponent<TextComponent>(content, fontId, r, g, b, a, isWorldSpace,
+    static_cast<int>(offset.x), static_cast<int>(offset.y));
+}
+
 void SceneLoader::addScriptComponent(sol::state& lua, Entity entity, const sol::table& components) {
   sol::optional<sol::table> hasScript = components["script"];
   if (hasScript == sol::nullopt) return;
@@ -178,6 +223,7 @@ void SceneLoader::loadEntities(sol::state& lua, const sol::table& entities, std:
       addSpriteComponent(newEntity, components);
       addCircleColliderComponent(newEntity, components);
       addAnimationComponent(newEntity, components);
+      addTextComponent(newEntity, components);
       addScriptComponent(lua, newEntity, components);
     }
 
@@ -200,6 +246,11 @@ void SceneLoader::load(const std::string& scenePath, sol::state& lua,  std::uniq
     sol::table sprites = scene["sprites"];
 
     this->loadSprites(renderer, sprites, assetManager);
+
+    sol::optional<sol::table> fonts = scene["fonts"];
+    if (fonts != sol::nullopt) {
+      this->loadFonts(*fonts, assetManager);
+    }
 
     sol::table keys = scene["keys"];
     this->loadKeys(keys, controllerManager);

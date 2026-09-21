@@ -8,6 +8,7 @@
 #include "../Components/CircleColliderComponent.hpp"
 #include "../Components/AnimationComponent.hpp"
 #include "../Components/ScriptComponent.hpp"
+#include "../Components/TextComponent.hpp"
 
 #include "../Systems/CollisionSystem.hpp"
 #include "../Systems/RenderSystem.hpp"
@@ -15,6 +16,7 @@
 #include "../Systems/DamageSystem.hpp"
 #include "../Systems/AnimationSystem.hpp"
 #include "../Systems/ScriptSystem.hpp"
+#include "../Systems/TextRenderSystem.hpp"
 
 Game::Game() {
     this->assetManager = std::make_unique<AssetManager>();
@@ -45,8 +47,8 @@ void Game::init() {
         return;
     }
 
-    this->windowWidth = 800;
-    this->windowHeight = 600;
+    this->windowWidth = 1920;
+    this->windowHeight = 1000;
 
     this->camera = { 0, 0, this->windowWidth, this->windowHeight };
 
@@ -81,8 +83,9 @@ void Game::setup() {
     this->registry->addSystem<DamageSystem>();
     this->registry->addSystem<AnimationSystem>();
     this->registry->addSystem<ScriptSystem>();
+    this->registry->addSystem<TextRenderSystem>();
 
-    this->lua.open_libraries(sol::lib::base, sol::lib::math);
+    this->lua.open_libraries(sol::lib::base, sol::lib::math, sol::lib::string);
     this->registry->getSystem<ScriptSystem>().createLuaBiding(this->lua);
     
     this->sceneLoader->load("./assets/scripts/scenes/scene_01.lua", this->lua, this->assetManager,
@@ -132,6 +135,13 @@ void Game::render() {
 
     this->registry->getSystem<RenderSystem>().update(this->renderer, this->assetManager, this->camera);
 
+    // El texto va después de los sprites para que quede encima
+    this->registry->getSystem<TextRenderSystem>().update(this->renderer, this->assetManager,
+        this->camera, this->textBuffer);
+
+    // Los comandos duran un frame: los scripts los vuelven a pedir en el próximo update()
+    this->textBuffer.clear();
+
     SDL_RenderPresent(this->renderer);
 }
 
@@ -170,6 +180,10 @@ void Game::run() {
 }
 
 void Game::destroy() {
+    // Las texturas y las fuentes tienen que morir antes que el renderer y antes de TTF_Quit
+    this->registry->getSystem<TextRenderSystem>().clearCache();
+    this->assetManager->clearAll();
+
     SDL_DestroyRenderer(this->renderer);
     SDL_DestroyWindow(this->window);
     TTF_Quit();

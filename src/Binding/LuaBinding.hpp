@@ -12,3 +12,4 @@
 #include "MovementBindings.hpp"
 #include "ScriptBindings.hpp"
 #include "SpriteBindings.hpp"
+#include "TextBindings.hpp"

@@ -38,5 +38,6 @@ class ScriptSystem : public System {
     registerColliderBindings(lua);
     registerScriptBindings(lua);
     registerCameraBindings(lua);
+    registerTextBindings(lua);
   }
 };

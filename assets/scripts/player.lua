@@ -53,4 +53,23 @@ function update()
   -- La cámara sigue a la nave
   local cam_x, cam_y = get_position(this)
   center_camera_on(cam_x, cam_y)
+
+  -- HUD de debug: se vuelve a pedir cada frame
+  local vx, vy = get_velocity(this)
+  local speed = math.sqrt(vx * vx + vy * vy)
+  local dt = get_delta_time()
+
+  draw_text(20, 20, string.format("Pos:   %8.1f , %8.1f", cam_x, cam_y), "default", 255, 255, 255)
+  draw_text(20, 42, string.format("Vel:   %8.1f , %8.1f", vx, vy), "default", 120, 220, 255)
+  draw_text(20, 64, string.format("Speed: %8.1f", speed), "default", 120, 220, 255)
+  draw_text(20, 86, string.format("Rot:   %8.2f", get_rotation(this)), "default", 200, 200, 120)
+  draw_text(20, 108, string.format("FPS:   %8.0f", 1.0 / math.max(dt, 0.0001)), "default", 200, 200, 120)
+
+  -- Etiqueta en coordenadas del mundo: sigue a la nave
+  draw_text_world(cam_x - 30, cam_y - 60, "PLAYER", "default", 255, 200, 0)
+
+  if not hud_probe_done then
+    hud_probe_done = true
+    print("[PROBE] HUD reached end of update, speed=" .. speed)
+  end
 end

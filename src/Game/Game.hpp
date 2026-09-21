@@ -10,6 +10,7 @@
 #include "../EventManager/EventManager.hpp"
 #include "../ControllerManager/ControllerManager.hpp"
 #include "../SceneManager/SceneLoader.hpp"
+#include "../Util/TextBuffer.hpp"
 
 const int FPS = 30;
 const int MILISECS_PER_FRAMES = 1000 / FPS;
@@ -23,6 +24,9 @@ class Game {
         int windowHeight = 0;
 
         SDL_Rect camera = {0, 0, 0, 0};
+
+        // Se llena desde los scripts en update() y se vacía en render()
+        TextBuffer textBuffer;
 
         int milisecsPreviousFrame = 0;
         double deltaTime = 0.0;
@@ -57,6 +61,7 @@ class Game {
      double getDeltaTime() const { return deltaTime; }
      Registry* getRegistry() const { return registry.get(); }
      SDL_Rect& getCamera() { return camera; }
+     TextBuffer& getTextBuffer() { return textBuffer; }
      int getWindowWidth() const { return windowWidth; }
      int getWindowHeight() const { return windowHeight; }
 };

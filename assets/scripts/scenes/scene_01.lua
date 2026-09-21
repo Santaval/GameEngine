@@ -10,6 +10,12 @@ scene = {
   },
 
   -- Fuentes
+  -- El tamaño se fija al cargar: hace falta un fontId por cada tamaño
+  fonts = {
+    [0] =
+    {fontId="default", filePath="./assets/fonts/DejaVuSansMono.ttf", fontSize=16},
+    {fontId="debug-big", filePath="./assets/fonts/DejaVuSansMono.ttf", fontSize=28},
+  },
 
   -- Keys
   keys = {
@@ -59,37 +65,45 @@ scene = {
         }
       },
     },
-     {
-      components = {
-        circle_collider =  {
-          radius = 8,
-          width = 16,
-          heigth = 16,
-        },
-        rigid_body = {
-          velocity = { x = 0, y = 0}
-        },
-        sprite = {
-          assetId = "spaceship-idle",
-          width = 430, 
-          height = 650,  
-          src_rect = {x = 0, y = 0},
-          rotation = 0,
-        },
-        animation = {
-          numFrames = 4,
-          frameSpeedRate = 5,
-          isLoop=true
-        },
-        transform = {
-          position = {x = 500, y = 300},
-          scale = { x = 0.2, y = 0.2}
-        },
-        script = {
-          path = "./assets/scripts/enemy.lua"
-        }
-      },
-    },
+    --  {
+    --   components = {
+    --     circle_collider =  {
+    --       radius = 8,
+    --       width = 16,
+    --       heigth = 16,
+    --     },
+    --     rigid_body = {
+    --       velocity = { x = 0, y = 0}
+    --     },
+    --     sprite = {
+    --       assetId = "spaceship-idle",
+    --       width = 430, 
+    --       height = 650,  
+    --       src_rect = {x = 0, y = 0},
+    --       rotation = 0,
+    --     },
+    --     animation = {
+    --       numFrames = 4,
+    --       frameSpeedRate = 5,
+    --       isLoop=true
+    --     },
+    --     transform = {
+    --       position = {x = 800, y =400},
+    --       scale = { x = 0.2, y = 0.2}
+    --     },
+    --     -- Etiqueta pegada a la entidad: se mueve con ella
+    --     text = {
+    --       content = "ENEMY",
+    --       fontId = "default",
+    --       color = { r = 255, g = 80, b = 80 },
+    --       is_world_space = true,
+    --       offset = { x = -20, y = -40 }
+    --     },
+    --     script = {
+    --       path = "./assets/scripts/enemy.lua"
+    --     }
+    --   },
+    -- },
   },
 
 }
