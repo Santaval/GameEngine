@@ -8,19 +8,19 @@
 local FIELD = {
   x = 0,
   y = 0,
-  width = 10000,
-  height = 10000,
+  width = 2000,
+  height = 2000,
 }
 
 -- Asteroides por cada bloque de 1000x1000 px.
 -- La cantidad final = area(FIELD) / (1000*1000) * ASTEROID_DENSITY
-local ASTEROID_DENSITY = 5
+local ASTEROID_DENSITY = 20
 
 -- Rango de tamanos (escala aplicada al frame del sprite)
 local ASTEROID_SCALE = { min = 0.25, max = 3 }
 
 -- Rango de velocidad de deriva (px/s). min = max = 0 -> asteroides quietos
-local ASTEROID_SPEED = { min = 10, max = 200 }
+local ASTEROID_SPEED = { min = 1, max = 20 }
 
 -- Zona libre alrededor del spawn del jugador (nil para desactivarla)
 local SAFE_ZONE = { x = 400, y = 100, radius = 180 }
@@ -141,6 +141,9 @@ local function makeAsteroid(cx, cy, scale)
       damage = {
         amount = ASTEROID_DAMAGE,
       },
+       script = {
+        path = "./assets/scripts/asteroid.lua"
+      }
       -- Sin animation: el AnimationSystem sobrescribe src_rect.x y se perderia
       -- la variante elegida (ademas los frames 4-8 son la explosion).
     },
@@ -241,6 +244,7 @@ scene = {
     {assetId="spaceship-movement", filePath="./assets/sprites/spaceship/player/movement.png"},
     {assetId="bullet", filePath="./assets/sprites/bullets/bullets.png"},
     {assetId="asteroid", filePath="./assets/sprites/asteroid/asteroid.png"},
+    {assetId="mineral", filePath="./assets/sprites/minerals/tech.png"},
   },
 
   -- Fuentes
