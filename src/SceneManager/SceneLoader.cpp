@@ -121,8 +121,10 @@ void SceneLoader::addRigidBodyComponent(Entity entity, const sol::table& compone
   if (hasRigidBody == sol::nullopt) return;
 
   glm::vec2 velocity = getVec2(*hasRigidBody, "velocity", glm::vec2(0.0, 0.0));
+  glm::vec2 acceleration = getVec2(*hasRigidBody, "acceleration", glm::vec2(0.0, 0.0));
+  float maxSpeed = (*hasRigidBody)["max_speed"].get_or(0.0f);
 
-  entity.addComponent<RigidBodyComponent>(velocity);
+  entity.addComponent<RigidBodyComponent>(velocity, acceleration, maxSpeed);
 }
 
 void SceneLoader::addSpriteComponent(Entity entity, const sol::table& components) {

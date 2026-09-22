@@ -31,6 +31,7 @@ class Game {
         int milisecsPreviousFrame = 0;
         double deltaTime = 0.0;
         bool isRunning = false;
+        bool showColliders = false;
 
         std::unique_ptr<AssetManager> assetManager;
         std::unique_ptr<EventManager> eventManager;
@@ -64,4 +65,7 @@ class Game {
      TextBuffer& getTextBuffer() { return textBuffer; }
      int getWindowWidth() const { return windowWidth; }
      int getWindowHeight() const { return windowHeight; }
+     bool isShowingColliders() const { return showColliders; }
+     void setShowColliders(bool value) { showColliders = value; }
+     void toggleShowColliders() { showColliders = !showColliders; }
 };

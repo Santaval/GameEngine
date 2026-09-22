@@ -42,14 +42,17 @@ class CollisionSystem : public System {
             continue;
           }
 
+         // transform.position es la esquina superior izquierda del sprite
+         // (ver RenderSystem y makeAsteroid en scene_01.lua), así que el
+         // centro se obtiene SUMANDO medio ancho/alto, no restando.
          glm::vec2 aCenterPos = glm::vec2(
-          aTransform.position.x - (aCollider.width / 2) * aTransform.scale.x,
-          aTransform.position.y - (aCollider.height / 2) * aTransform.scale.y
+          aTransform.position.x + (aCollider.width / 2) * aTransform.scale.x,
+          aTransform.position.y + (aCollider.height / 2) * aTransform.scale.y
          );
 
           glm::vec2 bCenterPos = glm::vec2(
-          bTransform.position.x - (bCollider.width / 2) * bTransform.scale.x,
-          bTransform.position.y - (bCollider.height / 2) * bTransform.scale.y
+          bTransform.position.x + (bCollider.width / 2) * bTransform.scale.x,
+          bTransform.position.y + (bCollider.height / 2) * bTransform.scale.y
          );
 
          int aRadius = aCollider.radius * aTransform.scale.x;

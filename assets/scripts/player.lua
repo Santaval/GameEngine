@@ -29,6 +29,13 @@ function update()
   end
   player_path_key_was_down = path_key_down
 
+  -- "C" activa/desactiva el overlay de hitboxes, mismo patrón de flanco
+  local collider_key_down = is_action_activated("toggle_colliders")
+  if collider_key_down and not player_collider_key_was_down then
+    toggle_colliders()
+  end
+  player_collider_key_was_down = collider_key_down
+
   if not is_action_activated("accelerate") then
     set_sprite(this, "spaceship-idle")
   end

@@ -8,13 +8,13 @@
 local FIELD = {
   x = 0,
   y = 0,
-  width = 20000,
-  height = 20000,
+  width = 10000,
+  height = 10000,
 }
 
 -- Asteroides por cada bloque de 1000x1000 px.
 -- La cantidad final = area(FIELD) / (1000*1000) * ASTEROID_DENSITY
-local ASTEROID_DENSITY = 1
+local ASTEROID_DENSITY = 5
 
 -- Rango de tamanos (escala aplicada al frame del sprite)
 local ASTEROID_SCALE = { min = 0.25, max = 3 }
@@ -153,13 +153,28 @@ local entities = {
   -- Player
   {
     components = {
+      -- El radio esta en unidades del sprite SIN escalar: CollisionSystem lo
+      -- multiplica por scale.x (0.2), asi que 170 -> 34 px de radio en
+      -- pantalla, casi exactamente la semi-anchura visible de la nave.
+      -- El sprite real ocupa 353x474 dentro del frame de 430x650 (el resto es
+      -- transparente), y el centro del collider cae en el pivote de rotacion
+      -- de RenderSystem: desde ahi hay 163 px al borde derecho y 172 a la
+      -- cola, asi que 170 inscribe el cuerpo. La punta de la nariz queda
+      -- afuera: es inevitable con un solo circulo en una nave mas alta que
+      -- ancha, y de paso perdona un poco (DamageSystem mata al instante).
+      --
+      -- width/heigth son el frame COMPLETO a proposito, no el bbox del dibujo:
+      -- el centro sale de position + (width/2)*scale, y ese punto es el pivote
+      -- con el que SDL_RenderCopyEx gira el sprite (center = NULL), el unico
+      -- que no se desplaza cuando la nave apunta al mouse.
       circle_collider =  {
-        radius = 8,
+        radius = 170,
         width = 430,
         heigth = 650,
       },
       rigid_body = {
-        velocity = { x = 0, y = 0}
+        velocity = { x = 0, y = 0},
+        max_speed=100
       },
       sprite = {
         assetId = "spaceship-idle",
@@ -218,6 +233,7 @@ scene = {
     {name = "accelerate", key=119},
     {name = "brake", key=115},
     {name = "toggle_path", key = 116},
+    {name = "toggle_colliders", key = 99},
   },
 
   -- Mouse

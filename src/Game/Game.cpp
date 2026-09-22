@@ -19,6 +19,7 @@
 #include "../Systems/ScriptSystem.hpp"
 #include "../Systems/TextRenderSystem.hpp"
 #include "../Systems/PathRenderSystem.hpp"
+#include "../Systems/ColliderRenderSystem.hpp"
 
 Game::Game() {
     this->assetManager = std::make_unique<AssetManager>();
@@ -87,6 +88,7 @@ void Game::setup() {
     this->registry->addSystem<ScriptSystem>();
     this->registry->addSystem<TextRenderSystem>();
     this->registry->addSystem<PathRenderSystem>();
+    this->registry->addSystem<ColliderRenderSystem>();
 
     this->lua.open_libraries(sol::lib::base, sol::lib::math, sol::lib::string);
     this->registry->getSystem<ScriptSystem>().createLuaBiding(this->lua);
@@ -140,6 +142,11 @@ void Game::render() {
 
     // La trayectoria va encima de los sprites pero debajo del HUD de texto
     this->registry->getSystem<PathRenderSystem>().update(this->renderer, this->camera, this->deltaTime);
+
+    // Overlay de debug: se salta por completo cuando está apagado
+    if (this->showColliders) {
+        this->registry->getSystem<ColliderRenderSystem>().update(this->renderer, this->camera);
+    }
 
     // El texto va después de los sprites para que quede encima
     this->registry->getSystem<TextRenderSystem>().update(this->renderer, this->assetManager,

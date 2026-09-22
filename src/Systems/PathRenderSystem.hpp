@@ -121,6 +121,16 @@ class PathRenderSystem : public System {
                 simVelocity.x += static_cast<float>(worldAccelX * step);
                 simVelocity.y += static_cast<float>(worldAccelY * step);
 
+                // Mismo clamp que MovementSystem, si no la predicción se despega
+                if (rigidBody.maxSpeed > 0.0f) {
+                    float speedSq = simVelocity.x * simVelocity.x + simVelocity.y * simVelocity.y;
+                    if (speedSq > rigidBody.maxSpeed * rigidBody.maxSpeed) {
+                        float scale = rigidBody.maxSpeed / std::sqrt(speedSq);
+                        simVelocity.x *= scale;
+                        simVelocity.y *= scale;
+                    }
+                }
+
                 simPosition.x += simVelocity.x * static_cast<float>(step);
                 simPosition.y += simVelocity.y * static_cast<float>(step);
 
