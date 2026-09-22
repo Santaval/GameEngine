@@ -50,8 +50,11 @@ void Game::init() {
         return;
     }
 
-    this->windowWidth = 800;
-    this->windowHeight = 600;
+    SDL_DisplayMode displayMode;
+    SDL_GetCurrentDisplayMode(0, &displayMode);
+
+    this->windowWidth = displayMode.w;
+    this->windowHeight = displayMode.h;
 
     this->camera = { 0, 0, this->windowWidth, this->windowHeight };
 
@@ -61,7 +64,7 @@ void Game::init() {
         SDL_WINDOWPOS_CENTERED,
         this->windowWidth,
         this->windowHeight,
-        SDL_WINDOW_SHOWN
+        SDL_WINDOW_SHOWN | SDL_WINDOW_FULLSCREEN_DESKTOP
     );
 
     if (!this->window) {
