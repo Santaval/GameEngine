@@ -1,4 +1,4 @@
-player_thrust = 50
+player_thrust = 100
 
 function update()
   player_entity = this
@@ -11,8 +11,7 @@ function update()
   end
 
   if is_action_activated("shoot") then
-    accel_y = accel_y + -1
-    set_sprite(this, "spaceship-attack")
+    -- set_sprite(this, "spaceship-attack")
   end
 
   if is_action_activated("brake") then
