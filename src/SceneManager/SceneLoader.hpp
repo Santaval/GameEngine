@@ -25,6 +25,8 @@ class SceneLoader {
     void addAnimationComponent(Entity entity, const sol::table& components);
     void addTextComponent(Entity entity, const sol::table& components);
     void addPathComponent(Entity entity, const sol::table& components);
+    void addHealthComponent(Entity entity, const sol::table& components);
+    void addDamageComponent(Entity entity, const sol::table& components);
     void addScriptComponent(sol::state& lua, Entity entity, const sol::table& components);
 
   public:

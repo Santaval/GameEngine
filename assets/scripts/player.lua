@@ -1,5 +1,8 @@
 player_thrust = 100
 
+-- Daño de cada bala. El motor no sabe nada de balas: sale de aquí.
+player_bullet_damage = 20
+
 function update()
   player_entity = this
 
@@ -60,6 +63,8 @@ function update()
     add_sprite(bullet, "bullet", 64, 32, 0, 192)
     add_animation(bullet, 8, 5, true)
     add_circle_collider(bullet, 30, 64, 32, this)
+    -- true = la bala se destruye al impactar contra algo que tenga vida
+    add_damage(bullet, player_bullet_damage, true)
   end
 
   accel_y = accel_y * player_thrust
@@ -81,6 +86,11 @@ function update()
   draw_text(20, 86, string.format("Rot:   %8.2f", get_rotation(this)), "default", 200, 200, 120)
   draw_text(20, 108, string.format("FPS:   %8.0f", 1.0 / math.max(dt, 0.0001)), "default", 200, 200, 120)
 
+  -- La barra de vida se pone roja por debajo de un tercio
+  local hp, hp_max = get_health(this), get_max_health(this)
+  local hp_g = hp * 3 >= hp_max and 220 or 60
+  draw_text(20, 130, string.format("HP:    %8d / %d", hp, hp_max), "default", 255, hp_g, 60)
+
   -- Etiqueta en coordenadas del mundo: sigue a la nave
   draw_text_world(cam_x - 30, cam_y - 60, "PLAYER", "default", 255, 200, 0)
 
@@ -88,4 +98,15 @@ function update()
     hud_probe_done = true
     print("[PROBE] HUD reached end of update, speed=" .. speed)
   end
+end
+
+-- Hooks opcionales: el motor los llama solo si el script los define, con la
+-- entidad afectada en "this"
+
+function on_damage(amount, source)
+  print(string.format("[player] -%d HP (quedan %d)", amount, get_health(this)))
+end
+
+function on_death()
+  print("[player] nave destruida")
 end

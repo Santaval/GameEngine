@@ -11,6 +11,8 @@
 #include "../Components/ScriptComponent.hpp"
 #include "../Components/TextComponent.hpp"
 #include "../Components/PathComponent.hpp"
+#include "../Components/HealthComponent.hpp"
+#include "../Components/DamageComponent.hpp"
 
 
 namespace {
@@ -205,15 +207,49 @@ void SceneLoader::addPathComponent(Entity entity, const sol::table& components) 
   entity.addComponent<PathComponent>(active);
 }
 
+void SceneLoader::addHealthComponent(Entity entity, const sol::table& components) {
+  sol::optional<sol::table> hasHealth = components["health"];
+  if (hasHealth == sol::nullopt) return;
+
+  sol::table health = *hasHealth;
+  int maxHealth = health["max"].get_or(1);
+  // current es opcional: -1 significa "empieza a tope"
+  int current = health["current"].get_or(-1);
+  double invulnerability = health["invulnerability"].get_or(0.0);
+
+  entity.addComponent<HealthComponent>(maxHealth, current, invulnerability);
+}
+
+void SceneLoader::addDamageComponent(Entity entity, const sol::table& components) {
+  sol::optional<sol::table> hasDamage = components["damage"];
+  if (hasDamage == sol::nullopt) return;
+
+  sol::table damage = *hasDamage;
+  int amount = damage["amount"].get_or(0);
+  bool destroyOnHit = damage["destroy_on_hit"].get_or(false);
+
+  entity.addComponent<DamageComponent>(amount, destroyOnHit);
+}
+
 void SceneLoader::addScriptComponent(sol::state& lua, Entity entity, const sol::table& components) {
   sol::optional<sol::table> hasScript = components["script"];
   if (hasScript == sol::nullopt) return;
 
   std::string path = (*hasScript)["path"];
-  lua.script_file(path);
-  sol::function update = lua["update"];
 
-  entity.addComponent<ScriptComponent>(update);
+  // Los scripts definen globals: sin limpiar antes, un archivo que no declara
+  // on_death heredaria la del archivo cargado justo antes
+  lua["update"] = sol::lua_nil;
+  lua["on_damage"] = sol::lua_nil;
+  lua["on_death"] = sol::lua_nil;
+
+  lua.script_file(path);
+
+  sol::function update = lua["update"];
+  sol::function onDamage = lua["on_damage"];
+  sol::function onDeath = lua["on_death"];
+
+  entity.addComponent<ScriptComponent>(update, onDamage, onDeath);
 }
 
 void SceneLoader::loadEntities(sol::state& lua, const sol::table& entities, std::unique_ptr<Registry>& registry) {
@@ -238,6 +274,8 @@ void SceneLoader::loadEntities(sol::state& lua, const sol::table& entities, std:
       addAnimationComponent(newEntity, components);
       addTextComponent(newEntity, components);
       addPathComponent(newEntity, components);
+      addHealthComponent(newEntity, components);
+      addDamageComponent(newEntity, components);
       addScriptComponent(lua, newEntity, components);
     }
 

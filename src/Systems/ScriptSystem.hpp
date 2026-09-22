@@ -36,6 +36,7 @@ class ScriptSystem : public System {
     registerMovementBindings(lua);
     registerSpriteBindings(lua);
     registerColliderBindings(lua);
+    registerHealthBindings(lua);
     registerScriptBindings(lua);
     registerCameraBindings(lua);
     registerTextBindings(lua);

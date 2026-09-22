@@ -20,7 +20,7 @@ local ASTEROID_DENSITY = 5
 local ASTEROID_SCALE = { min = 0.25, max = 3 }
 
 -- Rango de velocidad de deriva (px/s). min = max = 0 -> asteroides quietos
-local ASTEROID_SPEED = { min = 1, max = 20 }
+local ASTEROID_SPEED = { min = 10, max = 200 }
 
 -- Zona libre alrededor del spawn del jugador (nil para desactivarla)
 local SAFE_ZONE = { x = 400, y = 100, radius = 180 }
@@ -40,6 +40,13 @@ local ASTEROID_SHEET = {
 
 -- Separacion minima extra entre asteroides e intentos de colocacion
 local ASTEROID_PACKING = { minGap = 6, tries = 40 }
+
+-- Vida de un asteroide de escala 1.0: la vida real se escala con el tamano,
+-- asi que las rocas grandes aguantan mas balazos que las pequenas
+local ASTEROID_HEALTH = 60
+
+-- Dano que hace un asteroide al estrellarse contra algo con vida
+local ASTEROID_DAMAGE = 20
 
 -- ---------------------------------------------------------------------
 --  Generacion
@@ -123,6 +130,17 @@ local function makeAsteroid(cx, cy, scale)
         width = frameSize,
         heigth = frameSize,
       },
+      -- La invulnerabilidad importa sobre todo entre asteroides: se rozan
+      -- durante muchos frames seguidos y sin ella se pulverizarian al instante
+      health = {
+        max = math.max(1, math.floor(ASTEROID_HEALTH * scale + 0.5)),
+        invulnerability = 0.5,
+      },
+      -- El asteroide sobrevive al choque (sin destroy_on_hit): el que tiene
+      -- que preocuparse es quien se lo lleve por delante
+      damage = {
+        amount = ASTEROID_DAMAGE,
+      },
       -- Sin animation: el AnimationSystem sobrescribe src_rect.x y se perderia
       -- la variante elegida (ademas los frames 4-8 son la explosion).
     },
@@ -194,6 +212,12 @@ local entities = {
       },
       path = {
         active = true
+      },
+      -- medio segundo de gracia tras cada golpe: sin eso, rozar un asteroide
+      -- aplicaria dano en cada frame y la nave moriria al instante
+      health = {
+        max = 100,
+        invulnerability = 0.5,
       },
       script = {
         path = "./assets/scripts/player.lua"

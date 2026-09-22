@@ -1,5 +1,6 @@
 enemy_thrust = 40
 enemy_turn_speed = 3
+enemy_bullet_damage = 15
 shoot_cooldown = 1.2
 shoot_timer = shoot_cooldown
 
@@ -43,5 +44,6 @@ function update()
     add_sprite(bullet, "bullet", 64, 32, 0, 192)
     add_animation(bullet, 8, 5, true)
     add_circle_collider(bullet, 30, 64, 32, this)
+    add_damage(bullet, enemy_bullet_damage, true)
   end
 end

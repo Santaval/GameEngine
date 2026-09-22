@@ -61,6 +61,7 @@ class Game {
      void destroy();
      double getDeltaTime() const { return deltaTime; }
      Registry* getRegistry() const { return registry.get(); }
+     sol::state& getLua() { return lua; }
      SDL_Rect& getCamera() { return camera; }
      TextBuffer& getTextBuffer() { return textBuffer; }
      int getWindowWidth() const { return windowWidth; }

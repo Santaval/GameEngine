@@ -8,6 +8,7 @@
 #include "CameraBindings.hpp"
 #include "ColliderBindings.hpp"
 #include "EntityBindings.hpp"
+#include "HealthBindings.hpp"
 #include "InputBindings.hpp"
 #include "MovementBindings.hpp"
 #include "PathBindings.hpp"
