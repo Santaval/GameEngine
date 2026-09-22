@@ -10,6 +10,7 @@
 #include "../Components/AnimationComponent.hpp"
 #include "../Components/ScriptComponent.hpp"
 #include "../Components/TextComponent.hpp"
+#include "../Components/PathComponent.hpp"
 
 
 namespace {
@@ -192,6 +193,16 @@ void SceneLoader::addTextComponent(Entity entity, const sol::table& components) 
     static_cast<int>(offset.x), static_cast<int>(offset.y));
 }
 
+void SceneLoader::addPathComponent(Entity entity, const sol::table& components) {
+  sol::optional<sol::table> hasPath = components["path"];
+  if (hasPath == sol::nullopt) return;
+
+  sol::table path = *hasPath;
+  bool active = path["active"].get_or(true);
+
+  entity.addComponent<PathComponent>(active);
+}
+
 void SceneLoader::addScriptComponent(sol::state& lua, Entity entity, const sol::table& components) {
   sol::optional<sol::table> hasScript = components["script"];
   if (hasScript == sol::nullopt) return;
@@ -224,6 +235,7 @@ void SceneLoader::loadEntities(sol::state& lua, const sol::table& entities, std:
       addCircleColliderComponent(newEntity, components);
       addAnimationComponent(newEntity, components);
       addTextComponent(newEntity, components);
+      addPathComponent(newEntity, components);
       addScriptComponent(lua, newEntity, components);
     }
 

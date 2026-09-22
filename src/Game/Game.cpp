@@ -9,6 +9,7 @@
 #include "../Components/AnimationComponent.hpp"
 #include "../Components/ScriptComponent.hpp"
 #include "../Components/TextComponent.hpp"
+#include "../Components/PathComponent.hpp"
 
 #include "../Systems/CollisionSystem.hpp"
 #include "../Systems/RenderSystem.hpp"
@@ -17,6 +18,7 @@
 #include "../Systems/AnimationSystem.hpp"
 #include "../Systems/ScriptSystem.hpp"
 #include "../Systems/TextRenderSystem.hpp"
+#include "../Systems/PathRenderSystem.hpp"
 
 Game::Game() {
     this->assetManager = std::make_unique<AssetManager>();
@@ -84,6 +86,7 @@ void Game::setup() {
     this->registry->addSystem<AnimationSystem>();
     this->registry->addSystem<ScriptSystem>();
     this->registry->addSystem<TextRenderSystem>();
+    this->registry->addSystem<PathRenderSystem>();
 
     this->lua.open_libraries(sol::lib::base, sol::lib::math, sol::lib::string);
     this->registry->getSystem<ScriptSystem>().createLuaBiding(this->lua);
@@ -134,6 +137,9 @@ void Game::render() {
     SDL_RenderClear(this->renderer);
 
     this->registry->getSystem<RenderSystem>().update(this->renderer, this->assetManager, this->camera);
+
+    // La trayectoria va encima de los sprites pero debajo del HUD de texto
+    this->registry->getSystem<PathRenderSystem>().update(this->renderer, this->camera, this->deltaTime);
 
     // El texto va después de los sprites para que quede encima
     this->registry->getSystem<TextRenderSystem>().update(this->renderer, this->assetManager,

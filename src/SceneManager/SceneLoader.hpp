@@ -24,6 +24,7 @@ class SceneLoader {
     void addCircleColliderComponent(Entity entity, const sol::table& components);
     void addAnimationComponent(Entity entity, const sol::table& components);
     void addTextComponent(Entity entity, const sol::table& components);
+    void addPathComponent(Entity entity, const sol::table& components);
     void addScriptComponent(sol::state& lua, Entity entity, const sol::table& components);
 
   public:

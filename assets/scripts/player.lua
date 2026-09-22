@@ -19,6 +19,16 @@ function update()
     accel_y = accel_y + 1
   end
 
+  -- "T" activa/desactiva la línea de trayectoria. is_action_activated
+  -- reporta la tecla sostenida, no un flanco, así que hay que detectar el
+  -- flanco a mano con un global (los globals de scripts se comparten entre
+  -- archivos, de ahí el prefijo player_).
+  local path_key_down = is_action_activated("toggle_path")
+  if path_key_down and not player_path_key_was_down then
+    set_path_active(this, not is_path_active(this))
+  end
+  player_path_key_was_down = path_key_down
+
   if not is_action_activated("accelerate") then
     set_sprite(this, "spaceship-idle")
   end

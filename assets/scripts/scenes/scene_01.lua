@@ -177,6 +177,9 @@ local entities = {
         position = {x = 400, y = 100},
         scale = { x = 0.2, y = 0.2}
       },
+      path = {
+        active = true
+      },
       script = {
         path = "./assets/scripts/player.lua"
       }
@@ -214,6 +217,7 @@ scene = {
     [0] = 
     {name = "accelerate", key=119},
     {name = "brake", key=115},
+    {name = "toggle_path", key = 116},
   },
 
   -- Mouse

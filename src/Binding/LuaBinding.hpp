@@ -10,6 +10,7 @@
 #include "EntityBindings.hpp"
 #include "InputBindings.hpp"
 #include "MovementBindings.hpp"
+#include "PathBindings.hpp"
 #include "ScriptBindings.hpp"
 #include "SpriteBindings.hpp"
 #include "TextBindings.hpp"
