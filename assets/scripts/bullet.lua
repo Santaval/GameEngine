@@ -1,11 +1,3 @@
--- Ejemplo de los hooks de daño. Una entidad puede definir cualquiera de las
--- tres funciones que el motor conoce; las que falten simplemente no se llaman.
---
---   update()                  -> cada frame
---   on_damage(amount, source) -> al recibir daño, source es quien lo causo
---   on_death()                -> justo antes de morir
---
--- En las tres, "this" es la entidad afectada.
 
 function update()
 end

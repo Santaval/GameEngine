@@ -1,7 +1,9 @@
 player_thrust = 100
-
--- Daño de cada bala. El motor no sabe nada de balas: sale de aquí.
 player_bullet_damage = 20
+player_fire_rate = 3
+
+player_shoot_cooldown = 0
+
 
 function update()
   player_entity = this
@@ -48,7 +50,8 @@ function update()
   local target_rotation = math.atan(my - py_aim, mx - px_aim) + 1.5
   set_rotation_absolute(this, target_rotation)
 
-  if is_action_activated("shoot") then
+
+  if is_action_activated("shoot") and player_shoot_cooldown <= 0 then
     local bullet = create_entity()
     local px, py = get_position(this)
     local rotation = get_rotation(this)
@@ -65,6 +68,11 @@ function update()
     add_circle_collider(bullet, 30, 64, 32, this)
     -- true = la bala se destruye al impactar contra algo que tenga vida
     add_damage(bullet, player_bullet_damage, true)
+
+    player_shoot_cooldown = 1 / player_fire_rate
+
+  else 
+    player_shoot_cooldown = player_shoot_cooldown - get_delta_time()
   end
 
   accel_y = accel_y * player_thrust
@@ -92,6 +100,7 @@ function update()
   draw_text(20, 130, string.format("HP:    %8d / %d", hp, hp_max), "default", 255, hp_g, 60)
 
   -- Etiqueta en coordenadas del mundo: sigue a la nave
+  
   draw_text_world(cam_x - 30, cam_y - 60, "PLAYER", "default", 255, 200, 0)
 
   if not hud_probe_done then

@@ -50,8 +50,8 @@ void Game::init() {
         return;
     }
 
-    this->windowWidth = 1920;
-    this->windowHeight = 1000;
+    this->windowWidth = 800;
+    this->windowHeight = 600;
 
     this->camera = { 0, 0, this->windowWidth, this->windowHeight };
 
