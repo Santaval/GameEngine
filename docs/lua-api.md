@@ -48,11 +48,16 @@ them to avoid collisions (`player_target`, not `target`).
 
 ## Available Lua standard libraries
 
-Only three are opened: **`base`**, **`math`** and **`string`**.
+Only four are opened: **`base`**, **`math`**, **`string`** and **`package`**.
 
-That means `print`, `ipairs`, `pairs`, `math.*` and `string.format` work, but
-**`table.*`, `os.*` and `io.*` do not exist**. Use `t[#t + 1] = v` instead of
-`table.insert`, and `get_delta_time()` instead of `os.clock`.
+That means `print`, `ipairs`, `pairs`, `math.*`, `string.format` and `require`
+work, but **`table.*`, `os.*` and `io.*` do not exist**. Use `t[#t + 1] = v`
+instead of `table.insert`, and `get_delta_time()` instead of `os.clock`.
+
+`require("name")` searches `assets/scripts/` and `assets/scripts/player/`
+(see `Game.cpp`). Modules are loaded once and cached, so `local` variables at
+the top of a module persist across frames — `assets/scripts/player/` uses this
+for cooldowns and key-edge state instead of globals.
 
 ---
 
