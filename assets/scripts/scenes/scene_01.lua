@@ -237,7 +237,7 @@ local entities = {
         capacity = 50,
       },
       script = {
-        path = "./assets/scripts/player.lua"
+        path = "./assets/scripts/player/player.lua"
       }
     },
   },

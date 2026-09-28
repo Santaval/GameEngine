@@ -93,7 +93,9 @@ void Game::setup() {
     this->registry->addSystem<PathRenderSystem>();
     this->registry->addSystem<ColliderRenderSystem>();
 
-    this->lua.open_libraries(sol::lib::base, sol::lib::math, sol::lib::string);
+    this->lua.open_libraries(sol::lib::base, sol::lib::math, sol::lib::string, sol::lib::package);
+    this->lua["package"]["path"] = "./assets/scripts/?.lua;./assets/scripts/player/?.lua;" +
+        this->lua["package"]["path"].get<std::string>();
     this->registry->getSystem<ScriptSystem>().createLuaBiding(this->lua);
     
     this->sceneLoader->load("./assets/scripts/scenes/scene_01.lua", this->lua, this->assetManager,

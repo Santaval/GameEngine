@@ -1,19 +1,12 @@
+local player_shooting_module = require("player_shoot")
 player_thrust = 100
-player_bullet_damage = 20
-player_fire_rate = 2
-
-player_shoot_cooldown = 0
 
 
 function update()
+  player_shooting_module.shoot()
   player_entity = this
 
-  accel_y = 0
 
-  if is_action_activated("accelerate") then
-    accel_y = accel_y + -1
-    set_sprite(this, "spaceship-movement")
-  end
 
   if is_action_activated("shoot") then
     -- set_sprite(this, "spaceship-attack")
