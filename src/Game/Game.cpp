@@ -153,12 +153,30 @@ void Game::render() {
         this->registry->getSystem<ColliderRenderSystem>().update(this->renderer, this->camera);
     }
 
+    // Paneles del HUD (rectangulos): van antes del texto para que el texto quede encima
+    SDL_SetRenderDrawBlendMode(this->renderer, SDL_BLENDMODE_BLEND);
+    for (const auto& rect : this->rectBuffer.getCommands()) {
+        SDL_Rect sdlRect = { rect.x, rect.y, rect.w, rect.h };
+        if (rect.isWorldSpace) {
+            sdlRect.x -= this->camera.x;
+            sdlRect.y -= this->camera.y;
+        }
+
+        SDL_SetRenderDrawColor(this->renderer, rect.color.r, rect.color.g, rect.color.b, rect.color.a);
+        if (rect.filled) {
+            SDL_RenderFillRect(this->renderer, &sdlRect);
+        } else {
+            SDL_RenderDrawRect(this->renderer, &sdlRect);
+        }
+    }
+
     // El texto va después de los sprites para que quede encima
     this->registry->getSystem<TextRenderSystem>().update(this->renderer, this->assetManager,
         this->camera, this->textBuffer);
 
     // Los comandos duran un frame: los scripts los vuelven a pedir en el próximo update()
     this->textBuffer.clear();
+    this->rectBuffer.clear();
 
     SDL_RenderPresent(this->renderer);
 }

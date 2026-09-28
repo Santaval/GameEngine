@@ -70,6 +70,10 @@ Maps a name to an SDL keycode. Scripts then ask for the name, never the code.
 { name = "brake",            key = 115 },  -- s
 { name = "toggle_path",      key = 116 },  -- t
 { name = "toggle_colliders", key = 99  },  -- c
+{ name = "toggle_upgrades",  key = 101 },  -- e
+{ name = "upgrade_1",        key = 49  },  -- 1
+{ name = "upgrade_2",        key = 50  },  -- 2
+{ name = "upgrade_3",        key = 51  },  -- 3
 ```
 
 For printable ASCII keys the code is simply the character's byte value, so

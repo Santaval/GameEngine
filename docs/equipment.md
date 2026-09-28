@@ -99,14 +99,58 @@ end
 
 ---
 
-## Gotchas and limits
+## The upgrade menu
 
-**Nothing consumes these levels yet.** This is pure tracking. The player's
-actual thrust, bullet damage and fire rate still live as separate globals in
-`player.lua` (`player_thrust`, `player_bullet_damage`, `player_fire_rate`).
-Wiring `engine` to thrust, `gun` to damage/fire-rate and `shield` to
-invulnerability is the natural next step, but it is a gameplay change and
-belongs in its own task.
+Equipment levels are consumed by a compact HUD overlay, toggled with **E**,
+where the player spends inventory items to raise `engine`, `gun` and
+`shield`. It keeps running while open — no pause — since the game is meant to
+be multiplayer.
+
+### Cost table
+
+`assets/scripts/player/player_upgrades.lua` holds a data-driven table so it
+is easy to retune:
+
+```lua
+player_upgrades_module.UPGRADES = {
+  { equipment = "engine", label = "Engine", cost = { iron = 3 } },
+  { equipment = "gun",    label = "Gun",    cost = { gunpowder = 2, iron = 1 } },
+  { equipment = "shield", label = "Shield", cost = { plasma = 1, iron = 2 } },
+}
+```
+
+Each cost is **per next level**: the actual price is `base x (current level +
+1)`, so upgrades get steadily more expensive. `MAX_LEVEL` (10) caps every
+tool.
+
+### Level -> stat formulas
+
+`player_upgrades_module.apply_stats(entity)` maps the current equipment
+levels to real gameplay numbers, keeping today's values at the scene's
+starting levels (engine 1, gun 3, shield 4):
+
+| Tool | Formula | At the starting level |
+| --- | --- | --- |
+| `engine` L | `thrust = 60 + 40*L`, `set_max_speed(e, 60 + 40*L)` | 100 / 100 at L1 |
+| `gun` L | `bullet_damage = 5 + 5*L`, `fire_rate = 0.5 + 0.5*L` | 20 dmg, 2 shots/s at L3 |
+| `shield` L | `max_health = 60 + 10*L`, healed by the increase | 100 HP at L4 |
+
+`apply_stats` writes directly into `player_movement_module.thrust` and
+`player_shooting_module.*` — those modules are `require`d (and therefore
+cached) by `player_upgrades.lua`, so the change is visible to `player.lua`
+immediately. It runs once on the player's first `update()` (so the scene's
+starting levels take effect) and again after every successful purchase.
+
+### Where the code lives
+
+| File | Role |
+| --- | --- |
+| `assets/scripts/player/player_upgrades.lua` | Cost table, `get_cost` / `can_afford` / `purchase` / `apply_stats`. |
+| `assets/scripts/player/player_upgrade_menu.lua` | The overlay: open/close state, buy-key edge detection, feedback message, and the `draw_rect`/`draw_text` panel anchored top-right. |
+
+---
+
+## Gotchas and limits
 
 **`set_equipment_level` creating the component on the fly is safe only
 because no system calls `requireComponent<EquipmentComponent>()`.** If one

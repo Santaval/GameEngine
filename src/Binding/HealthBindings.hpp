@@ -51,6 +51,17 @@ inline void heal(Entity e, int amount) {
   setHealth(e, getHealth(e) + amount);
 }
 
+// Cambia el tope de vida (mejoras de escudo, por ejemplo). Nunca mata: si la
+// vida actual queda por encima del nuevo tope, se recorta, nada mas.
+inline void setMaxHealth(Entity e, int value) {
+  if (!e.hasComponent<HealthComponent>()) return;
+  if (value < 1) value = 1;
+
+  auto& health = e.getComponent<HealthComponent>();
+  health.maxHealth = value;
+  if (health.health > health.maxHealth) health.health = health.maxHealth;
+}
+
 inline void addDamage(Entity e, int amount, sol::optional<bool> destroyOnHit) {
   e.addComponent<DamageComponent>(amount, destroyOnHit.value_or(false));
 }
@@ -76,6 +87,7 @@ inline void registerHealthBindings(sol::state& lua) {
   lua.set_function("is_alive", isAlive);
   lua.set_function("set_health", setHealth);
   lua.set_function("heal", heal);
+  lua.set_function("set_max_health", setMaxHealth);
   lua.set_function("add_damage", addDamage);
   lua.set_function("get_damage", getDamage);
   lua.set_function("set_damage", setDamage);

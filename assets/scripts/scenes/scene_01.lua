@@ -304,6 +304,10 @@ scene = {
     {name = "brake", key=115},
     {name = "toggle_path", key = 116},
     {name = "toggle_colliders", key = 99},
+    {name = "toggle_upgrades", key = 101},
+    {name = "upgrade_1", key = 49},
+    {name = "upgrade_2", key = 50},
+    {name = "upgrade_3", key = 51},
   },
 
   -- Mouse

@@ -184,6 +184,7 @@ Summarised here; the full guide is in
 | `is_alive(e)` | `bool` | `true` for an entity with no health — indestructible counts as alive. |
 | `set_health(e, value)` | — | Clamped, ignores invulnerability, fires `on_death` at `0`. |
 | `heal(e, amount)` | — | Cannot revive something already at `0`. |
+| `set_max_health(e, value)` | — | Clamped to `>= 1`. Never kills — if `health` is above the new max, it is clamped down too, without firing `on_death`. |
 | `add_damage(e, amount, destroy_on_hit?)` | — | `destroy_on_hit` defaults to `false`. |
 | `get_damage(e)` / `set_damage(e, amount)` | `int` / — | `set_damage` adds the component if missing. |
 
@@ -270,6 +271,8 @@ get it through `set_loot` and hand it to whoever collects them.
 | `add_text(e, text, font_id?, r?, g?, b?, a?, offset_x?, offset_y?)` | — | A persistent label attached to the entity's transform. |
 | `set_text(e, text)` | — | |
 | `set_text_color(e, r, g, b, a?)` | — | |
+| `draw_rect(x, y, w, h, r?, g?, b?, a?, filled?)` | — | **Screen** coordinates. `filled` defaults to `true`. Lasts one frame. |
+| `draw_rect_world(x, y, w, h, r?, g?, b?, a?, filled?)` | — | **World** coordinates, scrolls with the camera. Lasts one frame. |
 
 `font_id` defaults to `"default"`; colour channels default to `255`.
 
@@ -384,7 +387,7 @@ of that slot left behind — entity ids are recycled.
 
 | Guarded, safe to call on anything | Unguarded, requires the component |
 | --- | --- |
-| `get_health`, `get_max_health`, `is_alive`, `set_health`, `heal`, `get_damage`, `set_damage`, `is_path_active`, `set_path_active`, `set_equipment_level`, `get_equipment_level`, `has_equipment`, `upgrade_equipment`, `remove_equipment`, `get_equipment_count`, `get_equipment_at`, `has_inventory`, `add_item`, `remove_item`, `update_item_count`, `get_item_count`, `has_item`, `get_inventory_total`, `get_inventory_capacity`, `set_inventory_capacity`, `get_inventory_count`, `get_inventory_at`, `clear_inventory`, `has_loot`, `get_loot_count`, `get_loot_at`, `set_loot`, `destroy_entity` | `get_position`, `get_rotation`, `set_rotation*`, every `*_velocity` / `*_acceleration` / `*_max_speed`, `get_speed`, `set_sprite`, `set_text`, `set_text_color` |
+| `get_health`, `get_max_health`, `is_alive`, `set_health`, `heal`, `set_max_health`, `get_damage`, `set_damage`, `is_path_active`, `set_path_active`, `set_equipment_level`, `get_equipment_level`, `has_equipment`, `upgrade_equipment`, `remove_equipment`, `get_equipment_count`, `get_equipment_at`, `has_inventory`, `add_item`, `remove_item`, `update_item_count`, `get_item_count`, `has_item`, `get_inventory_total`, `get_inventory_capacity`, `set_inventory_capacity`, `get_inventory_count`, `get_inventory_at`, `clear_inventory`, `has_loot`, `get_loot_count`, `get_loot_at`, `set_loot`, `destroy_entity`, `draw_rect`, `draw_rect_world` | `get_position`, `get_rotation`, `set_rotation*`, every `*_velocity` / `*_acceleration` / `*_max_speed`, `get_speed`, `set_sprite`, `set_text`, `set_text_color` |
 
 In practice: before calling anything in the right-hand column on an entity you
 did not build yourself, make sure it has the component.

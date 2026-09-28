@@ -11,6 +11,7 @@
 #include "../ControllerManager/ControllerManager.hpp"
 #include "../SceneManager/SceneLoader.hpp"
 #include "../Util/TextBuffer.hpp"
+#include "../Util/RectBuffer.hpp"
 
 const int FPS = 30;
 const int MILISECS_PER_FRAMES = 1000 / FPS;
@@ -27,6 +28,7 @@ class Game {
 
         // Se llena desde los scripts en update() y se vacía en render()
         TextBuffer textBuffer;
+        RectBuffer rectBuffer;
 
         int milisecsPreviousFrame = 0;
         double deltaTime = 0.0;
@@ -64,6 +66,7 @@ class Game {
      sol::state& getLua() { return lua; }
      SDL_Rect& getCamera() { return camera; }
      TextBuffer& getTextBuffer() { return textBuffer; }
+     RectBuffer& getRectBuffer() { return rectBuffer; }
      int getWindowWidth() const { return windowWidth; }
      int getWindowHeight() const { return windowHeight; }
      bool isShowingColliders() const { return showColliders; }

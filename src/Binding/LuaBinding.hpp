@@ -16,5 +16,6 @@
 #include "MovementBindings.hpp"
 #include "PathBindings.hpp"
 #include "ScriptBindings.hpp"
+#include "ShapeBindings.hpp"
 #include "SpriteBindings.hpp"
 #include "TextBindings.hpp"

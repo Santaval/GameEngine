@@ -54,6 +54,7 @@ class ScriptSystem : public System {
     registerScriptBindings(lua);
     registerCameraBindings(lua);
     registerTextBindings(lua);
+    registerShapeBindings(lua);
     registerPathBindings(lua);
     registerEquipmentBindings(lua);
     registerInventoryBindings(lua);
