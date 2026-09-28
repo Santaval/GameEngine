@@ -8,6 +8,7 @@ entirely in Lua.
 | [lua-api.md](lua-api.md) | Every function the engine exposes to Lua. |
 | [scene-format.md](scene-format.md) | The `scene` table: assets, input mappings, entities and every component. |
 | [health-and-damage.md](health-and-damage.md) | Hit points, contact damage, invulnerability and death hooks. |
+| [equipment.md](equipment.md) | Named upgrade levels tracked per entity. |
 
 ---
 
@@ -84,6 +85,7 @@ says "thrust forward", and the engine resolves what forward means.
 | `CircleColliderComponent` | Collision circle plus an owner exclusion. | `circle_collider` |
 | `HealthComponent` | Hit points and invulnerability window. | `health` |
 | `DamageComponent` | Contact damage dealt. | `damage` |
+| `EquipmentComponent` | Named upgrade levels (engine, gun, shield, ...). | `equipment` |
 | `TextComponent` | A label pinned to the entity. | `text` |
 | `PathComponent` | Trajectory prediction toggle. | `path` |
 | `ScriptComponent` | `update`, `on_damage`, `on_death`. | `script` |

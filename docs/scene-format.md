@@ -219,6 +219,22 @@ damage = {
 
 See [health-and-damage.md](health-and-damage.md) for how these two interact.
 
+### `equipment`
+
+```lua
+equipment = {
+  engine = 1,
+  gun    = 3,
+  shield = 4,
+}
+```
+
+Keys are free-form — anything the loader finds with a string key and an
+integer value is accepted, no need to register tool names anywhere in C++.
+The loader normalizes the order alphabetically by name before storing it,
+since Lua table iteration order is not guaranteed. See
+[equipment.md](equipment.md).
+
 ### `text`
 
 ```lua

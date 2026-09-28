@@ -1,6 +1,6 @@
 player_thrust = 100
 player_bullet_damage = 20
-player_fire_rate = 3
+player_fire_rate = 2
 
 player_shoot_cooldown = 0
 
@@ -98,6 +98,15 @@ function update()
   local hp, hp_max = get_health(this), get_max_health(this)
   local hp_g = hp * 3 >= hp_max and 220 or 60
   draw_text(20, 130, string.format("HP:    %8d / %d", hp, hp_max), "default", 255, hp_g, 60)
+
+  -- Equipo: una linea por herramienta, en el orden con el que el loader
+  -- las guardo (alfabetico si vienen de la escena). Iteracion por indice
+  -- 1-based porque table.* no existe en este motor.
+  local equipment_count = get_equipment_count(this)
+  for i = 1, equipment_count do
+    local eq_name, eq_level = get_equipment_at(this, i)
+    draw_text(20, 130 + i * 22, string.format("%s: %d", eq_name, eq_level), "default", 180, 200, 255)
+  end
 
   -- Etiqueta en coordenadas del mundo: sigue a la nave
   

@@ -20,6 +20,7 @@ implemented one domain per file under [`src/Binding/`](../src/Binding/).
 - [Sprites & animation](#sprites--animation)
 - [Colliders](#colliders)
 - [Health & damage](#health--damage)
+- [Equipment](#equipment)
 - [Text & HUD](#text--hud)
 - [Camera](#camera)
 - [Input](#input)
@@ -180,6 +181,33 @@ Summarised here; the full guide is in
 
 ---
 
+## Equipment
+
+Named upgrade levels tracked per entity (`engine`, `gun`, `shield`, or any
+other name a scene or script picks). Tracking only — nothing consumes these
+levels yet. Full guide in [equipment.md](equipment.md).
+
+| Function | Returns | Notes |
+| --- | --- | --- |
+| `set_equipment_level(e, name, level)` | — | Creates the component if missing. Overwrites an existing level. |
+| `get_equipment_level(e, name)` | `int` | `0` if the component or the tool is missing. |
+| `has_equipment(e, name)` | `bool` | |
+| `upgrade_equipment(e, name, amount?)` | `int` | Adds `amount` (defaults to `1`), returns the new level. Creates the tool if missing. |
+| `remove_equipment(e, name)` | — | No-op if missing. |
+| `get_equipment_count(e)` | `int` | `0` if the component is missing. |
+| `get_equipment_at(e, index)` | `name, level` | **1-based.** `"", 0` out of range. |
+
+`table.*` does not exist in this engine's Lua environment, so iterate by
+index instead of expecting a table back:
+
+```lua
+for i = 1, get_equipment_count(this) do
+  local name, level = get_equipment_at(this, i)
+end
+```
+
+---
+
 ## Text & HUD
 
 | Function | Returns | Notes |
@@ -301,7 +329,7 @@ of that slot left behind — entity ids are recycled.
 
 | Guarded, safe to call on anything | Unguarded, requires the component |
 | --- | --- |
-| `get_health`, `get_max_health`, `is_alive`, `set_health`, `heal`, `get_damage`, `set_damage`, `is_path_active`, `set_path_active` | `get_position`, `get_rotation`, `set_rotation*`, every `*_velocity` / `*_acceleration` / `*_max_speed`, `get_speed`, `set_sprite`, `set_text`, `set_text_color` |
+| `get_health`, `get_max_health`, `is_alive`, `set_health`, `heal`, `get_damage`, `set_damage`, `is_path_active`, `set_path_active`, `set_equipment_level`, `get_equipment_level`, `has_equipment`, `upgrade_equipment`, `remove_equipment`, `get_equipment_count`, `get_equipment_at` | `get_position`, `get_rotation`, `set_rotation*`, every `*_velocity` / `*_acceleration` / `*_max_speed`, `get_speed`, `set_sprite`, `set_text`, `set_text_color` |
 
 In practice: before calling anything in the right-hand column on an entity you
 did not build yourself, make sure it has the component.

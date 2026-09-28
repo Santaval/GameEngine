@@ -1,5 +1,6 @@
 #include "SceneLoader.hpp"
 
+#include <algorithm>
 #include <glm/glm.hpp>
 #include <iostream>
 
@@ -13,6 +14,7 @@
 #include "../Components/PathComponent.hpp"
 #include "../Components/HealthComponent.hpp"
 #include "../Components/DamageComponent.hpp"
+#include "../Components/EquipmentComponent.hpp"
 
 
 namespace {
@@ -231,6 +233,24 @@ void SceneLoader::addDamageComponent(Entity entity, const sol::table& components
   entity.addComponent<DamageComponent>(amount, destroyOnHit);
 }
 
+void SceneLoader::addEquipmentComponent(Entity entity, const sol::table& components) {
+  sol::optional<sol::table> hasEquipment = components["equipment"];
+  if (hasEquipment == sol::nullopt) return;
+
+  EquipmentList equipment;
+  for (const auto& pair : *hasEquipment) {
+    if (pair.first.get_type() != sol::type::string) continue;
+    if (!pair.second.is<int>()) continue;
+    equipment.emplace_back(pair.first.as<std::string>(), pair.second.as<int>());
+  }
+
+  // recorrer una tabla Lua con claves no garantiza orden: se ordena por nombre
+  // para que el HUD pinte siempre igual
+  std::sort(equipment.begin(), equipment.end());
+
+  entity.addComponent<EquipmentComponent>(equipment);
+}
+
 void SceneLoader::addScriptComponent(sol::state& lua, Entity entity, const sol::table& components) {
   sol::optional<sol::table> hasScript = components["script"];
   if (hasScript == sol::nullopt) return;
@@ -276,6 +296,7 @@ void SceneLoader::loadEntities(sol::state& lua, const sol::table& entities, std:
       addPathComponent(newEntity, components);
       addHealthComponent(newEntity, components);
       addDamageComponent(newEntity, components);
+      addEquipmentComponent(newEntity, components);
       addScriptComponent(lua, newEntity, components);
     }
 

@@ -222,6 +222,15 @@ local entities = {
         max = 100,
         invulnerability = 0.5,
       },
+      -- Niveles iniciales de las herramientas mejorables del jugador. Las
+      -- claves son libres (nada en C++ las conoce de antemano); el loader
+      -- las ordena alfabeticamente al leerlas, asi que el orden aqui no
+      -- importa.
+      equipment = {
+        engine = 1,
+        gun    = 3,
+        shield = 4,
+      },
       script = {
         path = "./assets/scripts/player.lua"
       }
