@@ -7,6 +7,7 @@
 #include "../Game/Game.hpp"
 #include "../ECS/Entity.hpp"
 #include "../Components/TransformComponent.hpp"
+#include "../Util/Damage.hpp"
 
 inline Entity createEntity() {
   return Game::getInstance().getRegistry()->createEntity();
@@ -21,8 +22,16 @@ inline std::tuple<float, float> getPosition(Entity e) {
   return { transform.position.x, transform.position.y };
 }
 
+// Mata la entidad sin pasar por HealthComponent: util para pickups y demas
+// entidades que no tienen vida (killWithHooks avisa a on_death y difiere el
+// kill, mismo camino que usa DamageSystem)
+inline void destroyEntity(Entity e) {
+  killWithHooks(e);
+}
+
 inline void registerEntityBindings(sol::state& lua) {
   lua.set_function("create_entity", createEntity);
   lua.set_function("add_transform", addTransform);
   lua.set_function("get_position", getPosition);
+  lua.set_function("destroy_entity", destroyEntity);
 }

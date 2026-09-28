@@ -7,6 +7,9 @@
 #include "../ECS/System.hpp"
 #include "../ECS/Entity.hpp"
 #include "../Components/ScriptComponent.hpp"
+#include "../Events/CollisionEvent.hpp"
+#include "../EventManager/EventManager.hpp"
+#include "../Util/Damage.hpp"
 #include "../Binding/LuaBinding.hpp"
 
 class ScriptSystem : public System {
@@ -26,6 +29,17 @@ class ScriptSystem : public System {
    }
   }
 
+  void subscribeToCollisionEvent(std::unique_ptr<EventManager>& eventManager) {
+    eventManager->subscribe<CollisionEvent, ScriptSystem>(this, &ScriptSystem::onCollision);
+  }
+
+  // Simetrico, mismo patron que DamageSystem: cada lado se entera de con
+  // quien choco. callScriptHook ya se fija si el script define on_collision.
+  void onCollision(CollisionEvent& e) {
+    callScriptHook(e.a, &ScriptComponent::onCollision, e.b);
+    callScriptHook(e.b, &ScriptComponent::onCollision, e.a);
+  }
+
   void createLuaBiding(sol::state& lua) {
     // classes
     lua.new_usertype<Entity>("entity");
@@ -42,5 +56,6 @@ class ScriptSystem : public System {
     registerTextBindings(lua);
     registerPathBindings(lua);
     registerEquipmentBindings(lua);
+    registerInventoryBindings(lua);
   }
 };

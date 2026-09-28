@@ -15,6 +15,7 @@
 #include "../Components/HealthComponent.hpp"
 #include "../Components/DamageComponent.hpp"
 #include "../Components/EquipmentComponent.hpp"
+#include "../Components/InventoryComponent.hpp"
 
 
 namespace {
@@ -251,6 +252,37 @@ void SceneLoader::addEquipmentComponent(Entity entity, const sol::table& compone
   entity.addComponent<EquipmentComponent>(equipment);
 }
 
+void SceneLoader::addInventoryComponent(Entity entity, const sol::table& components) {
+  sol::optional<sol::table> hasInventory = components["inventory"];
+  if (hasInventory == sol::nullopt) return;
+
+  // ambos son opcionales: sin capacity el inventario queda sin limite, sin
+  // items arranca vacio
+  int capacity = (*hasInventory)["capacity"].get_or(0);
+
+  InventoryList items;
+  sol::optional<sol::table> hasItems = (*hasInventory)["items"];
+  if (hasItems != sol::nullopt) {
+    for (const auto& pair : *hasItems) {
+      if (pair.first.get_type() != sol::type::string) continue;
+      if (!pair.second.is<int>()) continue;
+
+      int quantity = pair.second.as<int>();
+      if (quantity <= 0) continue;  // igual que InventoryComponent: nunca entradas en 0
+
+      items.emplace_back(pair.first.as<std::string>(), quantity);
+    }
+  }
+
+  // mismo motivo que addEquipmentComponent: el orden de iteracion de una
+  // tabla Lua no esta garantizado, asi que se ordena por nombre. Nota: los
+  // items de escena no se recortan contra capacity, confiamos en el autor
+  // de la escena (ver docs/inventory.md)
+  std::sort(items.begin(), items.end());
+
+  entity.addComponent<InventoryComponent>(items, capacity);
+}
+
 void SceneLoader::addScriptComponent(sol::state& lua, Entity entity, const sol::table& components) {
   sol::optional<sol::table> hasScript = components["script"];
   if (hasScript == sol::nullopt) return;
@@ -262,14 +294,16 @@ void SceneLoader::addScriptComponent(sol::state& lua, Entity entity, const sol::
   lua["update"] = sol::lua_nil;
   lua["on_damage"] = sol::lua_nil;
   lua["on_death"] = sol::lua_nil;
+  lua["on_collision"] = sol::lua_nil;
 
   lua.script_file(path);
 
   sol::function update = lua["update"];
   sol::function onDamage = lua["on_damage"];
   sol::function onDeath = lua["on_death"];
+  sol::function onCollision = lua["on_collision"];
 
-  entity.addComponent<ScriptComponent>(update, onDamage, onDeath);
+  entity.addComponent<ScriptComponent>(update, onDamage, onDeath, onCollision);
 }
 
 void SceneLoader::loadEntities(sol::state& lua, const sol::table& entities, std::unique_ptr<Registry>& registry) {
@@ -297,6 +331,7 @@ void SceneLoader::loadEntities(sol::state& lua, const sol::table& entities, std:
       addHealthComponent(newEntity, components);
       addDamageComponent(newEntity, components);
       addEquipmentComponent(newEntity, components);
+      addInventoryComponent(newEntity, components);
       addScriptComponent(lua, newEntity, components);
     }
 

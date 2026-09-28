@@ -176,6 +176,7 @@ void Game::update() {
     // Reset events subscriptions
     this->eventManager->reset();
     this->registry->getSystem<DamageSystem>().subscribeToCollisionEvent(this->eventManager);
+    this->registry->getSystem<ScriptSystem>().subscribeToCollisionEvent(this->eventManager);
 
     this->registry->update();
     this->registry->getSystem<ScriptSystem>().update(this->lua);

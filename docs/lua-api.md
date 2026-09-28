@@ -21,6 +21,7 @@ implemented one domain per file under [`src/Binding/`](../src/Binding/).
 - [Colliders](#colliders)
 - [Health & damage](#health--damage)
 - [Equipment](#equipment)
+- [Inventory](#inventory)
 - [Text & HUD](#text--hud)
 - [Camera](#camera)
 - [Input](#input)
@@ -67,8 +68,11 @@ That means `print`, `ipairs`, `pairs`, `math.*` and `string.format` work, but
 > entity centred on a point, subtract half its scaled size:
 > `add_transform(e, cx - w * scale / 2, cy - h * scale / 2, scale, scale, 0)`.
 
-There is no `destroy_entity` binding. Entities die by running out of health
-(see [Health & damage](#health--damage)).
+| `destroy_entity(e)` | — | Kills the entity outright, without going through health. Runs `on_death` first, same as dying from damage; the actual removal is deferred to the next frame like any `kill()`. |
+
+Entities also die by running out of health (see
+[Health & damage](#health--damage)); `destroy_entity` is the way to remove one
+that has no health at all, such as a pickup.
 
 ---
 
@@ -208,6 +212,35 @@ end
 
 ---
 
+## Inventory
+
+Named item quantities tracked per entity (`mineral`, or any other name a
+scene or script picks), plus an optional total capacity. Full guide in
+[inventory.md](inventory.md).
+
+| Function | Returns | Notes |
+| --- | --- | --- |
+| `has_inventory(e)` | `bool` | |
+| `add_item(e, name, qty?)` | `int` | `qty` defaults to `1`. Creates the component (unlimited) if missing. Clamped to remaining capacity, if any. Returns the amount actually added. |
+| `remove_item(e, name, qty?)` | `int` | `qty` defaults to `1`, never removes more than what is held. Returns the amount actually removed. |
+| `update_item_count(e, name, count)` | `int` | Sets the absolute quantity (not a delta). `count <= 0` erases the entry. Clamped to capacity. Returns the resulting count. |
+| `get_item_count(e, name)` | `int` | `0` if missing. |
+| `has_item(e, name, qty?)` | `bool` | `qty` defaults to `1`. |
+| `get_inventory_total(e)` | `int` | Sum of every item's quantity. |
+| `get_inventory_capacity(e)` / `set_inventory_capacity(e, cap)` | `int` / — | `0` = unlimited. Lowering it below the current total does not drop items. |
+| `get_inventory_count(e)` / `get_inventory_at(e, index)` | `int` / `name, quantity` | Same 1-based convention as equipment. |
+| `clear_inventory(e)` | — | Empties the items, keeps the capacity. |
+
+Same iteration convention as equipment — no `table.*`, so walk it by index:
+
+```lua
+for i = 1, get_inventory_count(this) do
+  local name, quantity = get_inventory_at(this, i)
+end
+```
+
+---
+
 ## Text & HUD
 
 | Function | Returns | Notes |
@@ -299,6 +332,7 @@ of speed nothing is drawn, so a parked ship has no stub of a line.
 | `add_script(e, fn)` | — | `fn` becomes the entity's `update`. |
 | `set_on_damage(e, fn)` | — | `fn(amount, source)`. |
 | `set_on_death(e, fn)` | — | `fn()`. |
+| `set_on_collision(e, fn)` | — | `fn(other)`. Fires every frame the two colliders keep overlapping, not once per contact — see [inventory.md](inventory.md#gotchas-and-limits) for the pickup pattern this implies. |
 
 A script file loaded through a scene defines its hooks as globals:
 
@@ -306,6 +340,7 @@ A script file loaded through a scene defines its hooks as globals:
 function update() end
 function on_damage(amount, source) end
 function on_death() end
+function on_collision(other) end
 ```
 
 For entities spawned at runtime, use the closure form instead:
@@ -329,7 +364,7 @@ of that slot left behind — entity ids are recycled.
 
 | Guarded, safe to call on anything | Unguarded, requires the component |
 | --- | --- |
-| `get_health`, `get_max_health`, `is_alive`, `set_health`, `heal`, `get_damage`, `set_damage`, `is_path_active`, `set_path_active`, `set_equipment_level`, `get_equipment_level`, `has_equipment`, `upgrade_equipment`, `remove_equipment`, `get_equipment_count`, `get_equipment_at` | `get_position`, `get_rotation`, `set_rotation*`, every `*_velocity` / `*_acceleration` / `*_max_speed`, `get_speed`, `set_sprite`, `set_text`, `set_text_color` |
+| `get_health`, `get_max_health`, `is_alive`, `set_health`, `heal`, `get_damage`, `set_damage`, `is_path_active`, `set_path_active`, `set_equipment_level`, `get_equipment_level`, `has_equipment`, `upgrade_equipment`, `remove_equipment`, `get_equipment_count`, `get_equipment_at`, `has_inventory`, `add_item`, `remove_item`, `update_item_count`, `get_item_count`, `has_item`, `get_inventory_total`, `get_inventory_capacity`, `set_inventory_capacity`, `get_inventory_count`, `get_inventory_at`, `clear_inventory`, `destroy_entity` | `get_position`, `get_rotation`, `set_rotation*`, every `*_velocity` / `*_acceleration` / `*_max_speed`, `get_speed`, `set_sprite`, `set_text`, `set_text_color` |
 
 In practice: before calling anything in the right-hand column on an entity you
 did not build yourself, make sure it has the component.

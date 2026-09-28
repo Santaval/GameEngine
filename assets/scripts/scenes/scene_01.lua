@@ -231,6 +231,11 @@ local entities = {
         gun    = 3,
         shield = 4,
       },
+      -- Bodega de carga: 50 unidades entre todos los items. Sin "items"
+      -- arranca vacia.
+      inventory = {
+        capacity = 50,
+      },
       script = {
         path = "./assets/scripts/player.lua"
       }

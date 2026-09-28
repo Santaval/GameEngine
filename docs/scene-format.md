@@ -235,6 +235,24 @@ The loader normalizes the order alphabetically by name before storing it,
 since Lua table iteration order is not guaranteed. See
 [equipment.md](equipment.md).
 
+### `inventory`
+
+```lua
+inventory = {
+  capacity = 50,        -- optional, default 0 (unlimited)
+  items = {
+    mineral = 0,
+  },
+}
+```
+
+Both `capacity` and `items` are optional. `items` follows the same rule as
+`equipment`: free-form string keys with integer values, sorted alphabetically
+by the loader before storing. Quantities of `0` or less are skipped. Unlike
+the Lua-facing `add_item` / `update_item_count`, scene items are **not**
+clamped against `capacity` — the loader trusts the scene author. See
+[inventory.md](inventory.md).
+
 ### `text`
 
 ```lua
@@ -263,12 +281,17 @@ Draws the predicted trajectory. Needs a transform and a rigid body.
 script = { path = "./assets/scripts/player.lua" }
 ```
 
-The file is executed immediately, and its globals `update`, `on_damage` and
-`on_death` are captured as that entity's callbacks.
+The file is executed immediately, and its globals `update`, `on_damage`,
+`on_death` and `on_collision` are captured as that entity's callbacks.
 
-> The loader clears those three globals before executing each file, so a script
+> The loader clears those four globals before executing each file, so a script
 > that defines only `update` will not inherit the `on_death` of whichever file
-> happened to load before it.
+> happened to load before it. This also means every entity loaded from the
+> same script file shares whatever `on_collision` that file defines as a
+> global — a hook meant for one runtime-created entity only (like a pickup
+> spawned from `on_death`) should be attached with `set_on_collision` instead,
+> not declared as the file's global `on_collision`. See
+> [inventory.md](inventory.md#gotchas-and-limits).
 >
 > Everything *else* a script defines stays global and shared across files. Use
 > prefixes (`player_cooldown`, not `cooldown`) to avoid collisions.

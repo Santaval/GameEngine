@@ -9,6 +9,7 @@ entirely in Lua.
 | [scene-format.md](scene-format.md) | The `scene` table: assets, input mappings, entities and every component. |
 | [health-and-damage.md](health-and-damage.md) | Hit points, contact damage, invulnerability and death hooks. |
 | [equipment.md](equipment.md) | Named upgrade levels tracked per entity. |
+| [inventory.md](inventory.md) | Named item quantities, an optional capacity, and the mineral pickup gameplay. |
 
 ---
 
@@ -86,9 +87,10 @@ says "thrust forward", and the engine resolves what forward means.
 | `HealthComponent` | Hit points and invulnerability window. | `health` |
 | `DamageComponent` | Contact damage dealt. | `damage` |
 | `EquipmentComponent` | Named upgrade levels (engine, gun, shield, ...). | `equipment` |
+| `InventoryComponent` | Named item quantities plus an optional total capacity. | `inventory` |
 | `TextComponent` | A label pinned to the entity. | `text` |
 | `PathComponent` | Trajectory prediction toggle. | `path` |
-| `ScriptComponent` | `update`, `on_damage`, `on_death`. | `script` |
+| `ScriptComponent` | `update`, `on_damage`, `on_death`, `on_collision`. | `script` |
 
 ---
 
@@ -111,7 +113,6 @@ the start of the next frame. Until then it still shows up in collision checks.
 
 ## What is not here yet
 
-- No way to destroy an entity from Lua other than reducing its health to zero.
 - No entity lifetime — a projectile that never hits anything lives forever.
 - Collision detection is O(n²) over every collider, every frame. This is the
   first thing that will limit scene size.

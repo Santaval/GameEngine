@@ -11,6 +11,7 @@
 #include "EquipmentBindings.hpp"
 #include "HealthBindings.hpp"
 #include "InputBindings.hpp"
+#include "InventoryBindings.hpp"
 #include "MovementBindings.hpp"
 #include "PathBindings.hpp"
 #include "ScriptBindings.hpp"

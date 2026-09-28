@@ -30,8 +30,18 @@ inline void setOnDeath(Entity e, sol::function onDeath) {
   e.getComponent<ScriptComponent>().onDeath = onDeath;
 }
 
+inline void setOnCollision(Entity e, sol::function onCollision) {
+  if (!e.hasComponent<ScriptComponent>()) {
+    e.addComponent<ScriptComponent>(sol::lua_nil, sol::lua_nil, sol::lua_nil, onCollision);
+    return;
+  }
+
+  e.getComponent<ScriptComponent>().onCollision = onCollision;
+}
+
 inline void registerScriptBindings(sol::state& lua) {
   lua.set_function("add_script", addScript);
   lua.set_function("set_on_damage", setOnDamage);
   lua.set_function("set_on_death", setOnDeath);
+  lua.set_function("set_on_collision", setOnCollision);
 }

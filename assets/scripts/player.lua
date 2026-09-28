@@ -108,6 +108,18 @@ function update()
     draw_text(20, 130 + i * 22, string.format("%s: %d", eq_name, eq_level), "default", 180, 200, 255)
   end
 
+  -- Bodega: total/capacidad y una linea por item, debajo del equipo. Misma
+  -- iteracion por indice 1-based que el equipo, mismo motivo (table.* no existe).
+  local cargo_y = 130 + (equipment_count + 1) * 22
+  local cargo_total, cargo_capacity = get_inventory_total(this), get_inventory_capacity(this)
+  draw_text(20, cargo_y, string.format("Cargo: %d / %d", cargo_total, cargo_capacity), "default", 180, 255, 180)
+
+  local inventory_count = get_inventory_count(this)
+  for i = 1, inventory_count do
+    local item_name, item_qty = get_inventory_at(this, i)
+    draw_text(20, cargo_y + i * 22, string.format("%s: %d", item_name, item_qty), "default", 180, 255, 180)
+  end
+
   -- Etiqueta en coordenadas del mundo: sigue a la nave
   
   draw_text_world(cam_x - 30, cam_y - 60, "PLAYER", "default", 255, 200, 0)
