@@ -22,6 +22,7 @@ implemented one domain per file under [`src/Binding/`](../src/Binding/).
 - [Health & damage](#health--damage)
 - [Equipment](#equipment)
 - [Inventory](#inventory)
+- [Loot](#loot)
 - [Text & HUD](#text--hud)
 - [Camera](#camera)
 - [Input](#input)
@@ -246,6 +247,20 @@ end
 
 ---
 
+## Loot
+
+What an entity drops or hands over (name → quantity). Asteroids get it from
+the scene (`loot = { ... }`) and read it in `on_death`; the pickups they spawn
+get it through `set_loot` and hand it to whoever collects them.
+
+| Function | Returns | Notes |
+| --- | --- | --- |
+| `has_loot(e)` | `bool` | |
+| `get_loot_count(e)` / `get_loot_at(e, index)` | `int` / `name, quantity` | Same 1-based convention as inventory. |
+| `set_loot(e, name, qty)` | — | Sets the absolute quantity. Creates the component if missing. `qty <= 0` erases the entry. |
+
+---
+
 ## Text & HUD
 
 | Function | Returns | Notes |
@@ -369,7 +384,7 @@ of that slot left behind — entity ids are recycled.
 
 | Guarded, safe to call on anything | Unguarded, requires the component |
 | --- | --- |
-| `get_health`, `get_max_health`, `is_alive`, `set_health`, `heal`, `get_damage`, `set_damage`, `is_path_active`, `set_path_active`, `set_equipment_level`, `get_equipment_level`, `has_equipment`, `upgrade_equipment`, `remove_equipment`, `get_equipment_count`, `get_equipment_at`, `has_inventory`, `add_item`, `remove_item`, `update_item_count`, `get_item_count`, `has_item`, `get_inventory_total`, `get_inventory_capacity`, `set_inventory_capacity`, `get_inventory_count`, `get_inventory_at`, `clear_inventory`, `destroy_entity` | `get_position`, `get_rotation`, `set_rotation*`, every `*_velocity` / `*_acceleration` / `*_max_speed`, `get_speed`, `set_sprite`, `set_text`, `set_text_color` |
+| `get_health`, `get_max_health`, `is_alive`, `set_health`, `heal`, `get_damage`, `set_damage`, `is_path_active`, `set_path_active`, `set_equipment_level`, `get_equipment_level`, `has_equipment`, `upgrade_equipment`, `remove_equipment`, `get_equipment_count`, `get_equipment_at`, `has_inventory`, `add_item`, `remove_item`, `update_item_count`, `get_item_count`, `has_item`, `get_inventory_total`, `get_inventory_capacity`, `set_inventory_capacity`, `get_inventory_count`, `get_inventory_at`, `clear_inventory`, `has_loot`, `get_loot_count`, `get_loot_at`, `set_loot`, `destroy_entity` | `get_position`, `get_rotation`, `set_rotation*`, every `*_velocity` / `*_acceleration` / `*_max_speed`, `get_speed`, `set_sprite`, `set_text`, `set_text_color` |
 
 In practice: before calling anything in the right-hand column on an entity you
 did not build yourself, make sure it has the component.

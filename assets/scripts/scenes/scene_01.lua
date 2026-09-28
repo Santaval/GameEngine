@@ -48,6 +48,16 @@ local ASTEROID_HEALTH = 60
 -- Dano que hace un asteroide al estrellarse contra algo con vida
 local ASTEROID_DAMAGE = 20
 
+-- Tipos de asteroide. weight es la probabilidad relativa de aparicion,
+-- frame la variante del spritesheet (0 sana, 1 agrietada, 2 fundida),
+-- healthMul multiplica ASTEROID_HEALTH y loot es lo que suelta al morir
+-- (nombre de item -> cantidad; los nombres son libres, igual que inventory)
+local ASTEROID_TYPES = {
+  { name = "iron", weight = 6, frame = 0, healthMul = 1.0, loot = { iron = 1 } },
+  { name = "gunpowder", weight = 3, frame = 1, healthMul = 1.5, loot = { gunpowder = 2 } },
+  { name = "plasma", weight = 1, frame = 2, healthMul = 2.0, loot = { plasma = 1, stone = 1 } },
+}
+
 -- ---------------------------------------------------------------------
 --  Generacion
 -- ---------------------------------------------------------------------
@@ -56,6 +66,22 @@ math.randomseed(ASTEROID_SEED)
 
 local function randRange(min, max)
   return min + math.random() * (max - min)
+end
+
+-- Elige un tipo de ASTEROID_TYPES respetando los weight
+local function pickAsteroidType()
+  local total = 0
+  for _, asteroidType in ipairs(ASTEROID_TYPES) do
+    total = total + asteroidType.weight
+  end
+
+  local roll = math.random() * total
+  for _, asteroidType in ipairs(ASTEROID_TYPES) do
+    roll = roll - asteroidType.weight
+    if roll < 0 then return asteroidType end
+  end
+
+  return ASTEROID_TYPES[#ASTEROID_TYPES]
 end
 
 local function distance(ax, ay, bx, by)
@@ -102,7 +128,8 @@ end
 local function makeAsteroid(cx, cy, scale)
   local frameSize = ASTEROID_SHEET.frameSize
   local drawSize = frameSize * scale
-  local frame = math.random(0, ASTEROID_SHEET.variants - 1)
+  local asteroidType = pickAsteroidType()
+  local frame = asteroidType.frame
   local heading = randRange(0, 2 * math.pi)
   local speed = randRange(ASTEROID_SPEED.min, ASTEROID_SPEED.max)
 
@@ -133,7 +160,7 @@ local function makeAsteroid(cx, cy, scale)
       -- La invulnerabilidad importa sobre todo entre asteroides: se rozan
       -- durante muchos frames seguidos y sin ella se pulverizarian al instante
       health = {
-        max = math.max(1, math.floor(ASTEROID_HEALTH * scale + 0.5)),
+        max = math.max(1, math.floor(ASTEROID_HEALTH * asteroidType.healthMul * scale + 0.5)),
         invulnerability = 0.5,
       },
       -- El asteroide sobrevive al choque (sin destroy_on_hit): el que tiene
@@ -141,6 +168,7 @@ local function makeAsteroid(cx, cy, scale)
       damage = {
         amount = ASTEROID_DAMAGE,
       },
+      loot = asteroidType.loot,
        script = {
         path = "./assets/scripts/asteroid.lua"
       }

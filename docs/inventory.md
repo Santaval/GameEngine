@@ -93,27 +93,36 @@ end
 
 This is exactly what `player.lua` does, right below the equipment lines.
 
-**Mineral pickup — a destroyed asteroid drops a mineral entity that collects
-itself on contact** (`assets/scripts/asteroid.lua`):
+**Mineral pickup — a destroyed asteroid drops one pickup per entry of its
+`loot`, and each pickup hands its loot over on contact**
+(`assets/scripts/asteroid.lua`, trimmed):
 
 ```lua
 function on_death()
   local x, y = get_position(this)
-  mineral = create_entity()
-  add_transform(mineral, x, y, 1, 1, 0)
-  add_sprite(mineral, "mineral", 16, 16, 0, 0)
-  add_rigid_body(mineral, 0, 0, 0, 0, 0)
-  add_circle_collider(mineral, 8, 16, 16)
-  set_on_collision(mineral, collect_mineral)
+  for i = 1, get_loot_count(this) do
+    local name, quantity = get_loot_at(this, i)
+    local pickup = create_entity()
+    -- add_transform / add_sprite / add_rigid_body / add_circle_collider ...
+    set_loot(pickup, name, quantity)
+    set_on_collision(pickup, collect_pickup)
+  end
 end
 
-function collect_mineral(other)
+function collect_pickup(other)
   if not has_inventory(other) then return end  -- asteroids/bullets don't collect
-  if add_item(other, "mineral", 1) > 0 then destroy_entity(this) end  -- full: stays afloat
+  -- add_item each loot entry, set_loot(this, name, leftover), and
+  -- destroy_entity(this) once nothing is left (full hold: stays afloat)
 end
 ```
 
-`collect_mineral` is a plain global, not `on_collision` — see
+What each asteroid drops comes from the scene (`ASTEROID_TYPES` in
+`scene_01.lua`, see the `loot` component in
+[scene-format.md](scene-format.md#loot)). Pickups carry a `LootComponent`,
+never an inventory: otherwise they would pass `has_inventory(other)` and
+collect each other.
+
+`collect_pickup` is a plain global, not `on_collision` — see
 [Gotchas](#gotchas-and-limits) for why that distinction matters here.
 
 ---
@@ -138,17 +147,17 @@ scene that starts an entity over its own cap gets exactly that.
 **`on_collision` fires every frame two colliders keep overlapping**, not
 once per contact (`CollisionSystem` emits a `CollisionEvent` per overlapping
 pair, every frame, same as it always has for damage). A pickup has to either
-destroy itself on success (`destroy_entity`, as `collect_mineral` does) or
+destroy itself on success (`destroy_entity`, as `collect_pickup` does) or
 otherwise guard against being processed dozens of times while the two
 entities drift past each other.
 
-**Why `collect_mineral` is not named `on_collision`.** `asteroid.lua` is the
+**Why `collect_pickup` is not named `on_collision`.** `asteroid.lua` is the
 script file loaded for *every* asteroid entity via the scene's `script`
 component. If the pickup hook were the global `on_collision`, every asteroid
 would pick it up too (`SceneLoader::addScriptComponent` reads whatever global
 `on_collision` is defined after running the file) and asteroids would start
-colliding with each other. `set_on_collision(mineral, collect_mineral)`
-attaches the hook to the one runtime-created mineral entity instead, leaving
+colliding with each other. `set_on_collision(pickup, collect_pickup)`
+attaches the hook to the one runtime-created pickup entity instead, leaving
 every asteroid's own `on_collision` at `lua_nil`.
 
 **Entity ids are recycled.** Every getter here is guarded and returns a

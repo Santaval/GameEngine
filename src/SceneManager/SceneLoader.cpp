@@ -16,6 +16,7 @@
 #include "../Components/DamageComponent.hpp"
 #include "../Components/EquipmentComponent.hpp"
 #include "../Components/InventoryComponent.hpp"
+#include "../Components/LootComponent.hpp"
 
 
 namespace {
@@ -283,6 +284,27 @@ void SceneLoader::addInventoryComponent(Entity entity, const sol::table& compone
   entity.addComponent<InventoryComponent>(items, capacity);
 }
 
+void SceneLoader::addLootComponent(Entity entity, const sol::table& components) {
+  sol::optional<sol::table> hasLoot = components["loot"];
+  if (hasLoot == sol::nullopt) return;
+
+  LootList items;
+  for (const auto& pair : *hasLoot) {
+    if (pair.first.get_type() != sol::type::string) continue;
+    if (!pair.second.is<int>()) continue;
+
+    int quantity = pair.second.as<int>();
+    if (quantity <= 0) continue;  // igual que LootComponent: nunca entradas en 0
+
+    items.emplace_back(pair.first.as<std::string>(), quantity);
+  }
+
+  // mismo motivo que addEquipmentComponent: orden estable por nombre
+  std::sort(items.begin(), items.end());
+
+  entity.addComponent<LootComponent>(items);
+}
+
 void SceneLoader::addScriptComponent(sol::state& lua, Entity entity, const sol::table& components) {
   sol::optional<sol::table> hasScript = components["script"];
   if (hasScript == sol::nullopt) return;
@@ -332,6 +354,7 @@ void SceneLoader::loadEntities(sol::state& lua, const sol::table& entities, std:
       addDamageComponent(newEntity, components);
       addEquipmentComponent(newEntity, components);
       addInventoryComponent(newEntity, components);
+      addLootComponent(newEntity, components);
       addScriptComponent(lua, newEntity, components);
     }
 

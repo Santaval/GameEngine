@@ -57,5 +57,6 @@ class ScriptSystem : public System {
     registerPathBindings(lua);
     registerEquipmentBindings(lua);
     registerInventoryBindings(lua);
+    registerLootBindings(lua);
   }
 };

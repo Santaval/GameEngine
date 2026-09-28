@@ -253,6 +253,21 @@ the Lua-facing `add_item` / `update_item_count`, scene items are **not**
 clamped against `capacity` — the loader trusts the scene author. See
 [inventory.md](inventory.md).
 
+### `loot`
+
+```lua
+loot = {
+  iron  = 2,
+  stone = 1,
+}
+```
+
+What the entity drops, read by its script (see `on_death` in
+`assets/scripts/asteroid.lua`). Same rules as `inventory.items`: free-form
+string keys with integer values, quantities of `0` or less skipped, sorted
+alphabetically by the loader. It is a separate component from `inventory` on
+purpose: `has_inventory(other)` is what decides who can pick things up.
+
 ### `text`
 
 ```lua

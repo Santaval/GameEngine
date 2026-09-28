@@ -7,10 +7,10 @@ function update()
   -- Global que leen otros scripts (enemy.lua) para perseguir al jugador
   player_entity = this
 
-  player_movement_module.face_mouse(this)
-  player_movement_module.update_thrust(this)
   player_shooting_module.update(this)
   player_visual_helpers_module.update(this)
+  player_movement_module.face_mouse(this)
+  player_movement_module.update_thrust(this)
 
   -- La camara sigue a la nave
   center_camera_on(get_position(this))
