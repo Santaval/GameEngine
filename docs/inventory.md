@@ -105,6 +105,7 @@ function on_death()
     local pickup = create_entity()
     -- add_transform / add_sprite / add_rigid_body / add_circle_collider ...
     set_loot(pickup, name, quantity)
+    add_script(pickup, pickup_magnet)          -- must come before set_on_collision
     set_on_collision(pickup, collect_pickup)
   end
 end
@@ -124,6 +125,15 @@ collect each other.
 
 `collect_pickup` is a plain global, not `on_collision` — see
 [Gotchas](#gotchas-and-limits) for why that distinction matters here.
+
+**Magnet.** Each pickup's update, `pickup_magnet`, pulls it towards the
+ship's centre (read from the global `player_entity`) once it is within
+`MAGNET_RADIUS`. Its speed ramps from `MAGNET_MIN_SPEED` at the edge to
+`MAGNET_MAX_SPEED` on top of the ship. It does nothing while the hold is full,
+so pickups that cannot be collected don't stick to the ship. All of these
+constants live at the top of `asteroid.lua`. `add_script` has to run before
+`set_on_collision`, because it recreates the `ScriptComponent` and would wipe
+the collision hook.
 
 ---
 
