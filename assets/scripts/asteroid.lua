@@ -21,13 +21,18 @@ local PICKUP_HALF = 8
 function update()
 end
 
-function on_damage(amount, source)
+-- Los hooks llevan nombre propio (asteroid_on_*) ademas de on_damage /
+-- on_death: SceneLoader limpia esos dos globals antes de cargar cada script,
+-- y los asteroides creados en runtime (asteroid_spawner.lua) los enganchan
+-- con set_on_damage / set_on_death usando estos nombres estables.
+function asteroid_on_damage(amount, source)
   print(string.format("[asteroid] -%d HP (quedan %d)", amount, get_health(this)))
 end
 
 -- Suelta un pickup por cada item del loot del asteroide (definido en la
--- escena, ver ASTEROID_TYPES en scene_01.lua). Sin loot no suelta nada.
-function on_death()
+-- escena o el spawner, ver ASTEROID_TYPES en asteroid_config.lua). Sin loot
+-- no suelta nada.
+function asteroid_on_death()
   local x, y = get_position(this)
   local count = get_loot_count(this)
 
@@ -50,6 +55,9 @@ function on_death()
     set_on_collision(pickup, collect_pickup)
   end
 end
+
+on_damage = asteroid_on_damage
+on_death = asteroid_on_death
 
 -- Update de cada pickup ("this" es el pickup). Fuera del radio se queda
 -- quieto; dentro acelera hacia el centro de la nave hasta tocarla, y ahi

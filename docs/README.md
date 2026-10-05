@@ -10,6 +10,7 @@ entirely in Lua.
 | [health-and-damage.md](health-and-damage.md) | Hit points, contact damage, invulnerability and death hooks. |
 | [equipment.md](equipment.md) | Named upgrade levels tracked per entity. |
 | [inventory.md](inventory.md) | Named item quantities, an optional capacity, and the mineral pickup gameplay. |
+| [asteroid-spawner.md](asteroid-spawner.md) | Generators outside the map that keep spawning asteroids at random intervals. |
 
 ---
 

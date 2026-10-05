@@ -4,20 +4,19 @@
 --  y de la densidad, asi que basta con cambiar FIELD / ASTEROID_DENSITY.
 -- =====================================================================
 
--- Region (en pixeles de mundo) donde se generan los asteroides
-local FIELD = {
-  x = 0,
-  y = 0,
-  width = 2000,
-  height = 2000,
-}
+-- Constantes compartidas con los generadores (asteroid_spawner.lua):
+-- FIELD, tamanos, sprite, vida, dano y tipos/loot viven en asteroid_config
+local cfg = require("asteroid_config")
+local FIELD = cfg.FIELD
+local ASTEROID_SCALE = cfg.ASTEROID_SCALE
+local ASTEROID_SHEET = cfg.ASTEROID_SHEET
+local ASTEROID_DAMAGE = cfg.ASTEROID_DAMAGE
+local randRange = cfg.randRange
+local pickAsteroidType = cfg.pickAsteroidType
 
 -- Asteroides por cada bloque de 1000x1000 px.
 -- La cantidad final = area(FIELD) / (1000*1000) * ASTEROID_DENSITY
 local ASTEROID_DENSITY = 20
-
--- Rango de tamanos (escala aplicada al frame del sprite)
-local ASTEROID_SCALE = { min = 0.25, max = 3 }
 
 -- Rango de velocidad de deriva (px/s). min = max = 0 -> asteroides quietos
 local ASTEROID_SPEED = { min = 1, max = 20 }
@@ -28,61 +27,14 @@ local SAFE_ZONE = { x = 400, y = 100, radius = 180 }
 -- Semilla: mismo valor -> mismo campo de asteroides en cada ejecucion
 local ASTEROID_SEED = 20250920
 
--- Datos del spritesheet ./assets/sprites/asteroid/asteroid.png (768x96)
--- 8 frames de 96x96: los 3 primeros son la roca (sana / agrietada / fundida),
--- los 5 restantes son la explosion.
-local ASTEROID_SHEET = {
-  assetId = "asteroid",
-  frameSize = 96,
-  variants = 3,     -- cuantos frames iniciales se usan como variantes visuales
-  bodyRadius = 26,  -- radio de la roca dentro del frame de 96x96
-}
-
 -- Separacion minima extra entre asteroides e intentos de colocacion
 local ASTEROID_PACKING = { minGap = 6, tries = 40 }
-
--- Vida de un asteroide de escala 1.0: la vida real se escala con el tamano,
--- asi que las rocas grandes aguantan mas balazos que las pequenas
-local ASTEROID_HEALTH = 60
-
--- Dano que hace un asteroide al estrellarse contra algo con vida
-local ASTEROID_DAMAGE = 20
-
--- Tipos de asteroide. weight es la probabilidad relativa de aparicion,
--- frame la variante del spritesheet (0 sana, 1 agrietada, 2 fundida),
--- healthMul multiplica ASTEROID_HEALTH y loot es lo que suelta al morir
--- (nombre de item -> cantidad; los nombres son libres, igual que inventory)
-local ASTEROID_TYPES = {
-  { name = "iron", weight = 6, frame = 0, healthMul = 1.0, loot = { iron = 1 } },
-  { name = "gunpowder", weight = 3, frame = 1, healthMul = 1.5, loot = { gunpowder = 2 } },
-  { name = "plasma", weight = 1, frame = 2, healthMul = 2.0, loot = { plasma = 1, stone = 1 } },
-}
 
 -- ---------------------------------------------------------------------
 --  Generacion
 -- ---------------------------------------------------------------------
 
 math.randomseed(ASTEROID_SEED)
-
-local function randRange(min, max)
-  return min + math.random() * (max - min)
-end
-
--- Elige un tipo de ASTEROID_TYPES respetando los weight
-local function pickAsteroidType()
-  local total = 0
-  for _, asteroidType in ipairs(ASTEROID_TYPES) do
-    total = total + asteroidType.weight
-  end
-
-  local roll = math.random() * total
-  for _, asteroidType in ipairs(ASTEROID_TYPES) do
-    roll = roll - asteroidType.weight
-    if roll < 0 then return asteroidType end
-  end
-
-  return ASTEROID_TYPES[#ASTEROID_TYPES]
-end
 
 local function distance(ax, ay, bx, by)
   local dx, dy = ax - bx, ay - by
@@ -157,11 +109,9 @@ local function makeAsteroid(cx, cy, scale)
         width = frameSize,
         heigth = frameSize,
       },
-      -- La invulnerabilidad importa sobre todo entre asteroides: se rozan
-      -- durante muchos frames seguidos y sin ella se pulverizarian al instante
       health = {
-        max = math.max(1, math.floor(ASTEROID_HEALTH * asteroidType.healthMul * scale + 0.5)),
-        invulnerability = 0.5,
+        max = cfg.healthFor(asteroidType, scale),
+        invulnerability = cfg.ASTEROID_INVULNERABILITY,
       },
       -- El asteroide sobrevive al choque (sin destroy_on_hit): el que tiene
       -- que preocuparse es quien se lo lleve por delante
@@ -275,6 +225,17 @@ local entities = {
 for _, asteroid in ipairs(buildAsteroidField()) do
   entities[#entities + 1] = asteroid
 end
+
+-- Director invisible de los generadores de asteroides: solo tiene script
+-- (ScriptSystem no pide nada mas). Va al final para que asteroid.lua ya
+-- este cargado y sus hooks asteroid_on_* existan.
+entities[#entities + 1] = {
+  components = {
+    script = {
+      path = "./assets/scripts/asteroid_spawner.lua"
+    }
+  },
+}
 
 scene = {
   -- Sprites
