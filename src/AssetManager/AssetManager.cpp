@@ -24,6 +24,9 @@ void AssetManager::clearAll() {
 
 void AssetManager::addTexture(SDL_Renderer* renderer,
 const std::string& textureId, const std::string& filePath) {
+  // Al recargar una escena los ids ya existen: cargarlos de nuevo filtraria
+  // la textura (emplace no reemplaza)
+  if (this->textures.count(textureId)) return;
 
   SDL_Surface* surface = IMG_Load(filePath.c_str());
   SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
@@ -47,6 +50,7 @@ SDL_Texture* AssetManager::getTexture(const std::string& textureId) {
 
 void AssetManager::addFont(const std::string& fontId,
 const std::string& filePath, int fontSize) {
+  if (this->fonts.count(fontId)) return;
 
   TTF_Font* font = TTF_OpenFont(filePath.c_str(), fontSize);
 

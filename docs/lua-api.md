@@ -28,6 +28,7 @@ implemented one domain per file under [`src/Binding/`](../src/Binding/).
 - [Input](#input)
 - [Trajectory path](#trajectory-path)
 - [Scripts & hooks](#scripts--hooks)
+- [Game flow & scenes](#game-flow--scenes)
 - [Reading a component you don't have](#reading-a-component-you-dont-have)
 
 ---
@@ -376,6 +377,27 @@ set_on_death(turret, function() print("turret down") end)
 
 All three receive the affected entity as `this`. The engine calls only the hooks
 that exist — defining none is fine.
+
+---
+
+## Game flow & scenes
+
+| Function | Description |
+| --- | --- |
+| `load_scene(path)` | Switches to another scene file. **Deferred**: the current frame finishes normally and the new scene loads at the start of the next one. |
+| `quit_game()` | Closes the game at the end of the current frame. |
+| `get_window_size()` | Returns `w, h` of the window in pixels (for centering HUD/menus). |
+
+Loading a scene is a full reset: every entity is destroyed, entity ids start at
+0 again, the camera goes back to `(0, 0)`, the `player_entity` / `game_over`
+globals are cleared, and every module loaded with `require` is unloaded so its
+module-level locals (cooldowns, open menus...) start fresh. Textures and fonts
+already loaded are kept and reused by id.
+
+Flow used by the game: `scenes/menu.lua` (start screen) → `scenes/scene_01.lua`.
+In scene_01, `player.lua`'s `on_death` sets `game_over = true` and
+`game_director.lua` shows the game-over overlay (ENTER restarts, M returns to
+the menu). Shared helpers for these screens live in `ui_helpers.lua`.
 
 ---
 

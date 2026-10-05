@@ -28,6 +28,10 @@ class Registry {
 
     void update();
 
+    // Borra todas las entidades (pendientes incluidas) y reinicia los ids.
+    // Para cambiar de escena: los sistemas se conservan.
+    void clear();
+
     Entity createEntity();
     void killEntity(Entity entity);
 

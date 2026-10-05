@@ -4,12 +4,17 @@ A scene is a Lua file that defines one global table called `scene`. The engine
 loads it at startup, registers the assets and input mappings it declares, and
 builds the entities it lists.
 
-The scene file currently loaded is hardcoded in
+The first scene, the main menu, is set in
 [`Game::setup()`](../src/Game/Game.cpp):
 
 ```cpp
-this->sceneLoader->load("./assets/scripts/scenes/scene_01.lua", ...);
+this->loadScene("./assets/scripts/scenes/menu.lua");
 ```
+
+From there scripts switch scenes with `load_scene(path)` (see
+[Game flow & scenes](lua-api.md#game-flow--scenes)). Reloading a scene resets
+all entities and `require`d modules, so restarting a level is just
+`load_scene` on the same file.
 
 ---
 

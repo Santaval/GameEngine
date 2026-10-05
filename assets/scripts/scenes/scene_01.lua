@@ -212,7 +212,7 @@ local entities = {
       -- Bodega de carga: 50 unidades entre todos los items. Sin "items"
       -- arranca vacia.
       inventory = {
-        capacity = 50,
+        capacity = 500,
       },
       script = {
         path = "./assets/scripts/player/player.lua"
@@ -237,6 +237,15 @@ entities[#entities + 1] = {
   },
 }
 
+-- Director de la partida: game over, reinicio y vuelta al menu
+entities[#entities + 1] = {
+  components = {
+    script = {
+      path = "./assets/scripts/game_director.lua"
+    }
+  },
+}
+
 scene = {
   -- Sprites
   sprites = {
@@ -256,6 +265,7 @@ scene = {
     [0] =
     {fontId="default", filePath="./assets/fonts/DejaVuSansMono.ttf", fontSize=16},
     {fontId="debug-big", filePath="./assets/fonts/DejaVuSansMono.ttf", fontSize=28},
+    {fontId="title", filePath="./assets/fonts/DejaVuSansMono.ttf", fontSize=56},
   },
 
   -- Keys
@@ -269,6 +279,8 @@ scene = {
     {name = "upgrade_1", key = 49},
     {name = "upgrade_2", key = 50},
     {name = "upgrade_3", key = 51},
+    {name = "confirm", key = 13},
+    {name = "menu", key = 109},
   },
 
   -- Mouse

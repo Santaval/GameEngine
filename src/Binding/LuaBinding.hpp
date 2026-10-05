@@ -9,6 +9,7 @@
 #include "ColliderBindings.hpp"
 #include "EntityBindings.hpp"
 #include "EquipmentBindings.hpp"
+#include "GameBindings.hpp"
 #include "HealthBindings.hpp"
 #include "InputBindings.hpp"
 #include "InventoryBindings.hpp"

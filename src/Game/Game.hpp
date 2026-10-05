@@ -3,6 +3,8 @@
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_ttf.h>
 #include <memory>
+#include <set>
+#include <string>
 #include <sol/sol.hpp>
 
 #include "../ECS/Registry.hpp"
@@ -42,6 +44,15 @@ class Game {
 
         std::unique_ptr<SceneLoader> sceneLoader;
 
+        // Escena pedida desde Lua (load_scene); se carga al inicio del
+        // proximo frame, nunca en medio de ScriptSystem::update
+        std::string pendingScene;
+
+        // Modulos de package.loaded que existen antes de cargar cualquier
+        // escena (librerias de Lua). Todo lo demas se descarga al cambiar de
+        // escena para que los require vuelvan a ejecutarse desde cero.
+        std::set<std::string> builtinModules;
+
     public:
         std::unique_ptr<ControllerManager> controllerManager;
 
@@ -55,12 +66,15 @@ class Game {
         void render();
         void update();
         void setup();
+        void loadScene(const std::string& scenePath);
     
     public:
     static Game& getInstance();
      void init();
      void run();
      void destroy();
+     void requestScene(const std::string& scenePath) { pendingScene = scenePath; }
+     void quit() { isRunning = false; }
      double getDeltaTime() const { return deltaTime; }
      Registry* getRegistry() const { return registry.get(); }
      sol::state& getLua() { return lua; }

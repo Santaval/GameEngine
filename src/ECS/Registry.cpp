@@ -76,3 +76,19 @@ void Registry::update() {
   this->entitiesToBeKilled.clear();
 
 }
+
+void Registry::clear() {
+  for(auto system : systems) {
+    system.second->clearEntities();
+  }
+
+  // Los pools se quedan: sin firma ningun componente viejo es accesible
+  for(auto& signature : this->entityComponentSignature) {
+    signature.reset();
+  }
+
+  this->entitiesToBeAdded.clear();
+  this->entitiesToBeKilled.clear();
+  this->freeIds.clear();
+  this->numEntity = 0;
+}

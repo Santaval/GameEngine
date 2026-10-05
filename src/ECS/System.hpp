@@ -17,6 +17,7 @@ class System {
     public:
       void addEntity(Entity entity);
       void removeEntity(Entity entity);
+      void clearEntities();
       std::vector<Entity> getEntities() const;
       const Signature& getComponentSignature() const;
 

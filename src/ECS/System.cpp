@@ -10,6 +10,10 @@ void System::removeEntity(Entity entity) {
     this->entities.erase(it, this->entities.end());
 }
 
+void System::clearEntities() {
+    this->entities.clear();
+}
+
 std::vector<Entity> System::getEntities() const {
     return this->entities;
 }

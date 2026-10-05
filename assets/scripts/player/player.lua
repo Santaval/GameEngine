@@ -8,6 +8,9 @@ local player_upgrade_menu_module = require("player_upgrade_menu")
 -- Aplica los niveles iniciales de la escena a thrust/dano/vida una sola vez
 local stats_applied = false
 
+-- Lo lee game_director.lua; se reinicia cada vez que se carga la escena
+game_over = false
+
 function update()
   -- Global que leen otros scripts (enemy.lua) para perseguir al jugador
   player_entity = this
@@ -39,4 +42,9 @@ end
 
 function on_death()
   print("[player] nave destruida")
+
+  -- Sin jugador: los scripts que lo siguen (spawner, iman, enemigos) ya
+  -- chequean nil, y asi no leen un id que el registry va a reciclar
+  player_entity = nil
+  game_over = true
 end

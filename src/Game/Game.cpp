@@ -97,10 +97,46 @@ void Game::setup() {
     this->lua["package"]["path"] = "./assets/scripts/?.lua;./assets/scripts/player/?.lua;" +
         this->lua["package"]["path"].get<std::string>();
     this->registry->getSystem<ScriptSystem>().createLuaBiding(this->lua);
-    
-    this->sceneLoader->load("./assets/scripts/scenes/scene_01.lua", this->lua, this->assetManager,
-        this->controllerManager, this->registry, this->renderer);
 
+    sol::table loaded = this->lua["package"]["loaded"];
+    for (const auto& entry : loaded) {
+        this->builtinModules.insert(entry.first.as<std::string>());
+    }
+
+    this->loadScene("./assets/scripts/scenes/menu.lua");
+}
+
+void Game::loadScene(const std::string& scenePath) {
+    std::cout << "[Game] Loading scene " << scenePath << std::endl;
+
+    // Primero se sueltan las entidades: sus ScriptComponent guardan
+    // funciones de los scripts que se van a volver a ejecutar
+    this->registry->clear();
+    this->textBuffer.clear();
+    this->rectBuffer.clear();
+    this->camera.x = 0;
+    this->camera.y = 0;
+
+    // Los modulos cacheados por require guardan estado en sus locals
+    // (cooldowns, menus abiertos...): se descargan para empezar limpio
+    sol::table loaded = this->lua["package"]["loaded"];
+    std::vector<std::string> toUnload;
+    for (const auto& entry : loaded) {
+        std::string name = entry.first.as<std::string>();
+        if (this->builtinModules.count(name) == 0) {
+            toUnload.push_back(name);
+        }
+    }
+    for (const auto& name : toUnload) {
+        loaded[name] = sol::lua_nil;
+    }
+
+    // Globals compartidos entre scripts que apuntarian a entidades viejas
+    this->lua["player_entity"] = sol::lua_nil;
+    this->lua["game_over"] = sol::lua_nil;
+
+    this->sceneLoader->load(scenePath, this->lua, this->assetManager,
+        this->controllerManager, this->registry, this->renderer);
 }
 
 
@@ -210,6 +246,12 @@ void Game::run() {
     this->setup();
 
     while(this->isRunning) {
+        if (!this->pendingScene.empty()) {
+            std::string scenePath = this->pendingScene;
+            this->pendingScene.clear();
+            this->loadScene(scenePath);
+        }
+
         this->processInput();
         this->update();
         this->render();
