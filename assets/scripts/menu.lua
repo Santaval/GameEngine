@@ -1,6 +1,6 @@
 local ui = require("ui_helpers")
 
-local GAME_SCENE = "./assets/scripts/scenes/scene_01.lua"
+local GAME_SCENE = "./assets/scripts/scenes/solar_system.lua"
 
 local confirm_pressed = ui.edge("confirm")
 local quit_pressed = ui.edge("quit")

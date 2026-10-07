@@ -178,7 +178,8 @@ void Game::processInput() {
 }
 
 void Game::render() {
-    SDL_SetRenderDrawColor(this->renderer, 31, 31, 31, 255);
+    // Casi negro: fondo de espacio
+    SDL_SetRenderDrawColor(this->renderer, 10, 10, 18, 255);
     SDL_RenderClear(this->renderer);
 
     this->registry->getSystem<RenderSystem>().update(this->renderer, this->assetManager, this->camera);

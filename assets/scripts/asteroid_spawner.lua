@@ -4,6 +4,12 @@
 --  este script. Reparte generadores en un anillo justo afuera del FIELD y
 --  cada uno, cada tanto (tiempo aleatorio), lanza un asteroide hacia un
 --  punto al azar del mapa. Nunca spawnea a la vista ni cerca del jugador.
+--
+--  Una escena puede reemplazar los generadores y los limites del mapa con
+--  dos globals (los usa scenes/solar_system.lua):
+--    scene_asteroid_generators = { {x, y, heading, spread, speed = {min, max}}, ... }
+--      heading: direccion base del lanzamiento (rad), spread: desvio maximo
+--    scene_bounds = { x, y, radius }  -- circulo fuera del cual se borran
 -- =====================================================================
 
 local cfg = require("asteroid_config")
@@ -46,6 +52,17 @@ local alive = 0
 
 local function buildGenerators()
   local list = {}
+
+  if scene_asteroid_generators ~= nil then
+    for _, g in ipairs(scene_asteroid_generators) do
+      list[#list + 1] = {
+        x = g.x, y = g.y, heading = g.heading, spread = g.spread or 0, speed = g.speed,
+        timer = randRange(SPAWN_INTERVAL.min, SPAWN_INTERVAL.max),
+      }
+    end
+    return list
+  end
+
   local left, top = FIELD.x - SPAWN_MARGIN, FIELD.y - SPAWN_MARGIN
   local right = FIELD.x + FIELD.width + SPAWN_MARGIN
   local bottom = FIELD.y + FIELD.height + SPAWN_MARGIN
@@ -82,6 +99,10 @@ local function isPlayerNear(x, y)
 end
 
 local function isFarOutside(cx, cy)
+  if scene_bounds ~= nil then
+    local dx, dy = cx - scene_bounds.x, cy - scene_bounds.y
+    return dx * dx + dy * dy > scene_bounds.radius * scene_bounds.radius
+  end
   return cx < FIELD.x - DESPAWN_MARGIN or cx > FIELD.x + FIELD.width + DESPAWN_MARGIN
       or cy < FIELD.y - DESPAWN_MARGIN or cy > FIELD.y + FIELD.height + DESPAWN_MARGIN
 end
@@ -143,13 +164,22 @@ local function trySpawn(gen)
   if alive >= MAX_ALIVE then return end
   if isPlayerNear(gen.x, gen.y) or isOnScreen(gen.x, gen.y) then return end
 
+  local speedRange = gen.speed or SPAWN_SPEED
+  local speed = randRange(speedRange.min, speedRange.max)
+
+  if gen.heading ~= nil then
+    -- Generador de la escena: lanza hacia su heading con un poco de desvio
+    local a = gen.heading + randRange(-gen.spread, gen.spread)
+    spawnAsteroid(gen.x, gen.y, math.cos(a) * speed, math.sin(a) * speed)
+    return
+  end
+
   -- Direccion aleatoria pero hacia dentro: apunta a un punto al azar del
   -- mapa, asi todos los asteroides lo cruzan en vez de perderse afuera
   local tx = randRange(FIELD.x, FIELD.x + FIELD.width)
   local ty = randRange(FIELD.y, FIELD.y + FIELD.height)
   local dx, dy = tx - gen.x, ty - gen.y
   local d = math.sqrt(dx * dx + dy * dy)
-  local speed = randRange(SPAWN_SPEED.min, SPAWN_SPEED.max)
 
   spawnAsteroid(gen.x, gen.y, dx / d * speed, dy / d * speed)
 end

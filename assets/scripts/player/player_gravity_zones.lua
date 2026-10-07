@@ -100,16 +100,20 @@ function player_gravity_zones_module.nearest_planet(entity, range_factor)
   return best
 end
 
-local function draw_ring(planet, radius, color)
+-- Anillo punteado de radio `radius` alrededor de center = {x, y}. alpha,
+-- spacing y offset (rad, para animarlo) son opcionales. Lo reusa saturn_ring.lua
+function player_gravity_zones_module.draw_ring(center, radius, color, alpha, spacing, offset)
   if radius <= 0 then return end
   local half = RING_DOT_SIZE / 2
-  local dots = math.max(RING_MIN_DOTS, math.floor(2 * math.pi * radius / RING_DOT_SPACING))
+  local dots = math.max(RING_MIN_DOTS, math.floor(2 * math.pi * radius / (spacing or RING_DOT_SPACING)))
+  offset = offset or 0
   for i = 0, dots - 1 do
-    local angle = i * 2 * math.pi / dots
-    draw_rect_world(planet.x + radius * math.cos(angle) - half, planet.y + radius * math.sin(angle) - half,
-      RING_DOT_SIZE, RING_DOT_SIZE, color[1], color[2], color[3], 160)
+    local angle = offset + i * 2 * math.pi / dots
+    draw_rect_world(center.x + radius * math.cos(angle) - half, center.y + radius * math.sin(angle) - half,
+      RING_DOT_SIZE, RING_DOT_SIZE, color[1], color[2], color[3], alpha or 160)
   end
 end
+local draw_ring = player_gravity_zones_module.draw_ring
 
 -- Anillo verde en el borde de la gravedad (range) de los planetas cercanos;
 -- anillos de aviso y sin retorno del planeta cuya gravedad alcanza a la nave,

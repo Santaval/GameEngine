@@ -7,12 +7,10 @@
 -- Constantes compartidas con los generadores (asteroid_spawner.lua):
 -- FIELD, tamanos, sprite, vida, dano y tipos/loot viven en asteroid_config
 local cfg = require("asteroid_config")
+local field = require("asteroid_field")
 local FIELD = cfg.FIELD
 local ASTEROID_SCALE = cfg.ASTEROID_SCALE
-local ASTEROID_SHEET = cfg.ASTEROID_SHEET
-local ASTEROID_DAMAGE = cfg.ASTEROID_DAMAGE
 local randRange = cfg.randRange
-local pickAsteroidType = cfg.pickAsteroidType
 
 -- Asteroides por cada bloque de 1000x1000 px.
 -- La cantidad final = area(FIELD) / (1000*1000) * ASTEROID_DENSITY
@@ -55,161 +53,55 @@ for _, p in ipairs(PLANETS) do
   p.body_radius = PLANET_BODY_RADIUS * p.scale
 end
 scene_planets = PLANETS
+-- Esta escena usa los generadores y limites por defecto del spawner (FIELD):
+-- se borran por si quedaron de la escena del sistema solar
+scene_asteroid_generators = nil
+scene_bounds = nil
 
 -- ---------------------------------------------------------------------
---  Generacion
+--  Generacion (constructores compartidos en asteroid_field.lua)
 -- ---------------------------------------------------------------------
 
 math.randomseed(ASTEROID_SEED)
-
-local function distance(ax, ay, bx, by)
-  local dx, dy = ax - bx, ay - by
-  return math.sqrt(dx * dx + dy * dy)
-end
 
 local function asteroidCount()
   local area = FIELD.width * FIELD.height
   return math.max(0, math.floor((area / (1000 * 1000)) * ASTEROID_DENSITY + 0.5))
 end
 
--- Devuelve cx, cy, scale de un hueco libre, o nil si no lo encuentra
-local function findSpot(placed)
-  for _ = 1, ASTEROID_PACKING.tries do
-    local scale = randRange(ASTEROID_SCALE.min, ASTEROID_SCALE.max)
-    local radius = ASTEROID_SHEET.bodyRadius * scale
-    local cx = randRange(FIELD.x + radius, FIELD.x + FIELD.width - radius)
-    local cy = randRange(FIELD.y + radius, FIELD.y + FIELD.height - radius)
+local FIELD_OPTS = {
+  sampler = field.rect_sampler(FIELD),
+  scale = ASTEROID_SCALE,
+  packing = ASTEROID_PACKING,
+  safe_zone = SAFE_ZONE,
+}
 
-    local free = true
-
-    if SAFE_ZONE and distance(cx, cy, SAFE_ZONE.x, SAFE_ZONE.y) < SAFE_ZONE.radius + radius then
-      free = false
-    end
-
-    if free then
-      for _, other in ipairs(placed) do
-        if distance(cx, cy, other.x, other.y) < other.radius + radius + ASTEROID_PACKING.minGap then
-          free = false
-          break
-        end
-      end
-    end
-
-    if free then
-      return cx, cy, scale, radius
-    end
-  end
-
-  return nil
-end
-
-local function makeAsteroid(cx, cy, scale)
-  local frameSize = ASTEROID_SHEET.frameSize
-  local drawSize = frameSize * scale
-  local asteroidType = pickAsteroidType()
-  local frame = asteroidType.frame
+-- Deriva en una direccion al azar
+local function randomDrift()
   local heading = randRange(0, 2 * math.pi)
   local speed = randRange(ASTEROID_SPEED.min, ASTEROID_SPEED.max)
-
-  return {
-    components = {
-      -- transform.position es la esquina superior izquierda del sprite,
-      -- asi que se descuenta medio frame para centrar la roca en (cx, cy)
-      transform = {
-        position = { x = cx - drawSize / 2, y = cy - drawSize / 2 },
-        scale = { x = scale, y = scale },
-        rotation = randRange(0, 2 * math.pi),
-      },
-      rigid_body = {
-        velocity = { x = math.cos(heading) * speed, y = math.sin(heading) * speed },
-      },
-      sprite = {
-        assetId = ASTEROID_SHEET.assetId,
-        width = frameSize,
-        height = frameSize,
-        src_rect = { x = frame * frameSize, y = 0 },
-        rotation = 0,
-      },
-      circle_collider = {
-        radius = ASTEROID_SHEET.bodyRadius,
-        width = frameSize,
-        heigth = frameSize,
-      },
-      health = {
-        max = cfg.healthFor(asteroidType, scale),
-        invulnerability = cfg.ASTEROID_INVULNERABILITY,
-      },
-      -- El asteroide sobrevive al choque (sin destroy_on_hit): el que tiene
-      -- que preocuparse es quien se lo lleve por delante
-      damage = {
-        amount = ASTEROID_DAMAGE,
-      },
-      gravity = {
-        mass = scale * cfg.GRAVITY.ASTEROID_MASS_PER_SCALE,
-        attracts = false,
-        affected = true,
-      },
-      loot = asteroidType.loot,
-       script = {
-        path = "./assets/scripts/asteroid.lua"
-      }
-      -- Sin animation: el AnimationSystem sobrescribe src_rect.x y se perderia
-      -- la variante elegida (ademas los frames 4-8 son la explosion).
-    },
-  }
+  return math.cos(heading) * speed, math.sin(heading) * speed
 end
 
--- Se ve, atrae y traga asteroides (collider): sin rigid_body, health ni script
 local function makePlanet(p)
-  local size = PLANET_FRAME * p.scale
-
-  return {
-    components = {
-      -- transform.position es la esquina superior izquierda del sprite,
-      -- asi que se descuenta medio tamano para centrar el planeta en (x, y)
-      transform = {
-        position = { x = p.x - size / 2, y = p.y - size / 2 },
-        scale = { x = p.scale, y = p.scale },
-        rotation = 0,
-      },
-      sprite = {
-        assetId = p.assetId,
-        width = PLANET_FRAME,
-        height = PLANET_FRAME,
-        src_rect = { x = 0, y = 0 },
-        rotation = 0,
-      },
-      circle_collider = {
-        radius = PLANET_BODY_RADIUS,
-        width = PLANET_FRAME,
-        heigth = PLANET_FRAME,
-      },
-      -- Fuente de gravedad fija: no es afectada (ni tiene rigid_body)
-      gravity = {
-        mass = p.mass,
-        attracts = true,
-        affected = false,
-        range = p.range,
-      },
-    },
-  }
+  return field.make_planet(p, PLANET_FRAME, PLANET_BODY_RADIUS)
 end
 
 local function buildAsteroidField()
   local placed = {}
   local asteroids = {}
 
-  -- Los planetas ocupan espacio: se registran primero para que findSpot
+  -- Los planetas ocupan espacio: se registran primero para que find_spot
   -- no coloque asteroides encima de ellos
   for _, p in ipairs(PLANETS) do
     placed[#placed + 1] = { x = p.x, y = p.y, radius = PLANET_FRAME * p.scale / 2 }
   end
 
   for _ = 1, asteroidCount() do
-    local cx, cy, scale, radius = findSpot(placed)
+    local cx, cy, scale, radius = field.find_spot(placed, FIELD_OPTS)
     if cx then
       placed[#placed + 1] = { x = cx, y = cy, radius = radius }
-      asteroids[#asteroids + 1] = makeAsteroid(cx, cy, scale)
+      asteroids[#asteroids + 1] = field.make_asteroid(cx, cy, scale, randomDrift)
     end
   end
 

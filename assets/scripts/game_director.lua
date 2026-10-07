@@ -3,7 +3,7 @@
 -- player.lua pone el global game_over en true desde su on_death.
 local ui = require("ui_helpers")
 
-local GAME_SCENE = "./assets/scripts/scenes/scene_01.lua"
+local GAME_SCENE = "./assets/scripts/scenes/solar_system.lua"
 local MENU_SCENE = "./assets/scripts/scenes/menu.lua"
 
 -- Segundos antes de mostrar el cartel: deja ver la explosion y evita que un
