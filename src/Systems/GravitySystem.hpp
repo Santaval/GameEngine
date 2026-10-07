@@ -52,8 +52,9 @@ class GravitySystem : public System {
       this->requireComponent<GravityComponent>();
     }
 
-    // Debe correr ANTES de MovementSystem: suma a la velocidad y asi el tope
-    // maxSpeed se sigue aplicando despues
+    // Debe correr ANTES de MovementSystem: suma a la velocidad, y MovementSystem
+    // toma esa rapidez como base para que maxSpeed solo limite al motor (la
+    // gravedad puede llevar la nave por encima de maxSpeed)
     void update(double dt) {
       auto entities = this->getEntities();
 

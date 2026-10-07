@@ -49,8 +49,10 @@ there is one, otherwise the sprite size.
 ## Frame order
 
 `GravitySystem` runs right **before** `MovementSystem`. It only changes
-`velocity`, so `max_speed` still caps the result: the ship's `max_speed = 100`
-limits how fast it can fall.
+`velocity`, and `MovementSystem` uses that speed as the baseline for its cap:
+`max_speed` only limits the **engine**. Gravity can pull the ship past
+`max_speed` (a ship falling into a planet keeps speeding up); thrust can then
+steer or brake, but never add speed above the limit.
 
 As with every system, an entity joins only in the frame it is created, so
 `add_gravity` must be called right after `create_entity`.
@@ -77,8 +79,8 @@ Bullet sprites do not rotate to follow their curved path.
 
 ## Danger zones
 
-`max_speed` stays on everywhere, autopilot included: it is what makes planets
-dangerous. A ship can only climb away while its thrust beats gravity, so each
+`max_speed` stays on everywhere, autopilot included: the engine is capped but
+gravity is not, which is what makes planets dangerous. A ship can only climb away while its thrust beats gravity, so each
 planet has zones relative to the ship's **current** thrust
 (`player_movement.thrust`, which grows with the engine level):
 

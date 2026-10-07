@@ -88,8 +88,8 @@ end
 -- Choque elastico (con perdida) entre el asteroide y la nave a lo largo de la
 -- normal que une sus centros. Solo actua si se estan acercando, asi que los
 -- frames siguientes de solape no repiten el impulso; el empuje minimo cubre
--- el caso de la nave quieta golpeada por un asteroide lento. Ojo: max_speed
--- de la nave topa la velocidad que salga de aqui (MovementSystem)
+-- el caso de la nave quieta golpeada por un asteroide lento. max_speed no
+-- topa este impulso: solo limita lo que suma el motor (MovementSystem)
 local function bounce_off_ship(asteroid, ship)
   local ax, ay = get_collider_center(asteroid)
   local sx, sy = get_collider_center(ship)

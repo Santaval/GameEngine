@@ -118,14 +118,18 @@ class PathRenderSystem : public System {
             this->pathPoints.push_back(simPosition);
 
             for (int i = 0; i < steps; i++) {
+                float speedBefore = std::sqrt(simVelocity.x * simVelocity.x + simVelocity.y * simVelocity.y);
+
                 simVelocity.x += static_cast<float>(worldAccelX * step);
                 simVelocity.y += static_cast<float>(worldAccelY * step);
 
-                // Mismo clamp que MovementSystem, si no la predicción se despega
+                // Mismo tope que MovementSystem (solo frena al motor), si no la
+                // predicción se despega
                 if (rigidBody.maxSpeed > 0.0f) {
                     float speedSq = simVelocity.x * simVelocity.x + simVelocity.y * simVelocity.y;
-                    if (speedSq > rigidBody.maxSpeed * rigidBody.maxSpeed) {
-                        float scale = rigidBody.maxSpeed / std::sqrt(speedSq);
+                    float cap = std::max(rigidBody.maxSpeed, speedBefore);
+                    if (speedSq > cap * cap) {
+                        float scale = cap / std::sqrt(speedSq);
                         simVelocity.x *= scale;
                         simVelocity.y *= scale;
                     }

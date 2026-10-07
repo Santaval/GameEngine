@@ -114,7 +114,11 @@ drifting feel right.
 
 ### Speed limiting
 
-`max_speed` clamps the *magnitude* of the velocity vector, preserving direction.
+`max_speed` caps what the **acceleration** (engine thrust) can do: thrust never
+takes the speed above `max_speed`, and if the entity is already faster (pushed
+by gravity, a bounce, `set_velocity`…) thrust can steer or brake but not add
+speed. External changes to the velocity are never clamped. Direction is
+preserved when capping.
 A value of `0` or less disables the limit entirely.
 
 ---
