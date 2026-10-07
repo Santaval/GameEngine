@@ -30,6 +30,15 @@ local ASTEROID_SEED = 20250920
 -- Separacion minima extra entre asteroides e intentos de colocacion
 local ASTEROID_PACKING = { minGap = 6, tries = 40 }
 
+-- Planetas decorativos (sin collider): uno por tipo para probar
+-- x, y es el centro del planeta; scale agranda el sprite de 48x48
+local PLANET_FRAME = 48          -- los png son de 48x48
+local PLANETS = {
+  { assetId = "planet-iron",      x = 1500, y = 400,  scale = 5 },
+  { assetId = "planet-gunpowder", x = 600,  y = 1300, scale = 4 },
+  { assetId = "planet-plasma",    x = 1500, y = 1600, scale = 6 },
+}
+
 -- ---------------------------------------------------------------------
 --  Generacion
 -- ---------------------------------------------------------------------
@@ -128,9 +137,39 @@ local function makeAsteroid(cx, cy, scale)
   }
 end
 
+-- Solo se ve: sin rigid_body, collider, health ni script
+local function makePlanet(p)
+  local size = PLANET_FRAME * p.scale
+
+  return {
+    components = {
+      -- transform.position es la esquina superior izquierda del sprite,
+      -- asi que se descuenta medio tamano para centrar el planeta en (x, y)
+      transform = {
+        position = { x = p.x - size / 2, y = p.y - size / 2 },
+        scale = { x = p.scale, y = p.scale },
+        rotation = 0,
+      },
+      sprite = {
+        assetId = p.assetId,
+        width = PLANET_FRAME,
+        height = PLANET_FRAME,
+        src_rect = { x = 0, y = 0 },
+        rotation = 0,
+      },
+    },
+  }
+end
+
 local function buildAsteroidField()
   local placed = {}
   local asteroids = {}
+
+  -- Los planetas ocupan espacio: se registran primero para que findSpot
+  -- no coloque asteroides encima de ellos
+  for _, p in ipairs(PLANETS) do
+    placed[#placed + 1] = { x = p.x, y = p.y, radius = PLANET_FRAME * p.scale / 2 }
+  end
 
   for _ = 1, asteroidCount() do
     local cx, cy, scale, radius = findSpot(placed)
@@ -147,10 +186,8 @@ end
 --  Entidades fijas de la escena
 -- ---------------------------------------------------------------------
 
-local entities = {
-  [0] =
-  -- Player
-  {
+-- Player
+local player = {
     components = {
       -- El radio esta en unidades del sprite SIN escalar: CollisionSystem lo
       -- multiplica por scale.x (0.2), asi que 170 -> 34 px de radio en
@@ -218,10 +255,20 @@ local entities = {
         path = "./assets/scripts/player/player.lua"
       }
     },
-  },
 }
 
--- Los asteroides generados se anexan detras del jugador (indices 1..n)
+-- RenderSystem dibuja en el orden de la lista: los planetas van primero
+-- (indices 0..2) para quedar detras del jugador y de los asteroides
+local entities = {}
+
+entities[0] = makePlanet(PLANETS[1])
+for i = 2, #PLANETS do
+  entities[#entities + 1] = makePlanet(PLANETS[i])
+end
+
+entities[#entities + 1] = player
+
+-- Los asteroides generados se anexan detras del jugador
 for _, asteroid in ipairs(buildAsteroidField()) do
   entities[#entities + 1] = asteroid
 end
@@ -257,6 +304,9 @@ scene = {
     {assetId="bullet", filePath="./assets/sprites/bullets/bullets.png"},
     {assetId="asteroid", filePath="./assets/sprites/asteroid/asteroid.png"},
     {assetId="mineral", filePath="./assets/sprites/minerals/tech.png"},
+    {assetId="planet-iron", filePath="./assets/sprites/planets/iron.png"},
+    {assetId="planet-gunpowder", filePath="./assets/sprites/planets/gunpowder.png"},
+    {assetId="planet-plasma", filePath="./assets/sprites/planets/plasma.png"},
   },
 
   -- Fuentes
