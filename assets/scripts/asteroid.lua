@@ -18,6 +18,12 @@ local MAGNET_MAX_SPEED = 600
 local PLAYER_CENTER_X, PLAYER_CENTER_Y = 43, 65
 local PICKUP_HALF = 8
 
+-- Rebote contra la nave: RESTITUTION es cuanto de la velocidad de choque
+-- se devuelve (0 = sin rebote), MIN_KNOCKBACK es el empuje minimo (px/s) con
+-- el que sale la nave aunque el golpe sea suave o ella este quieta
+local BOUNCE_RESTITUTION = 0.6
+local MIN_KNOCKBACK = 60
+
 function update()
 end
 
@@ -27,6 +33,11 @@ end
 -- con set_on_damage / set_on_death usando estos nombres estables.
 function asteroid_on_damage(amount, source)
   print(string.format("[asteroid] -%d HP (quedan %d)", amount, get_health(this)))
+  -- Un choque de la nave que lo rompe no suelta loot: asteroid_on_death
+  -- corre despues de este hook y ya no encuentra nada
+  if source ~= nil and has_inventory(source) and get_health(this) <= 0 then
+    asteroid_clear_loot(this)
+  end
 end
 
 -- Suelta un pickup por cada item del loot del asteroide (definido en la
@@ -56,10 +67,9 @@ function asteroid_on_death()
   end
 end
 
--- Desaparece sin soltar loot: vacia el loot antes de destruir para que
--- asteroid_on_death no deje pickups. Se copia primero porque set_loot
--- modifica la lista mientras se recorre
-function asteroid_vanish(e)
+-- Vacia el loot para que asteroid_on_death no deje pickups. Se copia primero
+-- porque set_loot modifica la lista mientras se recorre
+function asteroid_clear_loot(e)
   local names = {}
   for i = 1, get_loot_count(e) do
     names[#names + 1] = get_loot_at(e, i)
@@ -67,13 +77,61 @@ function asteroid_vanish(e)
   for _, name in ipairs(names) do
     set_loot(e, name, 0)
   end
+end
+
+-- Desaparece sin soltar loot
+function asteroid_vanish(e)
+  asteroid_clear_loot(e)
   destroy_entity(e)
 end
 
--- Un planeta (fuente de gravedad) se traga al asteroide que lo toca
+-- Choque elastico (con perdida) entre el asteroide y la nave a lo largo de la
+-- normal que une sus centros. Solo actua si se estan acercando, asi que los
+-- frames siguientes de solape no repiten el impulso; el empuje minimo cubre
+-- el caso de la nave quieta golpeada por un asteroide lento. Ojo: max_speed
+-- de la nave topa la velocidad que salga de aqui (MovementSystem)
+local function bounce_off_ship(asteroid, ship)
+  local ax, ay = get_collider_center(asteroid)
+  local sx, sy = get_collider_center(ship)
+  local dx, dy = sx - ax, sy - ay
+  local d = math.sqrt(dx * dx + dy * dy)
+  if d < 0.001 then return end
+  local nx, ny = dx / d, dy / d
+
+  local mAst, mShip = get_mass(asteroid), get_mass(ship)
+  if mAst <= 0 then mAst = 1 end
+  if mShip <= 0 then mShip = 1 end
+
+  local avx, avy = get_velocity(asteroid)
+  local svx, svy = get_velocity(ship)
+  local along = (svx - avx) * nx + (svy - avy) * ny
+
+  if along < 0 then
+    local j = -(1 + BOUNCE_RESTITUTION) * along
+    local total = mShip + mAst
+    svx = svx + j * mAst / total * nx
+    svy = svy + j * mAst / total * ny
+    avx = avx - j * mShip / total * nx
+    avy = avy - j * mShip / total * ny
+    set_velocity(asteroid, avx, avy)
+  end
+
+  local shipAlong = svx * nx + svy * ny
+  if shipAlong < MIN_KNOCKBACK then
+    local push = MIN_KNOCKBACK - shipAlong
+    svx = svx + push * nx
+    svy = svy + push * ny
+  end
+  set_velocity(ship, svx, svy)
+end
+
+-- Un planeta (fuente de gravedad) se traga al asteroide que lo toca; la nave
+-- (el unico con inventario) lo hace rebotar
 function asteroid_on_collision(other)
   if is_gravity_source(other) then
     asteroid_vanish(this)
+  elseif has_inventory(other) then
+    bounce_off_ship(this, other)
   end
 end
 

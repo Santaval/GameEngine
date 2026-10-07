@@ -162,6 +162,7 @@ frame size rather than the visible artwork's bounding box.
 | Function | Returns | Notes |
 | --- | --- | --- |
 | `add_circle_collider(e, radius, width, height, owner?)` | — | `owner` is an entity; collisions between an entity and its owner are skipped. |
+| `get_collider_center(e)` | `cx, cy` | World-space centre of the collider, same formula as `CollisionSystem` (`position + (width / 2, height / 2) * scale`). Falls back to the transform position without a collider, `0, 0` without a transform. |
 | `toggle_colliders()` | — | Flips the debug overlay. |
 | `set_show_colliders(v)` | — | |
 | `is_showing_colliders()` | `bool` | |

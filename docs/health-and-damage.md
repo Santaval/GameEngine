@@ -214,12 +214,19 @@ The `invulnerability` matters here: two obstacles that drift into each other
 overlap for many consecutive frames, and without a grace window they would
 grind each other to dust in a fraction of a second.
 
-**A player ship** — destructible but never deals contact damage:
+**A player ship** — destructible, and it hurts what it rams (scene_01 uses
+`cfg.SHIP_RAM_DAMAGE`):
 
 ```lua
 health = { max = 100, invulnerability = 0.5 },
--- no damage component at all
+damage = { amount = 10 },   -- no destroy_on_hit: the ship survives the crash
 ```
+
+Ramming is two-way: the ship takes the asteroid's damage and the asteroid takes
+the ship's. `asteroid.lua` also bounces the two apart on contact. An asteroid
+broken by a ram drops no loot (its `on_damage` hook clears the loot when the
+source is the ship and health reaches 0), so ramming cannot replace mining;
+asteroids shot to death still drop pickups.
 
 **A hazard that cannot be destroyed** — a laser wall, spikes, a black hole:
 

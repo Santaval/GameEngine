@@ -74,3 +74,54 @@ Planets (sources), the player ship, asteroids (scene and spawner) and bullets
 the magnet keeps working and nothing else moves them.
 
 Bullet sprites do not rotate to follow their curved path.
+
+## Danger zones
+
+`max_speed` stays on everywhere, autopilot included: it is what makes planets
+dangerous. A ship can only climb away while its thrust beats gravity, so each
+planet has zones relative to the ship's **current** thrust
+(`player_movement.thrust`, which grows with the engine level):
+
+| Zone | `gravity / thrust` | Meaning |
+| --- | --- | --- |
+| safe | `< 0.6` | Free flight; orbiting is offered here. |
+| warning | `0.6 – 1` | Escape is still possible, slowly. |
+| no return | `>= 1` | Gravity beats full thrust: the ship will crash. |
+
+Iron planet at engine level 1 (thrust 100): warning from r ≈ 218, no return
+from r ≈ 166, surface at r = 110. A green dashed ring marks the edge of each
+planet's gravity (`range`), visible from `1.5 * range` away. Within a planet's
+`range`, a yellow (warning) and a red (no return) dashed ring are drawn too, and the HUD shows the
+current zone in its colour. Code: [`player/player_gravity_zones.lua`](../assets/scripts/player/player_gravity_zones.lua).
+
+## Planet damage
+
+Touching a planet's body costs the ship `damage` HP (per planet in
+`scene_01.lua` `PLANETS`, 15 by default) at most every 0.5 s, from the
+player's `on_collision`. Planets get no `damage` component on purpose: that
+would also hit asteroids through `DamageSystem` and could drop their loot
+before `asteroid_vanish` clears it.
+
+## Orbiting a planet
+
+Press **F** (`orbit` action in `scene_01.lua`) near a planet and the ship flies
+itself around it; press F again or **W** (accelerate) to take control back.
+Pure Lua: [`player/player_orbit.lua`](../assets/scripts/player/player_orbit.lua).
+
+- **Capture**: the nearest planet within `0.6 * range`. Planets come from the
+  global `scene_planets`, which `scene_01.lua` publishes (Lua cannot list
+  entities) with `x, y` centre, `mass`, `range`, `body_radius` and `damage`.
+- **Refused** in the no-return zone, or if no circular orbit fits under
+  `max_speed` ("Demasiado cerca para orbitar").
+- **Radius**: the distance at the press, raised to the lowest radius whose
+  circular speed is at most `0.95 * max_speed` (≈ 325 px for iron at
+  max_speed 100). From the warning zone the autopilot climbs there first.
+- **Each frame** it steers toward `tangent * v_c + normal * v_r` (`v_c`
+  circular speed, `v_r` correction toward the radius, which takes priority
+  under the speed cap). The velocity change per frame is limited to
+  `thrust * dt`: the autopilot has the same engine as the ship, so it cannot
+  do anything the player couldn't. Gravity supplies the centripetal pull; the
+  nose follows the tangent (bullets fire forward along the orbit).
+
+`player_gravity_zones.lua` keeps its own copy of `G` and `SOFTENING`: if they
+change in `GravitySystem.hpp`, update them there too.

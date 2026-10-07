@@ -34,15 +34,23 @@ local ASTEROID_PACKING = { minGap = 6, tries = 40 }
 -- asteroides que los tocan (ver asteroid.lua); la nave y las balas los cruzan
 -- x, y es el centro del planeta; scale agranda el sprite de 48x48
 -- mass y range alimentan la gravedad (ver docs/gravity.md): range en px
+-- damage: vida que pierde la nave cada 0.5 s apoyada en el planeta
 local PLANET_FRAME = 48          -- los png son de 48x48
 -- Radio del planeta dibujado dentro del png de 48x48; se escala con p.scale
 -- en runtime, igual que ASTEROID_SHEET.bodyRadius
 local PLANET_BODY_RADIUS = 22
 local PLANETS = {
-  { assetId = "planet-iron",      x = 1500, y = 400,  scale = 5, mass = 3000, range = 700 },
-  { assetId = "planet-gunpowder", x = 600,  y = 1300, scale = 4, mass = 2000, range = 600 },
-  { assetId = "planet-plasma",    x = 1500, y = 1600, scale = 6, mass = 4500, range = 800 },
+  { assetId = "planet-iron",      x = 1500, y = 400,  scale = 5, mass = 3000, range = 700, damage = 15 },
+  { assetId = "planet-gunpowder", x = 600,  y = 1300, scale = 4, mass = 2000, range = 600, damage = 15 },
+  { assetId = "planet-plasma",    x = 1500, y = 1600, scale = 6, mass = 4500, range = 800, damage = 15 },
 }
+
+-- Global para player_orbit.lua: Lua no puede listar entidades, asi que la
+-- escena publica sus planetas (centro, masa, range y radio del cuerpo en px)
+for _, p in ipairs(PLANETS) do
+  p.body_radius = PLANET_BODY_RADIUS * p.scale
+end
+scene_planets = PLANETS
 
 -- ---------------------------------------------------------------------
 --  Generacion
@@ -264,6 +272,11 @@ local player = {
         max = 100,
         invulnerability = 0.5,
       },
+      -- Al embestir, la nave tambien lastima (sin destroy_on_hit: sobrevive
+      -- al choque)
+      damage = {
+        amount = cfg.SHIP_RAM_DAMAGE,
+      },
       -- Niveles iniciales de las herramientas mejorables del jugador. Las
       -- claves son libres (nada en C++ las conoce de antemano); el loader
       -- las ordena alfabeticamente al leerlas, asi que el orden aqui no
@@ -358,6 +371,7 @@ scene = {
     {name = "upgrade_3", key = 51},
     {name = "confirm", key = 13},
     {name = "menu", key = 109},
+    {name = "orbit", key = 102},
   },
 
   -- Mouse

@@ -40,6 +40,10 @@ config.ASTEROID_INVULNERABILITY = 0.5
 -- Dano que hace un asteroide al estrellarse contra algo con vida
 config.ASTEROID_DAMAGE = 20
 
+-- Dano que hace la nave al embestir un asteroide (el asteroide solo suelta
+-- loot si lo rompen a tiros, ver asteroid_on_damage en asteroid.lua)
+config.SHIP_RAM_DAMAGE = 10
+
 -- Tipos de asteroide. weight es la probabilidad relativa de aparicion,
 -- frame la variante del spritesheet (0 sana, 1 agrietada, 2 fundida),
 -- healthMul multiplica ASTEROID_HEALTH y loot es lo que suelta al morir
