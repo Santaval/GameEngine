@@ -228,6 +228,19 @@ damage = {
 
 See [health-and-damage.md](health-and-damage.md) for how these two interact.
 
+### `gravity`
+
+```lua
+gravity = {
+  mass     = 3000,    -- default 1
+  attracts = true,    -- default false: pulls other bodies
+  affected = false,   -- default true: is pulled (also needs a rigid_body)
+  range    = 700,     -- default 0 = unlimited, in px
+}
+```
+
+See [gravity.md](gravity.md).
+
 ### `equipment`
 
 ```lua

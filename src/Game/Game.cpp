@@ -14,6 +14,7 @@
 #include "../Systems/CollisionSystem.hpp"
 #include "../Systems/RenderSystem.hpp"
 #include "../Systems/MovementSystem.hpp"
+#include "../Systems/GravitySystem.hpp"
 #include "../Systems/DamageSystem.hpp"
 #include "../Systems/AnimationSystem.hpp"
 #include "../Systems/ScriptSystem.hpp"
@@ -85,6 +86,7 @@ void Game::init() {
 void Game::setup() {
     this->registry->addSystem<RenderSystem>();
     this->registry->addSystem<MovementSystem>();
+    this->registry->addSystem<GravitySystem>();
     this->registry->addSystem<CollisionSystem>();
     this->registry->addSystem<DamageSystem>();
     this->registry->addSystem<AnimationSystem>();
@@ -237,6 +239,8 @@ void Game::update() {
     this->registry->update();
     this->registry->getSystem<ScriptSystem>().update(this->lua);
     this->registry->getSystem<AnimationSystem>().update();
+    // La gravedad suma a la velocidad antes de integrar el movimiento
+    this->registry->getSystem<GravitySystem>().update(deltaTime);
     this->registry->getSystem<MovementSystem>().update(deltaTime);
     this->registry->getSystem<CollisionSystem>().update(this->eventManager);
 }

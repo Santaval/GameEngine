@@ -48,6 +48,7 @@ class ScriptSystem : public System {
     registerEntityBindings(lua);
     registerInputBindings(lua);
     registerMovementBindings(lua);
+    registerGravityBindings(lua);
     registerSpriteBindings(lua);
     registerColliderBindings(lua);
     registerHealthBindings(lua);

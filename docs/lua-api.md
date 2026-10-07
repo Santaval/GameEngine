@@ -17,6 +17,7 @@ implemented one domain per file under [`src/Binding/`](../src/Binding/).
 - [Available Lua standard libraries](#available-lua-standard-libraries)
 - [Entities](#entities)
 - [Movement & physics](#movement--physics)
+- [Gravity](#gravity)
 - [Sprites & animation](#sprites--animation)
 - [Colliders](#colliders)
 - [Health & damage](#health--damage)
@@ -115,6 +116,20 @@ drifting feel right.
 
 `max_speed` clamps the *magnitude* of the velocity vector, preserving direction.
 A value of `0` or less disables the limit entirely.
+
+---
+
+## Gravity
+
+| Function | Returns | Notes |
+| --- | --- | --- |
+| `add_gravity(e, mass, attracts?, affected?, range?)` | — | Defaults: `attracts = false`, `affected = true`, `range = 0` (unlimited). Call it right after `create_entity`. |
+| `has_gravity(e)` | `boolean` | |
+| `get_mass(e)` | `number` | `0` if the entity has no gravity component. |
+| `set_mass(e, mass)` | — | |
+| `set_gravity_affected(e, affected)` | — | |
+
+See [gravity.md](gravity.md) for the model.
 
 ---
 

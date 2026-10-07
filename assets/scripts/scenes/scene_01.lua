@@ -16,7 +16,7 @@ local pickAsteroidType = cfg.pickAsteroidType
 
 -- Asteroides por cada bloque de 1000x1000 px.
 -- La cantidad final = area(FIELD) / (1000*1000) * ASTEROID_DENSITY
-local ASTEROID_DENSITY = 20
+local ASTEROID_DENSITY = 2
 
 -- Rango de velocidad de deriva (px/s). min = max = 0 -> asteroides quietos
 local ASTEROID_SPEED = { min = 1, max = 20 }
@@ -32,11 +32,12 @@ local ASTEROID_PACKING = { minGap = 6, tries = 40 }
 
 -- Planetas decorativos (sin collider): uno por tipo para probar
 -- x, y es el centro del planeta; scale agranda el sprite de 48x48
+-- mass y range alimentan la gravedad (ver docs/gravity.md): range en px
 local PLANET_FRAME = 48          -- los png son de 48x48
 local PLANETS = {
-  { assetId = "planet-iron",      x = 1500, y = 400,  scale = 5 },
-  { assetId = "planet-gunpowder", x = 600,  y = 1300, scale = 4 },
-  { assetId = "planet-plasma",    x = 1500, y = 1600, scale = 6 },
+  { assetId = "planet-iron",      x = 1500, y = 400,  scale = 5, mass = 3000, range = 700 },
+  { assetId = "planet-gunpowder", x = 600,  y = 1300, scale = 4, mass = 2000, range = 600 },
+  { assetId = "planet-plasma",    x = 1500, y = 1600, scale = 6, mass = 4500, range = 800 },
 }
 
 -- ---------------------------------------------------------------------
@@ -127,6 +128,11 @@ local function makeAsteroid(cx, cy, scale)
       damage = {
         amount = ASTEROID_DAMAGE,
       },
+      gravity = {
+        mass = scale * cfg.GRAVITY.ASTEROID_MASS_PER_SCALE,
+        attracts = false,
+        affected = true,
+      },
       loot = asteroidType.loot,
        script = {
         path = "./assets/scripts/asteroid.lua"
@@ -137,7 +143,7 @@ local function makeAsteroid(cx, cy, scale)
   }
 end
 
--- Solo se ve: sin rigid_body, collider, health ni script
+-- Solo se ve y atrae: sin rigid_body, collider, health ni script
 local function makePlanet(p)
   local size = PLANET_FRAME * p.scale
 
@@ -156,6 +162,13 @@ local function makePlanet(p)
         height = PLANET_FRAME,
         src_rect = { x = 0, y = 0 },
         rotation = 0,
+      },
+      -- Fuente de gravedad fija: no es afectada (ni tiene rigid_body)
+      gravity = {
+        mass = p.mass,
+        attracts = true,
+        affected = false,
+        range = p.range,
       },
     },
   }
@@ -207,6 +220,11 @@ local player = {
         radius = 170,
         width = 430,
         heigth = 650,
+      },
+      gravity = {
+        mass = cfg.GRAVITY.SHIP.mass,
+        attracts = false,
+        affected = true,
       },
       rigid_body = {
         velocity = { x = 0, y = 0},

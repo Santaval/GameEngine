@@ -10,6 +10,7 @@ entirely in Lua.
 | [health-and-damage.md](health-and-damage.md) | Hit points, contact damage, invulnerability and death hooks. |
 | [equipment.md](equipment.md) | Named upgrade levels tracked per entity. |
 | [inventory.md](inventory.md) | Named item quantities, an optional capacity, and the mineral pickup gameplay. |
+| [gravity.md](gravity.md) | Mass-based attraction between planets, ship, asteroids and bullets. |
 | [asteroid-spawner.md](asteroid-spawner.md) | Generators outside the map that keep spawning asteroids at random intervals. |
 
 ---
@@ -54,8 +55,10 @@ game.
    entities killed last frame are removed.
 3. **ScriptSystem** — every entity's `update()` runs.
 4. **AnimationSystem** — advances spritesheet frames.
-5. **MovementSystem** — integrates acceleration into velocity into position.
-6. **CollisionSystem** — circle-vs-circle over every collider pair, emitting a
+5. **GravitySystem** — adds the pull of every attractor to the velocity of
+   every affected body (see [gravity.md](gravity.md)).
+6. **MovementSystem** — integrates acceleration into velocity into position.
+7. **CollisionSystem** — circle-vs-circle over every collider pair, emitting a
    collision event for each overlap. **DamageSystem** reacts to those events
    immediately.
 
@@ -87,6 +90,7 @@ says "thrust forward", and the engine resolves what forward means.
 | `CircleColliderComponent` | Collision circle plus an owner exclusion. | `circle_collider` |
 | `HealthComponent` | Hit points and invulnerability window. | `health` |
 | `DamageComponent` | Contact damage dealt. | `damage` |
+| `GravityComponent` | Mass, plus whether it attracts and/or is attracted. | `gravity` |
 | `EquipmentComponent` | Named upgrade levels (engine, gun, shield, ...). | `equipment` |
 | `InventoryComponent` | Named item quantities plus an optional total capacity. | `inventory` |
 | `TextComponent` | A label pinned to the entity. | `text` |

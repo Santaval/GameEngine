@@ -102,6 +102,7 @@ local function spawnAsteroid(cx, cy, vx, vy)
   -- position es la esquina sup-izq: se descuenta medio frame para centrar
   add_transform(e, cx - drawSize / 2, cy - drawSize / 2, scale, scale, randRange(0, 2 * math.pi))
   add_rigid_body(e, vx, vy, 0, 0)
+  add_gravity(e, scale * cfg.GRAVITY.ASTEROID_MASS_PER_SCALE, false, true)
   add_sprite(e, sheet.assetId, frameSize, frameSize, asteroidType.frame * frameSize, 0)
   add_circle_collider(e, sheet.bodyRadius, frameSize, frameSize)
   add_health(e, cfg.healthFor(asteroidType, scale), cfg.ASTEROID_INVULNERABILITY)

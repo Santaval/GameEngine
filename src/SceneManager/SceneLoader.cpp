@@ -14,6 +14,7 @@
 #include "../Components/PathComponent.hpp"
 #include "../Components/HealthComponent.hpp"
 #include "../Components/DamageComponent.hpp"
+#include "../Components/GravityComponent.hpp"
 #include "../Components/EquipmentComponent.hpp"
 #include "../Components/InventoryComponent.hpp"
 #include "../Components/LootComponent.hpp"
@@ -235,6 +236,19 @@ void SceneLoader::addDamageComponent(Entity entity, const sol::table& components
   entity.addComponent<DamageComponent>(amount, destroyOnHit);
 }
 
+void SceneLoader::addGravityComponent(Entity entity, const sol::table& components) {
+  sol::optional<sol::table> hasGravity = components["gravity"];
+  if (hasGravity == sol::nullopt) return;
+
+  sol::table gravity = *hasGravity;
+  float mass = gravity["mass"].get_or(1.0f);
+  bool attracts = gravity["attracts"].get_or(false);
+  bool affected = gravity["affected"].get_or(true);
+  float range = gravity["range"].get_or(0.0f);
+
+  entity.addComponent<GravityComponent>(mass, attracts, affected, range);
+}
+
 void SceneLoader::addEquipmentComponent(Entity entity, const sol::table& components) {
   sol::optional<sol::table> hasEquipment = components["equipment"];
   if (hasEquipment == sol::nullopt) return;
@@ -352,6 +366,7 @@ void SceneLoader::loadEntities(sol::state& lua, const sol::table& entities, std:
       addPathComponent(newEntity, components);
       addHealthComponent(newEntity, components);
       addDamageComponent(newEntity, components);
+      addGravityComponent(newEntity, components);
       addEquipmentComponent(newEntity, components);
       addInventoryComponent(newEntity, components);
       addLootComponent(newEntity, components);

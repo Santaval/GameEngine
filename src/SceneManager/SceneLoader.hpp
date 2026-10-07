@@ -27,6 +27,7 @@ class SceneLoader {
     void addPathComponent(Entity entity, const sol::table& components);
     void addHealthComponent(Entity entity, const sol::table& components);
     void addDamageComponent(Entity entity, const sol::table& components);
+    void addGravityComponent(Entity entity, const sol::table& components);
     void addEquipmentComponent(Entity entity, const sol::table& components);
     void addInventoryComponent(Entity entity, const sol::table& components);
     void addLootComponent(Entity entity, const sol::table& components);

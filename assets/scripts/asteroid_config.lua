@@ -16,7 +16,7 @@ config.FIELD = {
 }
 
 -- Rango de tamanos (escala aplicada al frame del sprite)
-config.ASTEROID_SCALE = { min = 0.25, max = 3 }
+config.ASTEROID_SCALE = { min = 0.25, max = 1.5 }
 
 -- Datos del spritesheet ./assets/sprites/asteroid/asteroid.png (768x96)
 -- 8 frames de 96x96: los 3 primeros son la roca (sana / agrietada / fundida),
@@ -48,6 +48,15 @@ config.ASTEROID_TYPES = {
   { name = "iron", weight = 6, frame = 0, healthMul = 1.0, loot = { iron = 1 } },
   { name = "gunpowder", weight = 3, frame = 1, healthMul = 1.5, loot = { gunpowder = 2 } },
   { name = "plasma", weight = 1, frame = 2, healthMul = 2.0, loot = { plasma = 1, stone = 1 } },
+}
+
+-- Gravedad (ver docs/gravity.md). Masa por tipo de cuerpo; los planetas
+-- definen la suya en scene_01.lua
+config.GRAVITY = {
+  -- masa = escala * esto. No se usa aun: los asteroides no atraen
+  ASTEROID_MASS_PER_SCALE = 20,
+  BULLET = { mass = 1 },
+  SHIP = { mass = 10 },
 }
 
 function config.randRange(min, max)
