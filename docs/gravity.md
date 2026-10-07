@@ -18,8 +18,14 @@ Each body has two independent flags:
 Splitting sources from receivers keeps the asteroid field stable: asteroids are
 affected by planets but do not pull each other into clumps.
 
-Planets have no collider, so bodies pass through them (collision is a
-follow-up).
+## Planets swallow asteroids
+
+Planets have a circle collider (`PLANET_BODY_RADIUS` in `scene_01.lua`). When
+an asteroid touches one it vanishes with no loot drop: `asteroid_on_collision`
+in `asteroid.lua` checks `is_gravity_source(other)` and calls
+`asteroid_vanish`, the same helper the spawner uses for off-map cleanup. The
+spawner's live count stays correct because `on_death` still runs. The ship,
+bullets and pickups still pass through planets.
 
 ## The formula
 

@@ -30,10 +30,14 @@ local ASTEROID_SEED = 20250920
 -- Separacion minima extra entre asteroides e intentos de colocacion
 local ASTEROID_PACKING = { minGap = 6, tries = 40 }
 
--- Planetas decorativos (sin collider): uno por tipo para probar
+-- Planetas: uno por tipo para probar. Tienen collider para tragarse a los
+-- asteroides que los tocan (ver asteroid.lua); la nave y las balas los cruzan
 -- x, y es el centro del planeta; scale agranda el sprite de 48x48
 -- mass y range alimentan la gravedad (ver docs/gravity.md): range en px
 local PLANET_FRAME = 48          -- los png son de 48x48
+-- Radio del planeta dibujado dentro del png de 48x48; se escala con p.scale
+-- en runtime, igual que ASTEROID_SHEET.bodyRadius
+local PLANET_BODY_RADIUS = 22
 local PLANETS = {
   { assetId = "planet-iron",      x = 1500, y = 400,  scale = 5, mass = 3000, range = 700 },
   { assetId = "planet-gunpowder", x = 600,  y = 1300, scale = 4, mass = 2000, range = 600 },
@@ -143,7 +147,7 @@ local function makeAsteroid(cx, cy, scale)
   }
 end
 
--- Solo se ve y atrae: sin rigid_body, collider, health ni script
+-- Se ve, atrae y traga asteroides (collider): sin rigid_body, health ni script
 local function makePlanet(p)
   local size = PLANET_FRAME * p.scale
 
@@ -162,6 +166,11 @@ local function makePlanet(p)
         height = PLANET_FRAME,
         src_rect = { x = 0, y = 0 },
         rotation = 0,
+      },
+      circle_collider = {
+        radius = PLANET_BODY_RADIUS,
+        width = PLANET_FRAME,
+        heigth = PLANET_FRAME,
       },
       -- Fuente de gravedad fija: no es afectada (ni tiene rigid_body)
       gravity = {

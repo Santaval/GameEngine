@@ -32,10 +32,19 @@ inline void setGravityAffected(Entity e, bool affected) {
   e.getComponent<GravityComponent>().affected = affected;
 }
 
+// Fuente de gravedad = la entidad atrae y tiene masa (los planetas hoy).
+// Sin componente devuelve false
+inline bool isGravitySource(Entity e) {
+  if (!e.hasComponent<GravityComponent>()) return false;
+  const auto& g = e.getComponent<GravityComponent>();
+  return g.attracts && g.mass > 0.0f;
+}
+
 inline void registerGravityBindings(sol::state& lua) {
   lua.set_function("add_gravity", addGravity);
   lua.set_function("has_gravity", hasGravity);
   lua.set_function("get_mass", getMass);
   lua.set_function("set_mass", setMass);
   lua.set_function("set_gravity_affected", setGravityAffected);
+  lua.set_function("is_gravity_source", isGravitySource);
 }

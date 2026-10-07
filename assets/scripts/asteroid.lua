@@ -56,8 +56,30 @@ function asteroid_on_death()
   end
 end
 
+-- Desaparece sin soltar loot: vacia el loot antes de destruir para que
+-- asteroid_on_death no deje pickups. Se copia primero porque set_loot
+-- modifica la lista mientras se recorre
+function asteroid_vanish(e)
+  local names = {}
+  for i = 1, get_loot_count(e) do
+    names[#names + 1] = get_loot_at(e, i)
+  end
+  for _, name in ipairs(names) do
+    set_loot(e, name, 0)
+  end
+  destroy_entity(e)
+end
+
+-- Un planeta (fuente de gravedad) se traga al asteroide que lo toca
+function asteroid_on_collision(other)
+  if is_gravity_source(other) then
+    asteroid_vanish(this)
+  end
+end
+
 on_damage = asteroid_on_damage
 on_death = asteroid_on_death
+on_collision = asteroid_on_collision
 
 -- Update de cada pickup ("this" es el pickup). Fuera del radio se queda
 -- quieto; dentro acelera hacia el centro de la nave hasta tocarla, y ahi

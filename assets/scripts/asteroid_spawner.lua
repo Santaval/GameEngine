@@ -122,20 +122,13 @@ local function spawnAsteroid(cx, cy, vx, vy)
     if dead then return end
     local x, y = get_position(this)
     if isFarOutside(x + half, y + half) then
-      -- Se fue del mapa: vaciar el loot antes de destruirlo para que
-      -- asteroid_on_death no deje pickups perdidos en el vacio. Se copia
-      -- primero porque set_loot modifica la lista mientras se recorre
-      local names = {}
-      for i = 1, get_loot_count(this) do
-        names[#names + 1] = get_loot_at(this, i)
-      end
-      for _, name in ipairs(names) do
-        set_loot(this, name, 0)
-      end
-      destroy_entity(this)
+      -- Se fue del mapa: se borra sin loot para que asteroid_on_death no
+      -- deje pickups perdidos en el vacio
+      asteroid_vanish(this)
     end
   end)
   set_on_damage(e, asteroid_on_damage)
+  set_on_collision(e, asteroid_on_collision)
   set_on_death(e, function()
     if dead then return end
     dead = true

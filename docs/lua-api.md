@@ -128,6 +128,7 @@ A value of `0` or less disables the limit entirely.
 | `get_mass(e)` | `number` | `0` if the entity has no gravity component. |
 | `set_mass(e, mass)` | — | |
 | `set_gravity_affected(e, affected)` | — | |
+| `is_gravity_source(e)` | `boolean` | `true` if the entity attracts and has `mass > 0` (planets). `false` without the component. |
 
 See [gravity.md](gravity.md) for the model.
 
