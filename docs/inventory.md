@@ -137,6 +137,11 @@ the collision hook.
 
 ---
 
+**Mining a planet from orbit**: `player_mining.lua` adds the planet's
+`mineral` with `add_item` every `mine_interval` seconds while the ship orbits
+it, and treats a return value of `0` as a full hold. See
+[gravity.md](gravity.md#mining-in-orbit).
+
 ## Gotchas and limits
 
 **Capacity `0` means unlimited**, not "empty". `set_inventory_capacity(this,

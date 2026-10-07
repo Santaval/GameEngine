@@ -35,14 +35,18 @@ local ASTEROID_PACKING = { minGap = 6, tries = 40 }
 -- x, y es el centro del planeta; scale agranda el sprite de 48x48
 -- mass y range alimentan la gravedad (ver docs/gravity.md): range en px
 -- damage: vida que pierde la nave cada 0.5 s apoyada en el planeta
+-- mineral / mine_interval: item que da minar en orbita y cada cuantos segundos
 local PLANET_FRAME = 48          -- los png son de 48x48
 -- Radio del planeta dibujado dentro del png de 48x48; se escala con p.scale
 -- en runtime, igual que ASTEROID_SHEET.bodyRadius
 local PLANET_BODY_RADIUS = 22
 local PLANETS = {
-  { assetId = "planet-iron",      x = 1500, y = 400,  scale = 5, mass = 3000, range = 700, damage = 15 },
-  { assetId = "planet-gunpowder", x = 600,  y = 1300, scale = 4, mass = 2000, range = 600, damage = 15 },
-  { assetId = "planet-plasma",    x = 1500, y = 1600, scale = 6, mass = 4500, range = 800, damage = 15 },
+  { assetId = "planet-iron",      x = 1500, y = 400,  scale = 5, mass = 3000, range = 700, damage = 15,
+    mineral = "iron", mine_interval = 2 },
+  { assetId = "planet-gunpowder", x = 600,  y = 1300, scale = 4, mass = 2000, range = 600, damage = 15,
+    mineral = "gunpowder", mine_interval = 2 },
+  { assetId = "planet-plasma",    x = 1500, y = 1600, scale = 6, mass = 4500, range = 800, damage = 15,
+    mineral = "plasma", mine_interval = 2 },
 }
 
 -- Global para player_orbit.lua: Lua no puede listar entidades, asi que la
@@ -339,7 +343,7 @@ scene = {
     [0] =
     {assetId="spaceship-attack", filePath="./assets/sprites/spaceship/player/attack.png"},
     {assetId="spaceship-idle", filePath="./assets/sprites/spaceship/player/idle.png"},
-    {assetId="spaceship-mine", filePath="./assets/sprites/spaceship/player/mine.png"},
+    {assetId="spaceship-mine", filePath="./assets/sprites/spaceship/player/mine_sheet.png"},
     {assetId="spaceship-movement", filePath="./assets/sprites/spaceship/player/movement.png"},
     {assetId="bullet", filePath="./assets/sprites/bullets/bullets.png"},
     {assetId="asteroid", filePath="./assets/sprites/asteroid/asteroid.png"},

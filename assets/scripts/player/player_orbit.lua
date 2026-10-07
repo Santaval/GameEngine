@@ -14,6 +14,8 @@ local ORBIT_SPEED_FRACTION = 0.95
 local RADIAL_GAIN = 2
 -- Cuanto dura el aviso de "demasiado cerca" (s)
 local REFUSED_MESSAGE_TIME = 2
+-- Error de radio por debajo del cual la orbita se considera estable (px)
+local SETTLED_TOLERANCE = 15
 
 -- Estado del modulo: persiste entre frames, se reinicia al cargar la escena
 local orbit_planet = nil
@@ -21,6 +23,9 @@ local orbit_radius = 0
 local orbit_dir = 1
 local key_was_down = false
 local refused_timer = 0
+-- Lo pide la mineria: la nariz mira hacia afuera para que las garras (atras
+-- en el sprite) apunten al planeta. Se reinicia cada frame
+local nose_outward = false
 
 local function clamp(v, lo, hi)
   return math.max(lo, math.min(hi, v))
@@ -97,14 +102,35 @@ local function update_orbit(entity)
   end
   set_velocity(entity, vx + ddx, vy + ddy)
 
-  -- Sin empuje del jugador; la nariz sigue la tangente
+  -- Sin empuje del jugador; la nariz sigue la tangente, o mira hacia afuera
+  -- si se esta minando
   set_acceleration(entity, 0, 0)
   set_sprite(entity, "spaceship-idle")
-  set_rotation_absolute(entity, math.atan(ty, tx) + player_movement_module.SPRITE_ROTATION_OFFSET)
+  local face_x, face_y = tx, ty
+  if nose_outward then face_x, face_y = nx, ny end
+  set_rotation_absolute(entity, math.atan(face_y, face_x) + player_movement_module.SPRITE_ROTATION_OFFSET)
+  nose_outward = false
 end
 
 function player_orbit_module.is_orbiting()
   return orbit_planet ~= nil
+end
+
+-- Planeta orbitado, o nil
+function player_orbit_module.get_planet()
+  return orbit_planet
+end
+
+-- En orbita y ya en el radio objetivo (no subiendo desde la zona de aviso)
+function player_orbit_module.is_settled(entity)
+  if orbit_planet == nil then return false end
+  local r = zones.distance_to(entity, orbit_planet)
+  return math.abs(r - orbit_radius) < SETTLED_TOLERANCE
+end
+
+-- Vale para el proximo frame de orbita: hay que pedirlo cada frame
+function player_orbit_module.face_outward()
+  nose_outward = true
 end
 
 function player_orbit_module.update(entity)

@@ -121,7 +121,26 @@ Pure Lua: [`player/player_orbit.lua`](../assets/scripts/player/player_orbit.lua)
   under the speed cap). The velocity change per frame is limited to
   `thrust * dt`: the autopilot has the same engine as the ship, so it cannot
   do anything the player couldn't. Gravity supplies the centripetal pull; the
-  nose follows the tangent (bullets fire forward along the orbit).
+  nose follows the tangent (bullets fire forward along the orbit), except
+  while mining.
+
+### Mining in orbit
+
+Once the orbit is settled (within 15 px of its target radius, so not while
+still climbing out of the warning zone), the ship mines the planet:
+[`player/player_mining.lua`](../assets/scripts/player/player_mining.lua).
+
+- Every `mine_interval` seconds it adds 1 `mineral` to the inventory
+  (`PLANETS` in `scene_01.lua`: iron → `iron`, gunpowder → `gunpowder`,
+  plasma → `plasma`, every 2 s). `add_item` clamps to the cargo capacity; when
+  it adds nothing the HUD shows "Bodega llena".
+- The sprite switches to `spaceship-mine` and the nose points away from the
+  planet so the claws (at the rear of the sprite) face it. A dotted beam in
+  the mineral's colour runs from the surface to the ship, and each unit pops a
+  rising "+1 <mineral>" label.
+- `spaceship-mine` loads `mine_sheet.png`, a re-layout of `mine.png` onto the
+  idle sheet's 430×650 frame grid. `set_sprite` keeps the frame geometry, and
+  the original `mine.png` frames sit at a different offset and spacing.
 
 `player_gravity_zones.lua` keeps its own copy of `G` and `SOFTENING`: if they
 change in `GravitySystem.hpp`, update them there too.

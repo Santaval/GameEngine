@@ -6,6 +6,7 @@ local player_upgrades_module = require("player_upgrades")
 local player_upgrade_menu_module = require("player_upgrade_menu")
 local player_orbit_module = require("player_orbit")
 local player_gravity_zones_module = require("player_gravity_zones")
+local player_mining_module = require("player_mining")
 
 -- Aplica los niveles iniciales de la escena a thrust/dano/vida una sola vez
 local stats_applied = false
@@ -27,6 +28,8 @@ function update()
 
   -- En orbita el piloto automatico maneja velocidad, rumbo y empuje
   player_orbit_module.update(this)
+  -- Con la orbita estable se mina el planeta (sprite, rumbo y cargamento)
+  player_mining_module.update(this)
   if not player_orbit_module.is_orbiting() then
     player_movement_module.face_mouse(this)
     player_movement_module.update_thrust(this)
@@ -41,6 +44,7 @@ function update()
   player_upgrade_menu_module.draw(this)
   player_gravity_zones_module.draw(this)
   player_orbit_module.draw(this)
+  player_mining_module.draw(this)
 end
 
 -- Hooks opcionales: el motor los llama solo si el script los define, con la
