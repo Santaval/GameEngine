@@ -84,7 +84,7 @@ planet has zones relative to the ship's **current** thrust
 
 | Zone | `gravity / thrust` | Meaning |
 | --- | --- | --- |
-| safe | `< 0.6` | Free flight; orbiting is offered here. |
+| safe | `< 0.6` | Free flight. |
 | warning | `0.6 – 1` | Escape is still possible, slowly. |
 | no return | `>= 1` | Gravity beats full thrust: the ship will crash. |
 
@@ -102,45 +102,23 @@ player's `on_collision`. Planets get no `damage` component on purpose: that
 would also hit asteroids through `DamageSystem` and could drop their loot
 before `asteroid_vanish` clears it.
 
-## Orbiting a planet
+## Mining
 
-Press **F** (`orbit` action in `scene_01.lua`) near a planet and the ship flies
-itself around it; press F again or **W** (accelerate) to take control back.
-Pure Lua: [`player/player_orbit.lua`](../assets/scripts/player/player_orbit.lua).
+While the ship is inside a planet's gravity (`range`) and the planet has a
+`mineral`, it mines automatically; no key, no autopilot, the player keeps full
+control. Pure Lua: [`player/player_mining.lua`](../assets/scripts/player/player_mining.lua).
 
-- **Capture**: the nearest planet within `0.6 * range`. Planets come from the
-  global `scene_planets`, which `scene_01.lua` publishes (Lua cannot list
-  entities) with `x, y` centre, `mass`, `range`, `body_radius` and `damage`.
-- **Refused** in the no-return zone, or if no circular orbit fits under
-  `max_speed` ("Demasiado cerca para orbitar").
-- **Radius**: the distance at the press, raised to the lowest radius whose
-  circular speed is at most `0.95 * max_speed` (≈ 325 px for iron at
-  max_speed 100). From the warning zone the autopilot climbs there first.
-- **Each frame** it steers toward `tangent * v_c + normal * v_r` (`v_c`
-  circular speed, `v_r` correction toward the radius, which takes priority
-  under the speed cap). The velocity change per frame is limited to
-  `thrust * dt`: the autopilot has the same engine as the ship, so it cannot
-  do anything the player couldn't. Gravity supplies the centripetal pull; the
-  nose follows the tangent (bullets fire forward along the orbit), except
-  while mining.
-
-### Mining in orbit
-
-Once the orbit is settled (within 15 px of its target radius, so not while
-still climbing out of the warning zone), the ship mines the planet:
-[`player/player_mining.lua`](../assets/scripts/player/player_mining.lua).
-
+- Planets come from the global `scene_planets`, which the scene publishes
+  (Lua cannot list entities) with `x, y` centre, `mass`, `range`,
+  `body_radius`, `damage`, `mineral` and `mine_interval`. The nearest planet
+  whose `range` contains the ship is mined.
 - Every `mine_interval` seconds it adds 1 `mineral` to the inventory
   (`PLANETS` in `scene_01.lua`: iron → `iron`, gunpowder → `gunpowder`,
   plasma → `plasma`, every 2 s). `add_item` clamps to the cargo capacity; when
   it adds nothing the HUD shows "Bodega llena".
-- The sprite switches to `spaceship-mine` and the nose points away from the
-  planet so the claws (at the rear of the sprite) face it. A dotted beam in
-  the mineral's colour runs from the surface to the ship, and each unit pops a
-  rising "+1 <mineral>" label.
-- `spaceship-mine` loads `mine_sheet.png`, a re-layout of `mine.png` onto the
-  idle sheet's 430×650 frame grid. `set_sprite` keeps the frame geometry, and
-  the original `mine.png` frames sit at a different offset and spacing.
+- A dotted beam in the mineral's colour runs from the surface to the ship, and
+  each unit pops a rising "+1 <mineral>" label. Leaving the range stops mining
+  and resets the timer.
 
 `player_gravity_zones.lua` keeps its own copy of `G` and `SOFTENING`: if they
 change in `GravitySystem.hpp`, update them there too.

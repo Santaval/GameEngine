@@ -45,11 +45,6 @@ function player_gravity_zones_module.gravity_accel(planet, r)
   return G * planet.mass * r / (denom * math.sqrt(denom))
 end
 
--- Velocidad de orbita circular a distancia r: v^2 / r = a
-function player_gravity_zones_module.circular_speed(planet, r)
-  return math.sqrt(player_gravity_zones_module.gravity_accel(planet, r) * r)
-end
-
 -- Mayor radio en el que la gravedad llega a `accel`, o 0 si nunca tira tanto.
 -- Desde SOFTENING hacia afuera a(r) solo decrece, asi que alcanza con biseccion
 function player_gravity_zones_module.radius_for_accel(planet, accel)

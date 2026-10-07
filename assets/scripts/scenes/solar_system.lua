@@ -28,7 +28,7 @@ math.randomseed(SEED)
 local PLANETS = solar.build_planets()
 solar.validate(PLANETS)
 
--- Globals para los modulos del jugador (orbita, zonas, mineria), el anillo
+-- Globals para los modulos del jugador (zonas, mineria), el anillo
 -- de Saturno y el minimapa: Lua no puede listar entidades
 scene_planets = PLANETS
 
@@ -212,7 +212,6 @@ scene = {
     [0] =
     {assetId="spaceship-attack", filePath="./assets/sprites/spaceship/player/attack.png"},
     {assetId="spaceship-idle", filePath="./assets/sprites/spaceship/player/idle.png"},
-    {assetId="spaceship-mine", filePath="./assets/sprites/spaceship/player/mine_sheet.png"},
     {assetId="spaceship-movement", filePath="./assets/sprites/spaceship/player/movement.png"},
     {assetId="bullet", filePath="./assets/sprites/bullets/bullets.png"},
     {assetId="asteroid", filePath="./assets/sprites/asteroid/asteroid.png"},
@@ -243,7 +242,6 @@ scene = {
     {name = "upgrade_3", key = 51},
     {name = "confirm", key = 13},
     {name = "menu", key = 109},
-    {name = "orbit", key = 102},
   },
 
   mouse = {

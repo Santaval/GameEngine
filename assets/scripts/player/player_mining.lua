@@ -1,4 +1,3 @@
-local player_orbit_module = require("player_orbit")
 local zones = require("player_gravity_zones")
 
 local player_mining_module = {}
@@ -21,6 +20,7 @@ local POPUP_RISE = 40
 
 -- Estado del modulo: persiste entre frames, se reinicia al cargar la escena
 local timer = 0
+local planet = nil
 local mining = false
 local cargo_full = false
 local clock = 0
@@ -30,23 +30,19 @@ local function color_for(mineral)
   return MINERAL_COLORS[mineral] or DEFAULT_COLOR
 end
 
--- Se llama despues de player_orbit_module.update: mina mientras la orbita
--- esta estable y suma el mineral del planeta cada mine_interval segundos
+-- Mina mientras la nave esta dentro del range (gravedad) de un planeta con
+-- mineral: suma el mineral del planeta cada mine_interval segundos
 function player_mining_module.update(entity)
   local dt = get_delta_time()
   clock = clock + dt
 
-  local planet = player_orbit_module.get_planet()
-  mining = planet ~= nil and planet.mineral ~= nil and player_orbit_module.is_settled(entity)
+  planet = zones.nearest_planet(entity, 1)
+  mining = planet ~= nil and planet.mineral ~= nil
   if not mining then
     timer = 0
     cargo_full = false
     return
   end
-
-  -- Pisa el sprite idle que pone la orbita; las garras apuntan al planeta
-  set_sprite(entity, "spaceship-mine")
-  player_orbit_module.face_outward()
 
   timer = timer + dt
   if timer < planet.mine_interval then return end
@@ -96,7 +92,6 @@ function player_mining_module.draw(entity)
   draw_popups()
   if not mining then return end
 
-  local planet = player_orbit_module.get_planet()
   local color = color_for(planet.mineral)
   draw_beam(entity, planet, color)
 

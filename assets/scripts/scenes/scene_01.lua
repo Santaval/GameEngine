@@ -33,7 +33,7 @@ local ASTEROID_PACKING = { minGap = 6, tries = 40 }
 -- x, y es el centro del planeta; scale agranda el sprite de 48x48
 -- mass y range alimentan la gravedad (ver docs/gravity.md): range en px
 -- damage: vida que pierde la nave cada 0.5 s apoyada en el planeta
--- mineral / mine_interval: item que da minar en orbita y cada cuantos segundos
+-- mineral / mine_interval: item que da minar dentro de la gravedad y cada cuantos segundos
 local PLANET_FRAME = 48          -- los png son de 48x48
 -- Radio del planeta dibujado dentro del png de 48x48; se escala con p.scale
 -- en runtime, igual que ASTEROID_SHEET.bodyRadius
@@ -47,7 +47,7 @@ local PLANETS = {
     mineral = "plasma", mine_interval = 2 },
 }
 
--- Global para player_orbit.lua: Lua no puede listar entidades, asi que la
+-- Global para player_gravity_zones / player_mining: Lua no puede listar entidades, asi que la
 -- escena publica sus planetas (centro, masa, range y radio del cuerpo en px)
 for _, p in ipairs(PLANETS) do
   p.body_radius = PLANET_BODY_RADIUS * p.scale
@@ -235,7 +235,6 @@ scene = {
     [0] =
     {assetId="spaceship-attack", filePath="./assets/sprites/spaceship/player/attack.png"},
     {assetId="spaceship-idle", filePath="./assets/sprites/spaceship/player/idle.png"},
-    {assetId="spaceship-mine", filePath="./assets/sprites/spaceship/player/mine_sheet.png"},
     {assetId="spaceship-movement", filePath="./assets/sprites/spaceship/player/movement.png"},
     {assetId="bullet", filePath="./assets/sprites/bullets/bullets.png"},
     {assetId="asteroid", filePath="./assets/sprites/asteroid/asteroid.png"},
@@ -267,7 +266,6 @@ scene = {
     {name = "upgrade_3", key = 51},
     {name = "confirm", key = 13},
     {name = "menu", key = 109},
-    {name = "orbit", key = 102},
   },
 
   -- Mouse

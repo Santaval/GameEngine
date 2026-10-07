@@ -25,14 +25,12 @@ config.PLANET_FRAME = 48
 config.PLANET_BODY_RADIUS = 22
 
 -- Masa y range por defecto: mass = MASS_PER_SCALE * scale,
--- range = RANGE_PER_BODY * radio_del_cuerpo + RANGE_EXTRA. Con estos valores
--- todos los planetas se pueden orbitar con el motor inicial (ver
--- player_orbit.lua: min_orbit_radius)
+-- range = RANGE_PER_BODY * radio_del_cuerpo + RANGE_EXTRA
 config.MASS_PER_SCALE = 500
 config.RANGE_PER_BODY = 4
 config.RANGE_EXTRA = 250
 
--- Mineral que da minar en orbita y cada cuantos segundos
+-- Mineral que da minar dentro de la gravedad del planeta y cada cuantos segundos
 config.MINE_INTERVAL = 2
 -- Vida que quita apoyarse en un planeta cada 0.5 s
 config.PLANET_DAMAGE = 15
@@ -78,9 +76,7 @@ config.BELTS = {
 config.BELT_SPEED = { min = 1, max = 8 }
 config.BELT_DRIFT_ANGLE = 0.3
 
--- Anillo de Saturno, en multiplos del radio del cuerpo. Queda por debajo del
--- radio minimo de orbita con el motor inicial (~2.5x), asi que el piloto
--- automatico pasa por afuera del anillo
+-- Anillo de Saturno, en multiplos del radio del cuerpo
 config.SATURN_RING = {
   planet = "Saturno",
   inner = 1.4,
@@ -98,7 +94,7 @@ config.PLAYER_SPAWN = { planet = "Tierra", altitude = 140 }
 config.SAFE_ZONE_RADIUS = 250
 
 -- Cuerpos con x, y, scale, mass, range, body_radius... en el formato que
--- esperan player_gravity_zones / player_orbit / player_mining (scene_planets)
+-- esperan player_gravity_zones / player_mining (scene_planets)
 function config.build_planets()
   local planets = {}
   for _, b in ipairs(config.BODIES) do

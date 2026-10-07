@@ -9,7 +9,7 @@ local solar = require("solar_system_config")
 
 local MAP_SIZE = 220
 local MARGIN = 20
--- La parte de abajo de la pantalla la usan los avisos de orbita / mineria
+-- La parte de abajo de la pantalla la usan los avisos de mineria / gravedad
 local BOTTOM_MARGIN = 120
 
 local MINERAL_COLORS = {

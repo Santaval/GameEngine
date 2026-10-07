@@ -4,7 +4,6 @@ local player_visual_helpers_module = require("player_visual_helpers")
 local player_hud_module = require("player_hud")
 local player_upgrades_module = require("player_upgrades")
 local player_upgrade_menu_module = require("player_upgrade_menu")
-local player_orbit_module = require("player_orbit")
 local player_gravity_zones_module = require("player_gravity_zones")
 local player_mining_module = require("player_mining")
 
@@ -26,14 +25,10 @@ function update()
   player_shooting_module.update(this)
   player_visual_helpers_module.update(this)
 
-  -- En orbita el piloto automatico maneja velocidad, rumbo y empuje
-  player_orbit_module.update(this)
-  -- Con la orbita estable se mina el planeta (sprite, rumbo y cargamento)
+  player_movement_module.face_mouse(this)
+  player_movement_module.update_thrust(this)
+  -- Dentro de la gravedad de un planeta se mina solo
   player_mining_module.update(this)
-  if not player_orbit_module.is_orbiting() then
-    player_movement_module.face_mouse(this)
-    player_movement_module.update_thrust(this)
-  end
 
   player_upgrade_menu_module.update(this)
 
@@ -43,7 +38,6 @@ function update()
   player_hud_module.draw(this)
   player_upgrade_menu_module.draw(this)
   player_gravity_zones_module.draw(this)
-  player_orbit_module.draw(this)
   player_mining_module.draw(this)
 end
 

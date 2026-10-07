@@ -137,10 +137,10 @@ the collision hook.
 
 ---
 
-**Mining a planet from orbit**: `player_mining.lua` adds the planet's
-`mineral` with `add_item` every `mine_interval` seconds while the ship orbits
-it, and treats a return value of `0` as a full hold. See
-[gravity.md](gravity.md#mining-in-orbit).
+**Mining a planet**: `player_mining.lua` adds the planet's `mineral` with
+`add_item` every `mine_interval` seconds while the ship is inside the planet's
+gravity range, and treats a return value of `0` as a full hold. See
+[gravity.md](gravity.md#mining).
 
 ## Gotchas and limits
 
