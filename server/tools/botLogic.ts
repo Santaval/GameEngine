@@ -21,6 +21,13 @@ export type Incoming = { t: string; from?: string } & Record<string, any>;
 
 export const SHIP_SCRIPT = "player/remote_player.lua";
 export const BULLET_SCRIPT = "bullet.lua";
+
+/**
+ * Default orbit center: the player's spawn in scenes/solar_system.lua (Sun at
+ * 20000,20000, Earth 3800 px to the right, minus its 510 px gravity range and
+ * the 140 px spawn altitude). Keep in sync with solar_system_config.lua.
+ */
+export const DEFAULT_CENTER = { x: 23150, y: 20000 };
 export const BULLET_SPEED = 600;
 export const BULLET_LIFETIME_SEC = 2;
 export const RESPAWN_DELAY_SEC = 3;
@@ -83,8 +90,8 @@ export class Bot {
   private readonly hitRadius: number;
 
   constructor(private readonly o: BotOptions) {
-    this.cx = o.cx ?? 0;
-    this.cy = o.cy ?? 0;
+    this.cx = o.cx ?? DEFAULT_CENTER.x;
+    this.cy = o.cy ?? DEFAULT_CENTER.y;
     this.radius = o.radius ?? 300;
     this.omega = o.angularSpeed ?? 0.5;
     this.fireInterval = o.fireIntervalSec ?? 1.5;
