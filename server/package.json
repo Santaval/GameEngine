@@ -1,0 +1,23 @@
+{
+  "name": "relay-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Dumb WebSocket relay server for the multiplayer protocol",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p .",
+    "start": "node dist/index.js",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "ws": "8.21.3"
+  },
+  "devDependencies": {
+    "@types/node": "24.13.6",
+    "@types/ws": "8.18.1",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3",
+    "vitest": "4.1.11"
+  }
+}

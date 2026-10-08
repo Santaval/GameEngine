@@ -190,3 +190,23 @@ the next oldest player. The new host **adopts** every entity whose owner was the
 old host (asteroids, enemies, loot, the director) by rewriting the owner locally
 and taking over simulation and authoritative events for them. NetIds keep the
 old prefix and stay valid. Players' own ships and bullets are unaffected.
+
+---
+
+## Running the relay server
+
+```
+cd server && npm install && npm run dev
+```
+
+Listens on `PORT` (default 7777). Limits and close codes:
+
+| Item | Value |
+| --- | --- |
+| Max message size | 16 KB. Larger frames close the connection with **1009**. |
+| Rate limit | Token bucket, 120 msg/s (burst 240). Abusive clients are closed with **1008**. |
+| Heartbeat | Ping every 5 s; a socket that misses a pong is terminated (~10 s). |
+| Version mismatch | `hello.version != PROTOCOL_VERSION` closes with **4000**. |
+
+Invalid, server-only-type or mis-addressed messages are dropped and logged
+(JSON lines on stdout) without disconnecting the client.
