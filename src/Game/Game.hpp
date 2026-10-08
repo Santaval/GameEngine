@@ -17,6 +17,7 @@
 
 class NetClient;
 class NetworkRegistry;
+class NetworkScripting;
 
 const int FPS = 30;
 const int MILISECS_PER_FRAMES = 1000 / FPS;
@@ -51,6 +52,9 @@ class Game {
         std::unique_ptr<NetClient> netClient;
         // Identidad de red de las entidades (netId <-> Entity)
         std::unique_ptr<NetworkRegistry> networkRegistry;
+        // Puente Lua <-> red. Declarado despues de lua: guarda funciones de Lua y
+        // tiene que destruirse antes que el estado
+        std::unique_ptr<NetworkScripting> networkScripting;
         std::string serverUrl;
 
         // Escena pedida desde Lua (load_scene); se carga al inicio del
@@ -86,6 +90,8 @@ class Game {
      void setServerUrl(const std::string& url) { serverUrl = url; }
      NetClient* getNetClient() const { return netClient.get(); }
      NetworkRegistry* getNetworkRegistry() const { return networkRegistry.get(); }
+     NetworkScripting* getNetworkScripting() const { return networkScripting.get(); }
+     SceneLoader* getSceneLoader() const { return sceneLoader.get(); }
      void quit() { isRunning = false; }
      double getDeltaTime() const { return deltaTime; }
      Registry* getRegistry() const { return registry.get(); }

@@ -41,9 +41,15 @@ class RenderSystem : public System{
 
             double rotationDegrees = transform.rotation * 180.0 / M_PI;
 
+            // Un prefab de red puede llegar antes de que la escena cargue su textura
+            SDL_Texture* texture = assetManager->getTexture(sprite.teaxtureId);
+            if (texture == nullptr) {
+                continue;
+            }
+
             SDL_RenderCopyEx(
                 renderer,
-                assetManager->getTexture(sprite.teaxtureId),
+                texture,
                 &srcRec,
                 &dstRec,
                 rotationDegrees,

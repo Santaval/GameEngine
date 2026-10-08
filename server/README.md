@@ -23,6 +23,9 @@ Environment variables: `PORT` (default 7777), `HOST` (default 0.0.0.0),
 instance can be tested alone. It sends `spawn` (script
 `player/remote_player.lua`), `state` at 10 Hz while flying in a circle, and a
 `fire` every 1.5 s. It only ever reports its own HP (`damage` / `death`).
+It also echoes `custom` messages: a `custom{type:"ping", data}` from another
+player is answered with a direct `custom{type:"pong", data}` carrying the same
+data, which gives a single-instance round-trip check for `net_send` / `net_on`.
 
 ```
 npm run bot -- --host --pvp --duration 30

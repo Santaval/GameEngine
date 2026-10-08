@@ -92,13 +92,15 @@ $(IXWS_LIB): $(DEPS_STAMP)
 run:
 	./engine
 
-# Test unitario de NetworkRegistry: solo ECS + NetworkRegistry (sin SDL ni red)
-test:
+# Tests unitarios: NetworkRegistry (solo ECS, sin SDL ni red) y LuaJson (solo sol + nlohmann)
+test: $(DEPS_STAMP)
 	$(CC) $(CFLAGS) $(STD) -I./src tests/NetworkRegistryTest.cpp src/ECS/*.cpp src/Network/NetworkRegistry.cpp -o tests/network_registry_test
 	./tests/network_registry_test
+	$(CC) $(CFLAGS) $(STD) $(INC_PATH) tests/LuaJsonTest.cpp $(LUA_LIBS) -o tests/lua_json_test
+	./tests/lua_json_test
 
 clean:
-	rm -f engine tests/network_registry_test
+	rm -f engine tests/network_registry_test tests/lua_json_test
 
 clean-deps:
 	rm -rf $(IXWS_OBJ) $(IXWS_LIB)

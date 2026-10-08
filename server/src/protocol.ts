@@ -205,6 +205,20 @@ export interface RoomSettingsMsg extends Envelope<"room_settings"> {
 }
 
 // ---------------------------------------------------------------------------
+// Custom messages
+// ---------------------------------------------------------------------------
+
+/**
+ * Any player, broadcast or direct. Opaque script-level message: the relay only
+ * checks `type` and forwards `data` untouched.
+ */
+export interface Custom extends Envelope<"custom"> {
+  /** Script-defined message name (1-64 chars). */
+  type: string;
+  data?: unknown;
+}
+
+// ---------------------------------------------------------------------------
 // Unions and maps
 // ---------------------------------------------------------------------------
 
@@ -224,7 +238,8 @@ export type Message =
   | LootTaken
   | SnapshotRequest
   | Snapshot
-  | RoomSettingsMsg;
+  | RoomSettingsMsg
+  | Custom;
 
 export type MessageType = Message["t"];
 
@@ -375,6 +390,7 @@ const payloadChecks: { [K in MessageType]: (v: Record<string, unknown>) => boole
   snapshot: (v) =>
     Array.isArray(v.entities) && v.entities.every(isSnapshotEntity) && isRoomSettings(v.settings),
   room_settings: (v) => isBoolean(v.pvp),
+  custom: (v) => isString(v.type) && v.type.length <= 64,
 };
 
 function guard<T extends MessageType>(t: T): (v: unknown) => v is MessageByType[T] {
@@ -402,6 +418,7 @@ export const isLootTaken = guard("loot_taken");
 export const isSnapshotRequest = guard("snapshot_request");
 export const isSnapshot = guard("snapshot");
 export const isRoomSettingsMsg = guard("room_settings");
+export const isCustom = guard("custom");
 
 /** Validator lookup by message type. */
 export const validators: { [K in MessageType]: (v: unknown) => v is MessageByType[K] } = {
@@ -421,6 +438,7 @@ export const validators: { [K in MessageType]: (v: unknown) => v is MessageByTyp
   snapshot_request: isSnapshotRequest,
   snapshot: isSnapshot,
   room_settings: isRoomSettingsMsg,
+  custom: isCustom,
 };
 
 function hasKnownType(v: unknown): v is { t: MessageType } {

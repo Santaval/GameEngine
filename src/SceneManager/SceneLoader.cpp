@@ -342,6 +342,32 @@ void SceneLoader::addScriptComponent(sol::state& lua, Entity entity, const sol::
   entity.addComponent<ScriptComponent>(update, onDamage, onDeath, onCollision);
 }
 
+Entity SceneLoader::buildEntity(sol::state& lua, const sol::table& entityDef, Registry& registry) {
+  Entity newEntity = registry.createEntity();
+
+  sol::optional<sol::table> hasComponents = entityDef["components"];
+  if(hasComponents != sol::nullopt) {
+    sol::table components = *hasComponents;
+
+    addTransformComponent(newEntity, components);
+    addRigidBodyComponent(newEntity, components);
+    addSpriteComponent(newEntity, components);
+    addCircleColliderComponent(newEntity, components);
+    addAnimationComponent(newEntity, components);
+    addTextComponent(newEntity, components);
+    addPathComponent(newEntity, components);
+    addHealthComponent(newEntity, components);
+    addDamageComponent(newEntity, components);
+    addGravityComponent(newEntity, components);
+    addEquipmentComponent(newEntity, components);
+    addInventoryComponent(newEntity, components);
+    addLootComponent(newEntity, components);
+    addScriptComponent(lua, newEntity, components);
+  }
+
+  return newEntity;
+}
+
 void SceneLoader::loadEntities(sol::state& lua, const sol::table& entities, std::unique_ptr<Registry>& registry) {
   int index = 0;
 
@@ -351,27 +377,7 @@ void SceneLoader::loadEntities(sol::state& lua, const sol::table& entities, std:
     if(hasEntity == sol::nullopt) break;
     sol::table entity = entities[index];
 
-    Entity newEntity = registry->createEntity();
-
-    sol::optional<sol::table> hasComponents = entity["components"];
-    if(hasComponents != sol::nullopt) {
-      sol::table components = *hasComponents;
-
-      addTransformComponent(newEntity, components);
-      addRigidBodyComponent(newEntity, components);
-      addSpriteComponent(newEntity, components);
-      addCircleColliderComponent(newEntity, components);
-      addAnimationComponent(newEntity, components);
-      addTextComponent(newEntity, components);
-      addPathComponent(newEntity, components);
-      addHealthComponent(newEntity, components);
-      addDamageComponent(newEntity, components);
-      addGravityComponent(newEntity, components);
-      addEquipmentComponent(newEntity, components);
-      addInventoryComponent(newEntity, components);
-      addLootComponent(newEntity, components);
-      addScriptComponent(lua, newEntity, components);
-    }
+    buildEntity(lua, entity, *registry);
 
     index++;
 

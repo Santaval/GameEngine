@@ -36,6 +36,10 @@ class SceneLoader {
   public:
     SceneLoader();
     ~SceneLoader();
+
+    // Fabrica de entidades: crea la entidad y todos sus componentes a partir de
+    // una definicion { components = {...} }. La usan las escenas y los prefabs de red.
+    Entity buildEntity(sol::state& lua, const sol::table& entityDef, Registry& registry);
     void load(const std::string& scenePath, sol::state& lua,  std::unique_ptr<AssetManager>& assetManager, 
     std::unique_ptr<ControllerManager>& controllerManager, std::unique_ptr<Registry>& registry, SDL_Renderer* renderer);
 };

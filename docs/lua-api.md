@@ -30,6 +30,7 @@ implemented one domain per file under [`src/Binding/`](../src/Binding/).
 - [Trajectory path](#trajectory-path)
 - [Scripts & hooks](#scripts--hooks)
 - [Game flow & scenes](#game-flow--scenes)
+- [Network](#network)
 - [Reading a component you don't have](#reading-a-component-you-dont-have)
 
 ---
@@ -419,6 +420,114 @@ Flow used by the game: `scenes/menu.lua` (start screen) → `scenes/scene_01.lua
 In scene_01, `player.lua`'s `on_death` sets `game_over = true` and
 `game_director.lua` shows the game-over overlay (ENTER restarts, M returns to
 the menu). Shared helpers for these screens live in `ui_helpers.lua`.
+
+---
+
+## Network
+
+Multiplayer bindings (protocol: [multiplayer-protocol.md](multiplayer-protocol.md)).
+They are always safe to call: without `--server` (or while disconnected) each
+one returns the offline default below, so single-player scripts run unchanged.
+
+### Session
+
+| Function | Online | Offline |
+| --- | --- | --- |
+| `net_is_online()` | `true` once the server sent `welcome` | `false` |
+| `net_my_id()` | Your player id | `""` |
+| `net_is_host()` | `true` if you are the host | `true` |
+| `net_peers()` | Array of the other players' ids | `{}` |
+
+### Messaging
+
+| Function | Description |
+| --- | --- |
+| `net_send(type, tbl [, to])` | Sends `tbl` (nested tables, arrays, numbers, strings, booleans) as a message of `type`. `to` is a player id for a direct message; without it the message goes to everyone but you. Returns `true` if it was sent, `false` offline or if the type is not allowed. |
+| `net_on(type, fn)` | Registers `fn(data, from)`. `from` is the sender's player id. Several handlers per type are allowed. Offline it only registers (nothing ever fires). |
+
+Handlers run on the main thread at the start of each frame, before scripts.
+**Handlers are cleared on every scene load**, so register them from a script of
+the new scene. A handler that raises an error is logged
+(`[Net] lua handler for '<type>' failed: ...`) and does not affect the others.
+
+Custom vs. protocol types:
+
+- Any `type` that is not a protocol message name is a **custom message**: it
+  travels as `{t = "custom", type = type, data = tbl}` and the receiving
+  handler gets `tbl` as `data`. Type is 1-64 characters.
+- If `type` is a protocol name (`state`, `fire`, `damage`, ...), `tbl` is merged
+  into the message as its fields and the handler receives the whole message
+  table as `data`. The server enforces the message's own rules.
+- `hello`, `welcome`, `peer_joined`, `peer_left`, `host_changed` and `custom`
+  cannot be sent with `net_send` (it logs and returns `false`). You can still
+  listen to the session ones with `net_on`.
+
+```lua
+net_on("chat", function(data, from)
+  print(from .. ": " .. data.text)
+end)
+net_send("chat", { text = "hola" })          -- everyone else
+net_send("chat", { text = "psst" }, peer_id) -- one player
+```
+
+### Networked entities
+
+| Function | Description |
+| --- | --- |
+| `net_spawn(script_path, state_tbl)` | Builds the entity from a prefab, tags it with a new netId owned by you, and broadcasts `spawn`. Returns the entity (or `nil` if the prefab failed). Offline it only creates the entity locally. |
+| `net_despawn(e)` | Removes a networked entity and tells the others. Only the owner can despawn: calling it on a remote entity while online logs a warning and does nothing. An entity without network identity is just killed. |
+| `is_local(e)` | `true` if you own the entity or it is not networked. Always `true` offline. |
+| `get_net_id(e)` | The entity's netId string, or `nil`. |
+| `find_by_net_id(id)` | The entity with that netId, or `nil`. |
+| `get_owner(e)` | The owner's player id, or `nil` if the entity is not networked. |
+| `set_owner(e, player_id)` | Rewrites the owner **locally only**; nothing is broadcast. |
+
+`net_despawn` is a plain kill: `on_death` does **not** run, on either side.
+That way remote copies do not repeat gameplay hooks (loot drops, score...) the
+owner already handled. Use `destroy_entity` first if you want the hook locally.
+
+`state_tbl` is `{ pos = {x, y}, vel = {x, y}, acc = {x, y}, rot = radians, hp = n }`
+plus any extra data (it travels to the other players in `spawn.state`). Missing
+`pos`/`vel`/`acc`/`rot` are filled with zeros before sending, because the server
+requires them. They override the prefab: `pos` -> `transform.position`,
+`rot` -> `transform.rotation`, `vel` -> `rigid_body.velocity`,
+`acc` -> `rigid_body.acceleration` (the `transform` / `rigid_body` tables are
+created when the prefab does not have them), and `hp` sets the `health` of an
+entity that has a `health` component.
+
+#### Prefabs
+
+`script_path` is relative to `assets/scripts/prefabs/` (so
+`"player/remote_player.lua"` is `assets/scripts/prefabs/player/remote_player.lua`)
+and must not contain `..`. The same relative path is what other players receive
+in `spawn.script`. A prefab is a Lua file that returns either a scene-format
+entity definition or a `function(state)` returning one (`state` is the table
+above):
+
+```lua
+-- assets/scripts/prefabs/bullet.lua
+return {
+  components = {
+    transform = { position = { x = 0, y = 0 }, scale = { x = 0.5, y = 0.5 } },
+    sprite = { assetId = "bullet", width = 64, height = 32, src_rect = { x = 0, y = 192 } },
+    script = { path = "./assets/scripts/bullet.lua" },
+  },
+}
+```
+
+The entity is built with the same factory as scene entities (see
+[scene-format.md](scene-format.md)), so every component works. Textures must
+already be loaded by the current scene; a sprite whose texture is missing is
+simply not drawn.
+
+When another player's `spawn` arrives, the engine builds the same prefab
+automatically and tags it with the sender's netId and owner: Lua does not have
+to handle `spawn` (a `net_on("spawn", ...)` handler still fires afterwards).
+Incoming `despawn` removes the entity the same way.
+
+Building a prefab with a `script` component redefines the `update` / `on_*`
+globals while it loads (same as `require` of a script mid-update); `this` is
+saved and restored around it.
 
 ---
 

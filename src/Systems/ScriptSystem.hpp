@@ -61,5 +61,6 @@ class ScriptSystem : public System {
     registerInventoryBindings(lua);
     registerLootBindings(lua);
     registerGameBindings(lua);
+    registerNetworkBindings(lua);
   }
 };

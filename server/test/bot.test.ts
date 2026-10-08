@@ -195,4 +195,17 @@ describe("fake-client bot", () => {
     expect(h.sent.filter((m) => m.t === "room_settings")).toHaveLength(1);
     h.ws.terminate();
   });
+
+  it("answers a custom ping with a direct pong carrying the same data", async () => {
+    const h = await startBot();
+    const obs = await connectObserver();
+    await obs.client.next("spawn");
+    obs.client.send(msg("custom", { type: "ping", data: { n: 1 } }));
+    const pong = await obs.client.next("custom");
+    expect(validateMessage(pong)).toBe(true);
+    expect(pong.type).toBe("pong");
+    expect(pong.data).toEqual({ n: 1 });
+    expect(pong.from).toBe(h.bot.playerId);
+    h.ws.terminate();
+  });
 });

@@ -15,6 +15,7 @@
 #include "InventoryBindings.hpp"
 #include "LootBindings.hpp"
 #include "MovementBindings.hpp"
+#include "NetworkBindings.hpp"
 #include "GravityBindings.hpp"
 #include "PathBindings.hpp"
 #include "ScriptBindings.hpp"

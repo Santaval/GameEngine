@@ -89,6 +89,34 @@ describe("relay server", () => {
     expect((await b.client.next("despawn")).netId).toBe(`${a.playerId}:3`);
   });
 
+  it("relays custom messages, broadcast and directed, with from stamped", async () => {
+    const a = await connect();
+    const b = await connect();
+    const c = await connect();
+    a.client.send(msg("custom", { type: "chat", data: { text: "hi", n: [1, 2] }, from: "spoofed" }));
+    for (const peer of [b, c]) {
+      const got = await peer.client.next("custom");
+      expect(got.from).toBe(a.playerId);
+      expect(got.type).toBe("chat");
+      expect(got.data).toEqual({ text: "hi", n: [1, 2] });
+    }
+
+    a.client.send(msg("custom", { type: "whisper", to: b.playerId }));
+    expect((await b.client.next("custom")).type).toBe("whisper");
+    await c.client.expectNone("custom");
+  });
+
+  it("drops custom messages without a valid type", async () => {
+    const a = await connect();
+    const b = await connect();
+    a.client.send(msg("custom", { data: 1 }));
+    a.client.send(msg("custom", { type: "" }));
+    a.client.send(msg("custom", { type: "x".repeat(65) }));
+    a.client.send(msg("custom", { type: "ok" }));
+    expect((await b.client.next("custom")).type).toBe("ok");
+    expect(b.client.queue.filter((m) => m.t === "custom")).toEqual([]);
+  });
+
   it("does not echo broadcasts to the sender", async () => {
     const a = await connect();
     const b = await connect();

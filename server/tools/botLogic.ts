@@ -144,6 +144,12 @@ export class Bot {
           });
         }
         break;
+      case "custom":
+        // Eco para probar el round-trip de net_send/net_on desde un solo cliente
+        if (m.type === "ping" && m.from && m.from !== this.playerId) {
+          this.send("custom", { type: "pong", data: m.data }, m.from);
+        }
+        break;
       case "despawn":
         this.remoteBullets.delete(m.netId);
         break;

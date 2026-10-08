@@ -98,7 +98,7 @@ the server. "Broadcast" excludes the sender.
 
 | Type | Direction | Sender | Fields | Notes |
 | --- | --- | --- | --- | --- |
-| `spawn` | client -> all | owner | `netId`, `owner`, `script`, `state` | `state` is `{ pos, vel, rot, acc, hp? }` plus any script-specific extras. `script` names the Lua script to attach. Rule 3. |
+| `spawn` | client -> all | owner | `netId`, `owner`, `script`, `state` | `state` is `{ pos, vel, rot, acc, hp? }` plus any script-specific extras. `script` is a prefab path relative to `assets/scripts/prefabs/` (e.g. `player/remote_player.lua`). Rule 3. |
 | `despawn` | client -> all | owner | `netId` | Removes the entity everywhere. Rule 3. |
 | `state` | client -> all | owner | `netId`, `pos`, `vel`, `rot`, `acc` | Periodic correction of the owner's entity. Stale ones (by `seq`) are dropped. Rule 1. |
 
@@ -135,6 +135,17 @@ the server. "Broadcast" excludes the sender.
 | `snapshot_request` | client -> all | joining player | (none) | A plain broadcast; the server does not treat it specially. Only the host answers. |
 | `snapshot` | client -> client | host | `entities[]`, `settings` | Direct (`to` = requester). Each entity is `{ netId, owner, script, state }`; `settings` is `{ pvp }`. |
 | `room_settings` | client -> all | host | `pvp` | Changes room-wide settings. |
+
+### Custom
+
+| Type | Direction | Sender | Fields | Notes |
+| --- | --- | --- | --- | --- |
+| `custom` | client -> all, or direct | any player | `type`, `data?` | Script-level message. `type` is a string of 1-64 characters; `data` is any JSON and is relayed untouched. Broadcast, or direct with `to`. Used by the Lua `net_send` / `net_on` for any type that is not a protocol message. |
+
+```json
+{ "t": "custom", "from": "k3f9", "seq": 7, "ts": 1718000000456,
+  "type": "chat", "data": { "text": "hola" } }
+```
 
 ---
 
@@ -241,6 +252,18 @@ mutex-protected queue. `NetClient::poll()` runs at the start of `Game::update()`
 before `Registry::update()` and the scripts, and is the only place that updates
 state (`myPlayerId`, `hostId`, `peers`), logs and calls handlers registered with
 `subscribe(type, handler)`. Never touch the registry from the socket thread.
+
+### Lua scripting
+
+Gameplay scripts reach all of this through the `net_*` functions (see the
+Network section of [lua-api.md](lua-api.md)). `NetworkScripting`
+(`src/Network/`) subscribes to `custom`, `spawn` and `despawn` in `NetClient`:
+`custom` is dispatched to `net_on` handlers by its `type`; an incoming `spawn`
+builds the prefab named by `script` (relative to `assets/scripts/prefabs/`) and
+registers it with the message's `netId` and `owner`; `despawn` kills the
+matching entity. Lua tables are converted to JSON by `src/Network/LuaJson.hpp`.
+The fake bot answers `custom` `ping` with a direct `pong`, which allows a
+single-instance round-trip check.
 
 ### Network identity
 

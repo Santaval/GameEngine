@@ -4,6 +4,7 @@
 
 #include "../Network/NetClient.hpp"
 #include "../Network/NetworkRegistry.hpp"
+#include "../Network/NetworkScripting.hpp"
 #include "../Components/TransformComponent.hpp"
 #include "../Components/SpriteComponent.hpp"
 #include "../Components/RigidBodyComponent.hpp"
@@ -37,6 +38,7 @@ Game::Game() {
 }
 
 Game::~Game() {
+    this->networkScripting.reset();
     this->netClient.reset();
     this->networkRegistry.reset();
     this->assetManager.reset();
@@ -105,6 +107,8 @@ void Game::setup() {
     this->lua["package"]["path"] = "./assets/scripts/?.lua;./assets/scripts/player/?.lua;" +
         this->lua["package"]["path"].get<std::string>();
     this->registry->getSystem<ScriptSystem>().createLuaBiding(this->lua);
+    this->networkScripting = std::make_unique<NetworkScripting>(*this->netClient,
+        *this->networkRegistry, *this->registry, this->lua, *this->sceneLoader);
 
     sol::table loaded = this->lua["package"]["loaded"];
     for (const auto& entry : loaded) {
@@ -126,6 +130,10 @@ void Game::loadScene(const std::string& scenePath) {
     // funciones de los scripts que se van a volver a ejecutar
     this->registry->clear();
     this->networkRegistry->clear();
+    // Los handlers de net_on pertenecen a la escena que se descarga
+    if (this->networkScripting) {
+        this->networkScripting->clearHandlers();
+    }
     this->textBuffer.clear();
     this->rectBuffer.clear();
     this->camera.x = 0;

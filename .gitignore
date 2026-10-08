@@ -4,3 +4,4 @@ libs
 .vscode
 graphify-out
 tests/network_registry_test
+tests/lua_json_test
