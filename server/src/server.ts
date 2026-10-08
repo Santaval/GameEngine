@@ -1,4 +1,5 @@
 import { randomBytes } from "node:crypto";
+import { createServer as createHttpServer } from "node:http";
 import { WebSocketServer, WebSocket, type RawData } from "ws";
 import { DEFAULT_CONFIG, type Config } from "./config.js";
 import { createLogger } from "./log.js";
@@ -35,14 +36,20 @@ export async function createServer(opts: Partial<Config> = {}): Promise<RelaySer
   const room = new Room<Client>();
   let serverSeq = 0;
 
-  const wss = new WebSocketServer({
-    port: cfg.port,
-    host: cfg.host,
-    maxPayload: cfg.maxMessageBytes,
+  // Plain HTTP answers GET /health (for container health checks); everything
+  // else must be a WebSocket upgrade.
+  const http = createHttpServer((req, res) => {
+    if (req.url === "/health") {
+      res.writeHead(200, { "Content-Type": "text/plain" }).end("ok");
+    } else {
+      res.writeHead(426, { "Content-Type": "text/plain" }).end("Upgrade Required");
+    }
   });
+  const wss = new WebSocketServer({ server: http, maxPayload: cfg.maxMessageBytes });
   await new Promise<void>((resolve, reject) => {
-    wss.once("listening", resolve);
-    wss.once("error", reject);
+    http.once("listening", resolve);
+    http.once("error", reject);
+    http.listen(cfg.port, cfg.host);
   });
 
   function newPlayerId(): PlayerId {
@@ -195,7 +202,7 @@ export async function createServer(opts: Partial<Config> = {}): Promise<RelaySer
     }
   }, cfg.heartbeatIntervalMs);
 
-  const addr = wss.address();
+  const addr = http.address();
   const port = typeof addr === "object" && addr ? addr.port : cfg.port;
 
   return {
@@ -204,7 +211,7 @@ export async function createServer(opts: Partial<Config> = {}): Promise<RelaySer
       clearInterval(heartbeat);
       for (const c of wss.clients) c.terminate();
       return new Promise<void>((resolve, reject) => {
-        wss.close((err) => (err ? reject(err) : resolve()));
+        wss.close(() => http.close((err) => (err ? reject(err) : resolve())));
       });
     },
   };

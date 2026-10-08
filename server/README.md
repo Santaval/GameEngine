@@ -17,6 +17,31 @@ npm run bot     # scripted fake player (see below)
 Environment variables: `PORT` (default 7777), `HOST` (default 0.0.0.0),
 `RATE_LIMIT_PER_SEC` (120), `RATE_LIMIT_BURST` (240), `HEARTBEAT_INTERVAL_MS` (5000).
 
+`GET /health` returns `200 ok` (for container health checks); any other plain
+HTTP request gets `426 Upgrade Required`.
+
+## Docker / Coolify
+
+```
+docker build -t relay-server .
+docker run --rm -p 7777:7777 relay-server
+```
+
+To deploy on Coolify, create an application from this repo with:
+
+- **Build pack:** Dockerfile, **Base directory:** `/server`
+- **Ports exposes:** `7777`
+- **Health check:** path `/health`, port `7777` (the image also has its own
+  `HEALTHCHECK`)
+
+The engine's WebSocket client is built without TLS, so it can only use
+`ws://`, not `wss://`. Pick one:
+
+- Map the port directly (**Ports mappings** `7777:7777`, open it in the
+  firewall) and connect with `--server ws://<server-ip>:7777`.
+- Or give the app an `http://` domain (not `https://`) so Coolify's proxy
+  serves it on port 80 and connect with `--server ws://<domain>`.
+
 ## Fake-client bot
 
 `npm run bot` connects a scripted player to the relay so a single game

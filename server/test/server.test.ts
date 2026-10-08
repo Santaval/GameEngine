@@ -23,6 +23,13 @@ describe("relay server", () => {
     expect((await a.client.next("peer_left")).playerId).toBe(b.playerId);
   });
 
+  it("answers GET /health with 200 and other plain HTTP with 426", async () => {
+    const health = await fetch(`http://127.0.0.1:${env.port()}/health`);
+    expect(health.status).toBe(200);
+    expect(await health.text()).toBe("ok");
+    expect((await fetch(`http://127.0.0.1:${env.port()}/`)).status).toBe(426);
+  });
+
   it("lets two clients see each other's messages with from stamped", async () => {
     const a = await connect();
     const b = await connect();
