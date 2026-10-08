@@ -67,11 +67,14 @@ game.
 2. `Registry::update()` — entities created last frame join their systems, and
    entities killed last frame are removed.
 3. **ScriptSystem** — every entity's `update()` runs.
-4. **AnimationSystem** — advances spritesheet frames.
-5. **GravitySystem** — adds the pull of every attractor to the velocity of
+4. **NetSyncSystem** — owners send their `state` (12.5 Hz, within a message
+   budget); non-owners get pulled toward the owner's last known state (see
+   [multiplayer-protocol.md](multiplayer-protocol.md)).
+5. **AnimationSystem** — advances spritesheet frames.
+6. **GravitySystem** — adds the pull of every attractor to the velocity of
    every affected body (see [gravity.md](gravity.md)).
-6. **MovementSystem** — integrates acceleration into velocity into position.
-7. **CollisionSystem** — circle-vs-circle over every collider pair, emitting a
+7. **MovementSystem** — integrates acceleration into velocity into position.
+8. **CollisionSystem** — circle-vs-circle over every collider pair, emitting a
    collision event for each overlap. **DamageSystem** reacts to those events
    immediately.
 

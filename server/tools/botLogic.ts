@@ -72,6 +72,8 @@ export class Bot {
   vel: Vec2 = { x: 0, y: 0 };
   acc: Vec2 = { x: 0, y: 0 };
   rot = 0;
+  /** Rumbo de viaje atan2(vel), distinto de `rot` (la proa apunta a -y). */
+  heading = 0;
   readonly remoteBullets = new Map<NetId, RemoteBullet>();
   readonly ownBullets = new Map<NetId, RemoteBullet>();
 
@@ -234,8 +236,19 @@ export class Bot {
     const w = this.omega;
     this.pos = { x: this.cx + r * Math.cos(a), y: this.cy + r * Math.sin(a) };
     this.vel = { x: -r * w * Math.sin(a), y: r * w * Math.cos(a) };
-    this.acc = { x: -r * w * w * Math.cos(a), y: -r * w * w * Math.sin(a) };
-    this.rot = r * w === 0 ? 0 : Math.atan2(this.vel.y, this.vel.x);
+    // Rumbo de viaje (mundo); se usa para las balas
+    this.heading = r * w === 0 ? 0 : Math.atan2(this.vel.y, this.vel.x);
+    // La proa de la nave es -y con rot 0, asi que mira al rumbo con rot = rumbo + pi/2
+    this.rot = this.heading + Math.PI / 2;
+    // `acc` viaja en espacio LOCAL (como RigidBodyComponent.acceleration, que
+    // MovementSystem rota por rot): local = R(-rot) * aceleracion mundo
+    const worldAcc = { x: -r * w * w * Math.cos(a), y: -r * w * w * Math.sin(a) };
+    const cos = Math.cos(this.rot);
+    const sin = Math.sin(this.rot);
+    this.acc = {
+      x: worldAcc.x * cos + worldAcc.y * sin,
+      y: -worldAcc.x * sin + worldAcc.y * cos,
+    };
   }
 
   private kinematics() {
@@ -287,7 +300,7 @@ export class Bot {
     const id = this.nextNetId();
     const bullet: RemoteBullet = {
       pos: { ...this.pos },
-      vel: { x: Math.cos(this.rot) * BULLET_SPEED, y: Math.sin(this.rot) * BULLET_SPEED },
+      vel: { x: Math.cos(this.heading) * BULLET_SPEED, y: Math.sin(this.heading) * BULLET_SPEED },
       dmg: 10,
       age: 0,
     };

@@ -11,7 +11,7 @@ decisions happen on the clients.
 | Source of truth | [`server/src/protocol.ts`](../server/src/protocol.ts) — types plus a runtime validator for every message. This document describes it for humans. |
 | Version | `PROTOCOL_VERSION = 1`, sent by the client in `hello.version`. |
 | Max message size | `MAX_MESSAGE_BYTES = 16384` (16 KB). Larger messages are dropped. |
-| Units | Positions in world pixels, velocity in px/s, acceleration in px/s², **rotation in radians** (same as `TransformComponent.rotation`). |
+| Units | Positions in world pixels, velocity in px/s, acceleration in px/s² (**local space**, same as `RigidBodyComponent.acceleration`: the engine rotates it by `rot`), **rotation in radians** (same as `TransformComponent.rotation`). |
 
 ---
 
@@ -287,3 +287,29 @@ managed through `NetworkRegistry` (`src/Network/`, reachable with
 
 Local entity ids are recycled and reset on scene load, so they must never go on
 the wire: always send the `netId`.
+
+### State replication
+
+`NetSyncSystem` (`src/Systems/NetSyncSystem.hpp`) keeps networked entities
+aligned, since every machine simulates every entity with its own variable
+timestep and would otherwise drift apart. It runs each frame after the scripts
+and before gravity/movement.
+
+- **Owner side:** every 80 ms (12.5 Hz) it sends `state` (`netId`, `pos`, `vel`,
+  `rot`, `acc`) for each entity it owns, skipping entities whose kinematics
+  have not changed (0.5 px, 0.5 px/s, 0.001 rad, 0.01 acc). Nothing is sent
+  while offline or before `welcome`.
+- **Send budget:** at most 60 `state` messages per second (token bucket, burst
+  60), stalest entity first. The relay allows 120 msg/s and closes offenders
+  with 1008, so half is left for `fire`, `damage` and `custom`. Entities that
+  did not fit stay "changed" and go first on the next tick.
+- **Receiver side:** a `state` is dropped if the `netId` is unknown, the entity
+  is owned locally, `from` is not the entity's owner, or `seq` is not newer
+  than the last one from that sender (a new `from`, e.g. after host migration,
+  resets the sequence).
+- **Correction:** clocks are not synchronized, so a fixed one-way latency of
+  50 ms is assumed: `target = pos + vel * 0.05`. If the target is less than
+  200 px from the local position the difference is absorbed with a lerp over
+  100 ms; farther than that the position snaps. `vel`, `rot` and `acc` are set
+  directly. Local physics keeps running between messages.
+- `Game::loadScene()` clears the system's bookkeeping.

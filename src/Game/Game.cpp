@@ -21,6 +21,7 @@
 #include "../Systems/DamageSystem.hpp"
 #include "../Systems/AnimationSystem.hpp"
 #include "../Systems/ScriptSystem.hpp"
+#include "../Systems/NetSyncSystem.hpp"
 #include "../Systems/TextRenderSystem.hpp"
 #include "../Systems/PathRenderSystem.hpp"
 #include "../Systems/ColliderRenderSystem.hpp"
@@ -99,6 +100,7 @@ void Game::setup() {
     this->registry->addSystem<DamageSystem>();
     this->registry->addSystem<AnimationSystem>();
     this->registry->addSystem<ScriptSystem>();
+    this->registry->addSystem<NetSyncSystem>();
     this->registry->addSystem<TextRenderSystem>();
     this->registry->addSystem<PathRenderSystem>();
     this->registry->addSystem<ColliderRenderSystem>();
@@ -109,6 +111,11 @@ void Game::setup() {
     this->registry->getSystem<ScriptSystem>().createLuaBiding(this->lua);
     this->networkScripting = std::make_unique<NetworkScripting>(*this->netClient,
         *this->networkRegistry, *this->registry, this->lua, *this->sceneLoader);
+
+    // Correccion de deriva: los "state" de los duenos llegan por poll()
+    this->netClient->subscribe("state", [this](const nlohmann::json& msg) {
+        this->registry->getSystem<NetSyncSystem>().onState(msg, *this->networkRegistry);
+    });
 
     sol::table loaded = this->lua["package"]["loaded"];
     for (const auto& entry : loaded) {
@@ -130,6 +137,7 @@ void Game::loadScene(const std::string& scenePath) {
     // funciones de los scripts que se van a volver a ejecutar
     this->registry->clear();
     this->networkRegistry->clear();
+    this->registry->getSystem<NetSyncSystem>().clear();
     // Los handlers de net_on pertenecen a la escena que se descarga
     if (this->networkScripting) {
         this->networkScripting->clearHandlers();
@@ -263,6 +271,11 @@ void Game::update() {
 
     this->registry->update();
     this->registry->getSystem<ScriptSystem>().update(this->lua);
+    // Replicacion de estado: envia lo propio y corrige lo ajeno antes de simular
+    for (auto& msg : this->registry->getSystem<NetSyncSystem>().update(
+            deltaTime, *this->networkRegistry, this->netClient->isOnline())) {
+        this->netClient->send(std::move(msg));
+    }
     this->registry->getSystem<AnimationSystem>().update();
     // La gravedad suma a la velocidad antes de integrar el movimiento
     this->registry->getSystem<GravitySystem>().update(deltaTime);
