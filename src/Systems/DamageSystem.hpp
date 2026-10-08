@@ -7,8 +7,11 @@
 #include "../Components/CircleColliderComponent.hpp"
 #include "../Components/DamageComponent.hpp"
 #include "../Components/HealthComponent.hpp"
+#include "../Components/RigidBodyComponent.hpp"
 #include "../ECS/System.hpp"
+#include "../Util/ColliderCenter.hpp"
 #include "../Util/Damage.hpp"
+#include "../Util/ImpactDamage.hpp"
 
 // Traduce colisiones en daño. Es generico: no sabe que es una bala ni que es
 // una nave, solo mira si el que golpea tiene DamageComponent y si el golpeado
@@ -33,6 +36,28 @@ class DamageSystem : public System {
     }
 
   private:
+    // Velocidad con la que se acercan los centros de los colliders, a lo largo
+    // de la normal atacante -> blanco (misma formula que bounce_off_ship en
+    // asteroid.lua). Positiva = se acercan, <= 0 = se separan o no hay normal.
+    // Corre antes que ScriptSystem, asi que ve las velocidades previas al rebote
+    static float closingSpeed(Entity attacker, Entity target) {
+      glm::dvec2 delta = colliderCenter(target) - colliderCenter(attacker);
+      double dist = glm::length(delta);
+      if (dist < 0.001) return 0.0f;
+      glm::vec2 normal = glm::vec2(delta / dist);
+
+      glm::vec2 attackerVel(0.0f);
+      glm::vec2 targetVel(0.0f);
+      if (attacker.hasComponent<RigidBodyComponent>()) {
+        attackerVel = attacker.getComponent<RigidBodyComponent>().velocity;
+      }
+      if (target.hasComponent<RigidBodyComponent>()) {
+        targetVel = target.getComponent<RigidBodyComponent>().velocity;
+      }
+
+      return -glm::dot(targetVel - attackerVel, normal);
+    }
+
     void resolve(Entity attacker, Entity target) {
       if (!attacker.hasComponent<DamageComponent>()) return;
 
@@ -42,7 +67,17 @@ class DamageSystem : public System {
       // Contra un blanco indestructible el proyectil ni se gasta: lo atraviesa
       if (!target.hasComponent<HealthComponent>()) return;
 
-      applyDamage(target, damage.amount, attacker);
+      int amount = damage.amount;
+      if (damage.fullImpactSpeed > 0.0f) {
+        amount = impactDamage(amount, closingSpeed(attacker, target),
+                              damage.minImpactSpeed, damage.fullImpactSpeed);
+        // Un roce no daña ni abre la ventana de invulnerabilidad del blanco.
+        // Solo se escala el daño por contacto (sin destroyOnHit), asi que no
+        // hay nada que gastar aqui
+        if (amount <= 0) return;
+      }
+
+      applyDamage(target, amount, attacker);
 
       // Esto solo quita la bala en esta maquina (killWithHooks nunca manda
       // "despawn"). Si la bala es de otro jugador, el dueño la borra al recibir

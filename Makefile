@@ -92,7 +92,7 @@ $(IXWS_LIB): $(DEPS_STAMP)
 run:
 	./engine
 
-# Tests unitarios: NetworkRegistry, NetSyncSystem, DamageSync y WorldSync (solo ECS, sin SDL ni red) y LuaJson (solo sol + nlohmann)
+# Tests unitarios: NetworkRegistry, NetSyncSystem, DamageSync, WorldSync e ImpactDamage (solo ECS, sin SDL ni red) y LuaJson (solo sol + nlohmann)
 test: $(DEPS_STAMP)
 	$(CC) $(CFLAGS) $(STD) $(INC_PATH) -I./src tests/NetworkRegistryTest.cpp src/ECS/*.cpp src/Network/NetworkRegistry.cpp -o tests/network_registry_test
 	./tests/network_registry_test
@@ -104,9 +104,11 @@ test: $(DEPS_STAMP)
 	./tests/world_sync_test
 	$(CC) $(CFLAGS) $(STD) $(INC_PATH) tests/LuaJsonTest.cpp $(LUA_LIBS) -o tests/lua_json_test
 	./tests/lua_json_test
+	$(CC) $(CFLAGS) $(STD) $(INC_PATH) tests/ImpactDamageTest.cpp -o tests/impact_damage_test
+	./tests/impact_damage_test
 
 clean:
-	rm -f engine tests/network_registry_test tests/net_sync_test tests/damage_sync_test tests/world_sync_test tests/lua_json_test
+	rm -f engine tests/network_registry_test tests/net_sync_test tests/damage_sync_test tests/world_sync_test tests/lua_json_test tests/impact_damage_test
 
 clean-deps:
 	rm -rf $(IXWS_OBJ) $(IXWS_LIB)

@@ -171,6 +171,8 @@ local player = {
       },
       damage = {
         amount = cfg.SHIP_RAM_DAMAGE,
+        min_impact_speed = cfg.IMPACT_MIN_SPEED,
+        full_impact_speed = cfg.IMPACT_FULL_SPEED,
       },
       equipment = {
         engine = 1,

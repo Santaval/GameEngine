@@ -223,6 +223,8 @@ health = {
 damage = {
   amount         = 20,      -- default 0
   destroy_on_hit = true,    -- default false
+  min_impact_speed  = 40,   -- optional, px/s: slower impacts deal no damage
+  full_impact_speed = 200,  -- optional, px/s: impacts at/above deal `amount`; 0 = flat damage
 }
 ```
 

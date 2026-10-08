@@ -237,7 +237,12 @@ void SceneLoader::addDamageComponent(Entity entity, const sol::table& components
 
   bool fromPlayer = damage["player"].get_or(false);
 
-  entity.addComponent<DamageComponent>(amount, destroyOnHit, fromPlayer);
+  // Opcionales: con full_impact_speed > 0 amount pasa a ser el tope y el daño
+  // escala con la velocidad de cierre (ver DamageComponent)
+  float minImpactSpeed = damage["min_impact_speed"].get_or(0.0f);
+  float fullImpactSpeed = damage["full_impact_speed"].get_or(0.0f);
+
+  entity.addComponent<DamageComponent>(amount, destroyOnHit, fromPlayer, minImpactSpeed, fullImpactSpeed);
 }
 
 void SceneLoader::addGravityComponent(Entity entity, const sol::table& components) {

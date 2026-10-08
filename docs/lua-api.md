@@ -209,6 +209,7 @@ Summarised here; the full guide is in
 | `heal(e, amount)` | — | Cannot revive something already at `0`. |
 | `set_max_health(e, value)` | — | Clamped to `>= 1`. Never kills — if `health` is above the new max, it is clamped down too, without firing `on_death`. |
 | `add_damage(e, amount, destroy_on_hit?, player?)` | — | `destroy_on_hit` defaults to `false`. `player` (default `false`) marks a player weapon that does not hurt other players when PvP is off. |
+| `set_impact_damage(e, min_speed, full_speed)` | — | Scales contact damage by closing speed (px/s): none at or below `min_speed`, full `amount` at or above `full_speed`. `0, 0` = flat damage. |
 | `get_damage(e)` / `set_damage(e, amount)` | `int` / — | `set_damage` adds the component if missing. |
 
 **An entity with no health component is indestructible.**

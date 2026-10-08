@@ -53,6 +53,9 @@ Two new component tables are accepted inside `components`:
     damage = {
       amount         = 20,
       destroy_on_hit = false, -- optional, defaults to false
+      -- optional: scale the damage by impact speed (see "Impact speed" below)
+      min_impact_speed  = 40,
+      full_impact_speed = 200,
     },
   },
 }
@@ -95,6 +98,7 @@ timer by itself, so an expiring bullet is never sent as a `despawn`.
 | Function | Returns | Notes |
 | --- | --- | --- |
 | `add_damage(e, amount, destroy_on_hit?)` | — | `destroy_on_hit` defaults to `false`. |
+| `set_impact_damage(e, min_speed, full_speed)` | — | Enables impact-speed scaling (see below); `0, 0` disables it. Adds the component with `0` damage if missing. |
 | `get_damage(e)` | `int` | `0` if the entity has no `DamageComponent`. |
 | `set_damage(e, amount)` | — | Adds the component if it is missing. Useful for power-ups. |
 
@@ -163,19 +167,40 @@ hurt each other in the same impact:
 2. Has that component already been spent this life? If so, nothing happens.
 3. Does the **target** have a `HealthComponent`? If not, nothing happens — the
    attacker is *not* consumed, it simply passes through.
-4. Apply the damage. This is skipped when the target is already at `0` HP, or
+4. If the attacker has `full_impact_speed > 0`, scale the damage by impact
+   speed (see below). When it rounds to `0` the hit is dropped here: nothing
+   is applied and the target's invulnerability window does not start.
+5. Apply the damage. This is skipped when the target is already at `0` HP, or
    when it is still inside its invulnerability window.
-5. If `destroy_on_hit` is set, mark the attacker as spent and destroy it.
+6. If `destroy_on_hit` is set, mark the attacker as spent and destroy it.
 
 Two consequences worth knowing:
 
-- **Step 5 runs even when step 4 was skipped.** A bullet that hits a target
+- **Step 6 runs even when step 5 was skipped.** A bullet that hits a target
   during its invulnerability window is still consumed — it connected, the target
   just shrugged it off. If you want bullets to pass through invulnerable
   targets, that is a change to `DamageSystem::resolve`.
 - **`destroy_on_hit` is about being consumed, not about dying on contact.** An
   entity with `destroy_on_hit = false` keeps its damage forever and will hurt
   everything it touches, over and over.
+
+### Impact speed
+
+By default `amount` is flat. Setting `full_impact_speed` (px/s) on the
+`damage` table makes `amount` the *cap* and scales the damage by the **closing
+speed**: the relative velocity of the two bodies along the line joining their
+collider centers (the same normal `bounce_off_ship` in `asteroid.lua` uses).
+A missing `RigidBodyComponent` counts as zero velocity.
+
+- closing speed `<= min_impact_speed` (or bodies separating): no damage
+- closing speed `>= full_impact_speed`: the full `amount`
+- in between: linear, rounded to the nearest integer
+
+A glancing bump therefore costs nothing and does not trigger the target's
+invulnerability. `DamageSystem` subscribes before `ScriptSystem`, so it sees the
+velocities from before any scripted bounce. Both fields default to `0`
+(disabled), so bullets and other flat-damage entities are unaffected. Contact
+between two entities that both use it (asteroid against asteroid) is scaled too.
 
 ### Invulnerability
 
@@ -224,7 +249,8 @@ grind each other to dust in a fraction of a second.
 
 ```lua
 health = { max = 100, invulnerability = 0.5 },
-damage = { amount = 10 },   -- no destroy_on_hit: the ship survives the crash
+damage = { amount = 10, min_impact_speed = 40, full_impact_speed = 200 },
+-- no destroy_on_hit: the ship survives the crash
 ```
 
 Ramming is two-way: the ship takes the asteroid's damage and the asteroid takes

@@ -43,6 +43,8 @@ return function(state)
     -- que preocuparse es quien se lo lleve por delante
     damage = {
       amount = cfg.ASTEROID_DAMAGE,
+      min_impact_speed = cfg.IMPACT_MIN_SPEED,
+      full_impact_speed = cfg.IMPACT_FULL_SPEED,
     },
     loot = asteroidType.loot,
     script = {

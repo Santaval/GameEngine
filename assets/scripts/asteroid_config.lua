@@ -37,12 +37,23 @@ config.ASTEROID_HEALTH = 60
 -- pulverizarian al instante
 config.ASTEROID_INVULNERABILITY = 0.5
 
--- Dano que hace un asteroide al estrellarse contra algo con vida
+-- Dano maximo que hace un asteroide al estrellarse contra algo con vida (el
+-- choque real escala con la velocidad, ver IMPACT_*_SPEED)
 config.ASTEROID_DAMAGE = 20
 
--- Dano que hace la nave al embestir un asteroide (el asteroide solo suelta
--- loot si lo rompen a tiros, ver on_damage en asteroid.lua)
+-- Dano maximo que hace la nave al embestir un asteroide (el asteroide solo
+-- suelta loot si lo rompen a tiros, ver on_damage en asteroid.lua)
 config.SHIP_RAM_DAMAGE = 10
+
+-- Velocidad de impacto (px/s, de cierre a lo largo de la normal entre los
+-- centros) que escala el dano de contacto: por debajo de MIN no hay dano (ni
+-- invulnerabilidad), en FULL se aplica el dano entero. Los asteroides van a
+-- 1-20 px/s y la nave a 100-220 (max_speed 60 + 40 por nivel de motor), asi
+-- que casi todo el cierre lo pone la nave: FULL = 200 hace que un choque a
+-- velocidad crucero ya sea completo y MIN = 40 deja pasar los roces y los
+-- asteroides a la deriva
+config.IMPACT_MIN_SPEED = 40
+config.IMPACT_FULL_SPEED = 200
 
 -- Tipos de asteroide. weight es la probabilidad relativa de aparicion,
 -- frame la variante del spritesheet (0 sana, 1 agrietada, 2 fundida),

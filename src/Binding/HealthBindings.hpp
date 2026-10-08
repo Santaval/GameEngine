@@ -80,6 +80,16 @@ inline void addDamage(Entity e, int amount, sol::optional<bool> destroyOnHit,
   e.addComponent<DamageComponent>(amount, destroyOnHit.value_or(false), player.value_or(false));
 }
 
+// Activa la escala por velocidad de impacto (ver DamageComponent). Añade el
+// componente con daño 0 si falta; min = full = 0 la desactiva
+inline void setImpactDamage(Entity e, float minSpeed, float fullSpeed) {
+  if (!e.hasComponent<DamageComponent>()) e.addComponent<DamageComponent>(0);
+
+  auto& damage = e.getComponent<DamageComponent>();
+  damage.minImpactSpeed = minSpeed;
+  damage.fullImpactSpeed = fullSpeed;
+}
+
 inline int getDamage(Entity e) {
   if (!e.hasComponent<DamageComponent>()) return 0;
   return e.getComponent<DamageComponent>().amount;
@@ -105,4 +115,5 @@ inline void registerHealthBindings(sol::state& lua) {
   lua.set_function("add_damage", addDamage);
   lua.set_function("get_damage", getDamage);
   lua.set_function("set_damage", setDamage);
+  lua.set_function("set_impact_damage", setImpactDamage);
 }
