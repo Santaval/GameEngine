@@ -37,6 +37,11 @@ void Registry::killEntity(Entity entity) {
 }
 
 
+void Registry::onEntityKilled(std::function<void(Entity)> listener) {
+  this->killListeners.push_back(std::move(listener));
+}
+
+
 void Registry::addEntityToSystems(Entity entity) {
   const int entityId = entity.getId();
   const Signature& entityComponentSignature 
@@ -69,6 +74,13 @@ void Registry::update() {
 
   for(auto entity : this->entitiesToBeKilled) {
     this->removeEntityFromSystem(entity);
+
+    // Antes de resetear la firma y de liberar el id: los listeners aun pueden
+    // leer los componentes y el id todavia no se puede reciclar
+    for(auto& listener : this->killListeners) {
+      listener(entity);
+    }
+
     this->entityComponentSignature[entity.getId()].reset();
 
     this->freeIds.push_back(entity.getId());

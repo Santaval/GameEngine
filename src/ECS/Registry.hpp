@@ -8,6 +8,7 @@
 #include <deque>
 #include <utility>
 #include <iostream>
+#include <functional>
 #include "../Util/Pool.hpp"
 #include "System.hpp"
 #include "Entity.hpp"
@@ -21,6 +22,7 @@ class Registry {
     std::set<Entity> entitiesToBeAdded;
     std::set<Entity> entitiesToBeKilled;
     std::deque<int> freeIds;
+    std::vector<std::function<void(Entity)>> killListeners;
 
   public:
     Registry();
@@ -34,6 +36,11 @@ class Registry {
 
     Entity createEntity();
     void killEntity(Entity entity);
+
+    // Registra un listener que corre en update() por cada entidad que muere,
+    // antes de resetear su firma y de reciclar su id (aun se pueden leer sus
+    // componentes). clear() no los llama; los listeners sobreviven a clear().
+    void onEntityKilled(std::function<void(Entity)> listener);
 
     // components managment
 

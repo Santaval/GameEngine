@@ -3,6 +3,7 @@
 #include <iostream>
 
 #include "../Network/NetClient.hpp"
+#include "../Network/NetworkRegistry.hpp"
 #include "../Components/TransformComponent.hpp"
 #include "../Components/SpriteComponent.hpp"
 #include "../Components/RigidBodyComponent.hpp"
@@ -28,6 +29,7 @@ Game::Game() {
     this->eventManager = std::make_unique<EventManager>();
     this->controllerManager = std::make_unique<ControllerManager>();
     this->registry = std::make_unique<Registry>(); 
+    this->networkRegistry = std::make_unique<NetworkRegistry>(this->registry.get());
     this->netClient = std::make_unique<NetClient>();
 
     this->sceneLoader = std::make_unique<SceneLoader>(); 
@@ -36,6 +38,7 @@ Game::Game() {
 
 Game::~Game() {
     this->netClient.reset();
+    this->networkRegistry.reset();
     this->assetManager.reset();
     this->controllerManager.reset();
     this->eventManager.reset();
@@ -122,6 +125,7 @@ void Game::loadScene(const std::string& scenePath) {
     // Primero se sueltan las entidades: sus ScriptComponent guardan
     // funciones de los scripts que se van a volver a ejecutar
     this->registry->clear();
+    this->networkRegistry->clear();
     this->textBuffer.clear();
     this->rectBuffer.clear();
     this->camera.x = 0;
@@ -242,6 +246,7 @@ void Game::update() {
 
     // Red: los handlers corren aqui, en el hilo principal, antes de todo lo demas
     this->netClient->poll();
+    this->networkRegistry->setLocalPlayerId(this->netClient->getMyPlayerId());
 
     // Reset events subscriptions
     this->eventManager->reset();

@@ -68,7 +68,7 @@ SRC = src/*.cpp \
       src/SceneManager/*.cpp \
       src/Network/*.cpp
 
-.PHONY: build run clean clean-deps deps
+.PHONY: build run test clean clean-deps deps
 
 build: $(DEPS_STAMP) $(IXWS_LIB)
 	$(CC) $(CFLAGS) $(STD) $(INC_PATH) $(SRC) $(LFLAGS) -o engine
@@ -92,8 +92,13 @@ $(IXWS_LIB): $(DEPS_STAMP)
 run:
 	./engine
 
+# Test unitario de NetworkRegistry: solo ECS + NetworkRegistry (sin SDL ni red)
+test:
+	$(CC) $(CFLAGS) $(STD) -I./src tests/NetworkRegistryTest.cpp src/ECS/*.cpp src/Network/NetworkRegistry.cpp -o tests/network_registry_test
+	./tests/network_registry_test
+
 clean:
-	rm -f engine
+	rm -f engine tests/network_registry_test
 
 clean-deps:
 	rm -rf $(IXWS_OBJ) $(IXWS_LIB)

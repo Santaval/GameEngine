@@ -3,3 +3,4 @@ luatest
 libs
 .vscode
 graphify-out
+tests/network_registry_test

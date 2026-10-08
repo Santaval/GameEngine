@@ -22,6 +22,7 @@ entirely in Lua.
 make        # builds ./engine
 make run    # ./engine
 make deps   # fetches IXWebSocket + nlohmann/json (make build does it automatically)
+make test   # unit test for NetworkRegistry (ECS only, no SDL)
 make clean
 make clean-deps   # forces IXWebSocket to be rebuilt
 ```
@@ -107,6 +108,7 @@ says "thrust forward", and the engine resolves what forward means.
 | `InventoryComponent` | Named item quantities plus an optional total capacity. | `inventory` |
 | `TextComponent` | A label pinned to the entity. | `text` |
 | `PathComponent` | Trajectory prediction toggle. | `path` |
+| `NetworkComponent` | Network identity (`netId`) and owner (`ownerId`); set via `NetworkRegistry`. | none yet |
 | `ScriptComponent` | `update`, `on_damage`, `on_death`, `on_collision`. | `script` |
 
 ---

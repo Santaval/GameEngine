@@ -241,3 +241,26 @@ mutex-protected queue. `NetClient::poll()` runs at the start of `Game::update()`
 before `Registry::update()` and the scripts, and is the only place that updates
 state (`myPlayerId`, `hostId`, `peers`), logs and calls handlers registered with
 `subscribe(type, handler)`. Never touch the registry from the socket thread.
+
+### Network identity
+
+Entities shared between machines carry a `NetworkComponent` (`netId`, `ownerId`),
+managed through `NetworkRegistry` (`src/Network/`, reachable with
+`Game::getNetworkRegistry()`). It keeps the `netId <-> Entity` map:
+
+- `nextNetId()` returns `"<myPlayerId>:<counter>"` (prefix `local` while offline).
+  The counter is never reset, not even on scene change. `Game::update()` pushes
+  the player id from `NetClient` after each `poll()`.
+- `registerEntity(entity, netId, ownerId)` adds the component and the mapping
+  immediately, so events arriving in the same frame (before `Registry::update()`
+  flushes the spawn) can already find the entity.
+- `isLocallyOwned(entity)` is true when the entity has no `NetworkComponent` or
+  its `ownerId` is the local player, so offline play and purely local entities
+  (particles, HUD) are unaffected. `entitiesOwnedBy` / `reassignOwner` support
+  host migration.
+- Cleanup: the mapping is removed in `Registry::update()` when the entity is
+  killed (via `Registry::onEntityKilled`, before the local id is recycled) and
+  cleared in `Game::loadScene()`.
+
+Local entity ids are recycled and reset on scene load, so they must never go on
+the wire: always send the `netId`.
