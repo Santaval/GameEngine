@@ -3,6 +3,7 @@
 #include "../src/ECS/Registry.hpp"
 #include "../src/Network/NetworkRegistry.hpp"
 #include "../src/Components/NetworkComponent.hpp"
+#include "../src/ECS/System.hpp"
 
 static int failures = 0;
 
@@ -146,6 +147,41 @@ static void testDuplicate() {
   CHECK(net.netIdOf(e2).has_value());
 }
 
+namespace {
+  class NetOnlySystem : public System {
+    public:
+      NetOnlySystem() { this->requireComponent<NetworkComponent>(); }
+  };
+}
+
+static void testRefreshEntity() {
+  Registry registry;
+  NetworkRegistry net(&registry);
+  registry.addSystem<NetOnlySystem>();
+
+  // Entidad viva sin NetworkComponent: no esta en el sistema
+  Entity e = registry.createEntity();
+  registry.update();
+  CHECK(registry.getSystem<NetOnlySystem>().getEntities().empty());
+
+  // addComponent no reevalua sistemas; refreshEntity si
+  net.registerEntity(e, "me:1", "me");
+  CHECK(registry.getSystem<NetOnlySystem>().getEntities().empty());
+  registry.refreshEntity(e);
+  CHECK(registry.getSystem<NetOnlySystem>().getEntities().size() == 1);
+  // Repetir no duplica
+  registry.refreshEntity(e);
+  CHECK(registry.getSystem<NetOnlySystem>().getEntities().size() == 1);
+
+  // Pendiente de alta: refresh no hace nada y update() la agrega una sola vez
+  Entity pending = registry.createEntity();
+  net.registerEntity(pending, "me:2", "me");
+  registry.refreshEntity(pending);
+  CHECK(registry.getSystem<NetOnlySystem>().getEntities().size() == 1);
+  registry.update();
+  CHECK(registry.getSystem<NetOnlySystem>().getEntities().size() == 2);
+}
+
 int main() {
   testNextNetId();
   testFindBeforeUpdate();
@@ -156,6 +192,7 @@ int main() {
   testReassign();
   testClear();
   testDuplicate();
+  testRefreshEntity();
 
   if (failures > 0) {
     std::cerr << failures << " check(s) failed" << std::endl;

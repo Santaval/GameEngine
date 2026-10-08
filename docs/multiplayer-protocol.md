@@ -112,7 +112,7 @@ the server. "Broadcast" excludes the sender.
 
 | Type | Direction | Sender | Fields | Notes |
 | --- | --- | --- | --- | --- |
-| `fire` | client -> all | shooter | `bulletNetId`, `shooterNetId`, `pos`, `vel`, `dmg` | A bullet was fired; every client simulates it locally. The shooter owns the bullet. |
+| `fire` | client -> all | shooter | `bulletNetId`, `shooterNetId`, `pos`, `vel`, `dmg` | A bullet was fired; every client simulates it locally. The shooter owns the bullet. The engine handles it: it builds `prefabs/bullet.lua` at `pos` / `vel` with `dmg`, `fromPlayer = true` and the collider owner set to the shooter's ship, and registers it as `bulletNetId` owned by the sender. Bullets live 2 s on every client (`bullet_lifetime.lua`) and expire without a `despawn`. |
 | `damage` | client -> all | owner of `target` | `target`, `amount`, `newHp`, `source?` | Rule 4. Receivers set the target's HP to `newHp`. `source` is the bullet / entity netId. |
 | `death` | client -> all | owner of `netId` | `netId`, `killer?` | Rule 4. `killer` is a PlayerId. |
 
@@ -132,7 +132,7 @@ the server. "Broadcast" excludes the sender.
 
 | Type | Direction | Sender | Fields | Notes |
 | --- | --- | --- | --- | --- |
-| `snapshot_request` | client -> all | joining player | (none) | A plain broadcast; the server does not treat it specially. Only the host answers. |
+| `snapshot_request` | client -> all | joining player | (none) | A plain broadcast; the server does not treat it specially. The host answers with `snapshot`; other players answer with a direct `spawn` of their own ship. Sent by the engine after every scene load and reconnect. |
 | `snapshot` | client -> client | host | `entities[]`, `settings` | Direct (`to` = requester). Each entity is `{ netId, owner, script, state }`; `settings` is `{ pvp }`. |
 | `room_settings` | client -> all | host | `pvp` | Changes room-wide settings. |
 
@@ -257,6 +257,29 @@ before `Registry::update()` and the scripts, and is the only place that updates
 state (`myPlayerId`, `hostId`, `peers`), logs and calls handlers registered with
 `subscribe(type, handler)`. Never touch the registry from the socket thread.
 
+### Player ships
+
+The local ship is a scene entity (`player.lua`). Once online it registers itself
+with `net_register` and announces
+`spawn { script: "player/remote_player.lua", state }`, where `state` is
+`{ pos, vel, rot, acc, hp, name, max_hp, max_speed, engine, gun, shield }`.
+Other clients build the ship from that prefab (name, HP bar from `max_hp`, thrust
+flame from the replicated `acc`). The ship re-sends its `spawn` directly (`to`)
+to every `peer_joined`, since the newcomer missed the broadcast.
+
+Loading a scene (leaving the menu, for example) clears every entity, including
+remote ones that arrived earlier. So after each scene load, and after each
+`welcome` on reconnect, the engine broadcasts `snapshot_request`. The host
+answers with a `snapshot`, and the engine builds each of its `entities` like a
+`spawn`. Every other player (engine `player.lua` and the bot) answers with a
+direct `spawn` of its own ship. Duplicates are ignored by `netId`.
+
+When an upgrade
+changes the ship's stats, the owner broadcasts the custom message
+`player_stats { netId, max_hp, max_speed, engine, gun, shield }` so remote copies
+update their HP bar and speed cap. If a `damage` carries a `newHp` above the
+receiver's known maximum, the receiver raises its copy's maximum instead of clamping.
+
 ### Lua scripting
 
 Gameplay scripts reach all of this through the `net_*` functions (see the
@@ -265,7 +288,8 @@ Network section of [lua-api.md](lua-api.md)). `NetworkScripting`
 `custom` is dispatched to `net_on` handlers by its `type`; an incoming `spawn`
 builds the prefab named by `script` (relative to `assets/scripts/prefabs/`) and
 registers it with the message's `netId` and `owner`; `despawn` kills the
-matching entity. Lua tables are converted to JSON by `src/Network/LuaJson.hpp`.
+matching entity; `fire` builds a replica bullet (see the `fire` row above).
+Lua tables are converted to JSON by `src/Network/LuaJson.hpp`.
 The fake bot answers `custom` `ping` with a direct `pong`, which allows a
 single-instance round-trip check.
 

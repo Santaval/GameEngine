@@ -148,6 +148,10 @@ void Game::setup() {
     this->netClient->subscribe("snapshot", [this](const nlohmann::json& msg) {
         this->damageSync->onSnapshot(msg);
     });
+    // Reconexion: el servidor nos olvido y el resto tambien a nosotros
+    this->netClient->subscribe("welcome", [this](const nlohmann::json&) {
+        this->snapshotRequested = false;
+    });
 
     sol::table loaded = this->lua["package"]["loaded"];
     for (const auto& entry : loaded) {
@@ -170,6 +174,8 @@ void Game::loadScene(const std::string& scenePath) {
     this->registry->clear();
     this->networkRegistry->clear();
     this->registry->getSystem<NetSyncSystem>().clear();
+    // La escena nueva arranca sin las entidades de los demas: se vuelven a pedir
+    this->snapshotRequested = false;
     // Los handlers de net_on pertenecen a la escena que se descarga
     if (this->networkScripting) {
         this->networkScripting->clearHandlers();
@@ -295,6 +301,13 @@ void Game::update() {
     // Red: los handlers corren aqui, en el hilo principal, antes de todo lo demas
     this->netClient->poll();
     this->networkRegistry->setLocalPlayerId(this->netClient->getMyPlayerId());
+
+    // Lo que llego mientras estabamos en otra escena (el menu) se borro al
+    // cargar esta: el host responde con un snapshot y cada jugador con su nave
+    if (this->netClient->isOnline() && !this->snapshotRequested) {
+        this->snapshotRequested = true;
+        this->netClient->send({{"t", "snapshot_request"}});
+    }
 
     // Reset events subscriptions
     this->eventManager->reset();

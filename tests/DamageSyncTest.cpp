@@ -72,8 +72,12 @@ static void testDamageFromOwner() {
   // newHp se recorta al rango valido
   f.sync.onDamage(damageMsg("bot:1", "bot", 500, -5), 1);
   CHECK(h.health == 0);
-  f.sync.onDamage(damageMsg("bot:1", "bot", -500, 900), 1);
+  f.sync.onDamage(damageMsg("bot:1", "bot", -500, 100), 1);
   CHECK(h.health == 100);
+  // Mas vida que el tope conocido: el dueño subio su tope (escudo), se sigue
+  f.sync.onDamage(damageMsg("bot:1", "bot", -500, 140), 1);
+  CHECK(h.health == 140);
+  CHECK(h.maxHealth == 140);
 }
 
 static void testDamageIgnored() {

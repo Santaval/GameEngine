@@ -73,7 +73,11 @@ class DamageSync {
       if (!entity->hasComponent<HealthComponent>()) return;
 
       auto& health = entity->getComponent<HealthComponent>();
-      health.health = std::clamp(hpIt->get<int>(), 0, health.maxHealth);
+      const int newHp = std::max(hpIt->get<int>(), 0);
+      // Esta copia no conoce las mejoras (escudo) del dueño: si su vida supera
+      // nuestro tope, el tope subio alla y se sube aca tambien
+      if (newHp > health.maxHealth) health.maxHealth = newHp;
+      health.health = newHp;
       health.lastDamageTicks = now;
 
       auto amountIt = msg.find("amount");

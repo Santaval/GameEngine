@@ -1,8 +1,13 @@
 #include "NetworkScripting.hpp"
 
+#include <cmath>
 #include <iostream>
 
+#include "../Components/CircleColliderComponent.hpp"
+#include "../Components/DamageComponent.hpp"
 #include "../Components/HealthComponent.hpp"
+#include "../Components/RigidBodyComponent.hpp"
+#include "../Components/TransformComponent.hpp"
 #include "../Components/NetworkComponent.hpp"
 #include "LuaJson.hpp"
 
@@ -63,7 +68,11 @@ NetworkScripting::NetworkScripting(NetClient& netClient, NetworkRegistry& netReg
   // Handlers por defecto: corren antes que los de Lua porque se suscriben primero
   this->netClient.subscribe("spawn", [this](const json& msg) { this->onSpawnMessage(msg); });
   this->netClient.subscribe("despawn", [this](const json& msg) { this->onDespawnMessage(msg); });
+  this->netClient.subscribe("fire", [this](const json& msg) { this->onFireMessage(msg); });
+  this->netClient.subscribe("snapshot", [this](const json& msg) { this->onSnapshotMessage(msg); });
   this->subscribedTypes.insert("spawn");
+  this->subscribedTypes.insert("fire");
+  this->subscribedTypes.insert("snapshot");
   this->subscribedTypes.insert("despawn");
 }
 
@@ -138,6 +147,10 @@ std::optional<Entity> NetworkScripting::buildFromPrefab(const std::string& scrip
   // addScriptComponent redefine los globals de scripts; "this" se conserva para
   // que el update() que nos llamo siga viendo su propia entidad
   sol::object savedThis = this->lua["this"];
+  // El script runtime del prefab lee su estado inicial al cargar (spawn_state);
+  // los locals del chunk son por entidad porque el SceneLoader lo corre por cada una
+  sol::object savedSpawnState = this->lua["spawn_state"];
+  this->lua["spawn_state"] = jsonToLua(state, this->lua);
   std::optional<Entity> built;
 
   try {
@@ -199,6 +212,7 @@ std::optional<Entity> NetworkScripting::buildFromPrefab(const std::string& scrip
   }
 
   this->lua["this"] = savedThis;
+  this->lua["spawn_state"] = savedSpawnState;
   return built;
 }
 
@@ -235,6 +249,58 @@ std::optional<Entity> NetworkScripting::spawn(const std::string& script, json st
   return entity;
 }
 
+std::string NetworkScripting::registerLocal(Entity entity, const std::string& script,
+                                            json state) {
+  const std::string netId = this->netRegistry.nextNetId();
+  const std::string owner = this->netRegistry.getLocalPlayerId();
+  this->netRegistry.registerEntity(entity, netId, owner);
+  // Sin script nadie la construye por spawn: la anuncia un evento (fire) y cada
+  // cliente la simula solo, asi que no gasta presupuesto de "state"
+  entity.getComponent<NetworkComponent>().syncState = !script.empty();
+  // Entidad ya viva: addComponent no la mete en NetSyncSystem por si solo
+  this->registry.refreshEntity(entity);
+
+  if (script.empty() || !this->netClient.isOnline()) {
+    return netId;
+  }
+
+  // La cinematica sale de la entidad; lo que mande Lua (name, max_hp...) se suma
+  json merged = json::object();
+  if (entity.hasComponent<TransformComponent>()) {
+    const auto& transform = entity.getComponent<TransformComponent>();
+    merged["pos"] = {{"x", transform.position.x}, {"y", transform.position.y}};
+    merged["rot"] = transform.rotation;
+  }
+  if (entity.hasComponent<RigidBodyComponent>()) {
+    const auto& body = entity.getComponent<RigidBodyComponent>();
+    merged["vel"] = {{"x", body.velocity.x}, {"y", body.velocity.y}};
+    merged["acc"] = {{"x", body.acceleration.x}, {"y", body.acceleration.y}};
+  }
+  if (entity.hasComponent<HealthComponent>()) {
+    merged["hp"] = entity.getComponent<HealthComponent>().health;
+  }
+  if (state.is_object()) {
+    for (auto it = state.begin(); it != state.end(); ++it) {
+      merged[it.key()] = it.value();
+    }
+  }
+  fillVec2(merged, "pos");
+  fillVec2(merged, "vel");
+  fillVec2(merged, "acc");
+  if (!merged.contains("rot") || !merged["rot"].is_number()) {
+    merged["rot"] = 0;
+  }
+
+  this->netClient.send({
+    {"t", "spawn"},
+    {"netId", netId},
+    {"owner", owner},
+    {"script", script},
+    {"state", merged},
+  });
+  return netId;
+}
+
 void NetworkScripting::despawn(Entity entity) {
   if (!entity.hasComponent<NetworkComponent>()) {
     entity.kill();
@@ -256,22 +322,39 @@ void NetworkScripting::despawn(Entity entity) {
 }
 
 void NetworkScripting::onSpawnMessage(const json& msg) {
-  if (!msg.contains("netId") || !msg["netId"].is_string() ||
-      !msg.contains("owner") || !msg["owner"].is_string() ||
-      !msg.contains("script") || !msg["script"].is_string()) {
-    return;
-  }
-
-  const std::string netId = msg["netId"].get<std::string>();
-  if (msg.value("from", std::string()) == this->netClient.getMyPlayerId() ||
-      this->netRegistry.find(netId)) {
-    return;
-  }
-
   json state = msg.contains("state") ? msg["state"] : json::object();
-  std::optional<Entity> entity = this->buildFromPrefab(msg["script"].get<std::string>(), state);
+  this->buildRemote(msg, state, msg.value("from", std::string()));
+}
+
+// Una entidad de otro jugador, venga de "spawn" o de un "snapshot"
+void NetworkScripting::buildRemote(const json& entry, const json& state, const std::string& from) {
+  if (!entry.contains("netId") || !entry["netId"].is_string() ||
+      !entry.contains("owner") || !entry["owner"].is_string() ||
+      !entry.contains("script") || !entry["script"].is_string()) {
+    return;
+  }
+
+  const std::string netId = entry["netId"].get<std::string>();
+  if (from == this->netClient.getMyPlayerId() || this->netRegistry.find(netId)) {
+    return;
+  }
+
+  std::optional<Entity> entity = this->buildFromPrefab(entry["script"].get<std::string>(), state);
   if (entity) {
-    this->netRegistry.registerEntity(*entity, netId, msg["owner"].get<std::string>());
+    this->netRegistry.registerEntity(*entity, netId, entry["owner"].get<std::string>());
+  }
+}
+
+// Respuesta del host a nuestro snapshot_request: cada entidad se construye como un spawn
+void NetworkScripting::onSnapshotMessage(const json& msg) {
+  if (!msg.contains("entities") || !msg["entities"].is_array()) {
+    return;
+  }
+  const std::string from = msg.value("from", std::string());
+  for (const auto& entry : msg["entities"]) {
+    if (!entry.is_object()) continue;
+    json state = entry.contains("state") ? entry["state"] : json::object();
+    this->buildRemote(entry, state, from);
   }
 }
 
@@ -291,4 +374,54 @@ void NetworkScripting::onDespawnMessage(const json& msg) {
     return;
   }
   entity->kill();
+}
+
+void NetworkScripting::onFireMessage(const json& msg) {
+  if (!msg.contains("bulletNetId") || !msg["bulletNetId"].is_string() ||
+      !msg.contains("shooterNetId") || !msg["shooterNetId"].is_string() ||
+      !msg.contains("pos") || !isVec2(msg["pos"]) ||
+      !msg.contains("vel") || !isVec2(msg["vel"]) ||
+      !msg.contains("dmg") || !msg["dmg"].is_number()) {
+    return;
+  }
+
+  const std::string from = msg.value("from", std::string());
+  const std::string bulletNetId = msg["bulletNetId"].get<std::string>();
+  // Mi propia bala ya existe; un netId repetido tampoco se duplica
+  if (from.empty() || from == this->netClient.getMyPlayerId() ||
+      this->netRegistry.find(bulletNetId)) {
+    return;
+  }
+
+  const double vx = msg["vel"]["x"].get<double>();
+  const double vy = msg["vel"]["y"].get<double>();
+  json state = {
+    {"pos", msg["pos"]},
+    {"vel", msg["vel"]},
+    {"rot", std::atan2(vy, vx)},
+    {"acc", {{"x", 0}, {"y", 0}}},
+  };
+
+  std::optional<Entity> bullet = this->buildFromPrefab("bullet.lua", state);
+  if (!bullet) {
+    return;
+  }
+
+  const int dmg = static_cast<int>(msg["dmg"].get<double>());
+  if (bullet->hasComponent<DamageComponent>()) {
+    auto& damage = bullet->getComponent<DamageComponent>();
+    damage.amount = dmg;
+    damage.destroyOnHit = true;
+    damage.fromPlayer = true;
+  } else {
+    bullet->addComponent<DamageComponent>(dmg, true, true);
+  }
+
+  // Sin dueño la replica chocaria al instante con la copia de su propio tirador
+  std::optional<Entity> shooter = this->netRegistry.find(msg["shooterNetId"].get<std::string>());
+  if (shooter && bullet->hasComponent<CircleColliderComponent>()) {
+    bullet->getComponent<CircleColliderComponent>().ownerId = shooter->getId();
+  }
+
+  this->netRegistry.registerEntity(*bullet, bulletNetId, from);
 }

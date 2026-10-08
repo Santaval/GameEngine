@@ -167,6 +167,7 @@ class NetSyncSystem : public System {
         if (net.isLocallyOwned(entity)) {
           // 3) Dueno: solo online, con id local conocido y siendo el dueno real
           if (!online || !sendTick || localId.empty() || netComp.ownerId != localId) continue;
+          if (!netComp.syncState) continue;
           Tracked& t = this->tracked[netComp.netId];
           Kinematics now{transform.position, body.velocity, transform.rotation, body.acceleration};
           if (!t.lastSent || differs(*t.lastSent, now)) {

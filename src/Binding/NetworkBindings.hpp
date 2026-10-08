@@ -58,6 +58,15 @@ inline sol::object netSpawn(const std::string& scriptPath, sol::object state, so
   return sol::make_object(s, *entity);
 }
 
+// Da identidad de red a una entidad ya existente (la nave del jugador, una bala).
+// Con script no vacio y online, ademas anuncia un spawn a los demas.
+inline sol::object netRegister(Entity e, sol::optional<std::string> script, sol::object state,
+                               sol::this_state s) {
+  auto netId = Game::getInstance().getNetworkScripting()->registerLocal(
+    e, script.value_or(""), luaToJson(state));
+  return sol::make_object(s, netId);
+}
+
 // Online solo el duenio puede despawnear; la copia local muere sin on_death
 inline void netDespawn(Entity e) {
   Game::getInstance().getNetworkScripting()->despawn(e);
@@ -99,6 +108,7 @@ inline void registerNetworkBindings(sol::state& lua) {
   lua.set_function("net_send", netSend);
   lua.set_function("net_on", netOn);
   lua.set_function("net_spawn", netSpawn);
+  lua.set_function("net_register", netRegister);
   lua.set_function("net_despawn", netDespawn);
   lua.set_function("is_local", isLocal);
   lua.set_function("get_net_id", getNetId);

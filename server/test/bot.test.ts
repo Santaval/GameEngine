@@ -185,6 +185,18 @@ describe("fake-client bot", () => {
     h.ws.terminate();
   });
 
+  it("re-sends its ship spawn directly on snapshot_request when it is not the host", async () => {
+    const host = await env.connect();
+    const h = await startBot({ host: true });
+    await host.client.next("spawn");
+    expect(h.bot.isHost).toBe(false);
+    host.client.send(msg("snapshot_request"));
+    const spawn = await host.client.next("spawn");
+    expect(spawn.netId).toBe(h.bot.shipNetId);
+    expect(spawn.script).toBe("player/remote_player.lua");
+    h.ws.terminate();
+  });
+
   it("takes over host duties after host_changed", async () => {
     const host = await env.connect();
     const h = await startBot({ host: true, pvp: true });

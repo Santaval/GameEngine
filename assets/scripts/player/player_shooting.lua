@@ -1,4 +1,5 @@
 local player_movement_module = require("player_movement")
+local bullet_lifetime = require("bullet_lifetime")
 
 local player_shooting_module = {}
 
@@ -27,6 +28,21 @@ local function spawn_bullet(owner)
   -- destroy_on_hit = true: la bala se destruye al impactar contra algo que tenga vida
   -- player = true: es un arma de jugador (respeta la regla de pvp)
   add_damage(bullet, player_shooting_module.bullet_damage, true, true)
+  -- La bala expira sola a los 2 s (online, en cada cliente por separado)
+  add_script(bullet, bullet_lifetime.make_update())
+
+  -- Online: la bala es mia y los demas crean una replica con "fire"
+  local shooter_id = get_net_id(owner)
+  if net_is_online() and shooter_id then
+    local bullet_id = net_register(bullet)
+    net_send("fire", {
+      bulletNetId = bullet_id,
+      shooterNetId = shooter_id,
+      pos = { x = px, y = py },
+      vel = { x = b_vx, y = b_vy },
+      dmg = player_shooting_module.bullet_damage,
+    })
+  end
 end
 
 function player_shooting_module.update(entity)

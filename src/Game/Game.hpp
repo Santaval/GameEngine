@@ -60,6 +60,9 @@ class Game {
         // y netClient, asi que se destruye antes que ellos (declarado despues)
         std::unique_ptr<DamageSync> damageSync;
         std::string serverUrl;
+        // Pedido de entidades ya existentes ("snapshot_request") hecho para la
+        // escena actual; se repite al cargar escena o al reconectar
+        bool snapshotRequested = false;
 
         // Escena pedida desde Lua (load_scene); se carga al inicio del
         // proximo frame, nunca en medio de ScriptSystem::update

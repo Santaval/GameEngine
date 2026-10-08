@@ -13,6 +13,70 @@ local stats_applied = false
 -- Lo lee game_director.lua; se reinicia cada vez que se carga la escena
 game_over = false
 
+-- Script con el que los demas clientes dibujan nuestra nave (prefabs/)
+local REMOTE_SCRIPT = "player/remote_player.lua"
+
+-- player_stats recibidos de otras naves, por netId; los consume remote_player.lua
+remote_player_stats = {}
+
+-- id con el que la nave esta registrada en la red (cambia al reconectar)
+local registered_as = nil
+-- la nave local, para responder a peer_joined fuera de update()
+local my_ship = nil
+
+local function ship_state(entity)
+  return {
+    name = net_my_id(),
+    hp = get_health(entity),
+    max_hp = get_max_health(entity),
+    max_speed = get_max_speed(entity),
+    engine = get_equipment_level(entity, "engine"),
+    gun = get_equipment_level(entity, "gun"),
+    shield = get_equipment_level(entity, "shield"),
+  }
+end
+
+-- Registra la nave local en la red la primera vez que hay sesion (o tras reconectar)
+local function ensure_registered(entity)
+  if not net_is_online() or registered_as == net_my_id() then return end
+
+  registered_as = net_my_id()
+  net_register(entity, REMOTE_SCRIPT, ship_state(entity))
+end
+
+-- Manda nuestro spawn directo a un solo jugador que no lo tiene
+local function send_spawn_to(player_id)
+  if not my_ship or not player_id or registered_as ~= net_my_id() then return end
+
+  local px, py = get_position(my_ship)
+  local vx, vy = get_velocity(my_ship)
+  local ax, ay = get_acceleration(my_ship)
+  local state = ship_state(my_ship)
+  state.pos = { x = px, y = py }
+  state.vel = { x = vx, y = vy }
+  state.acc = { x = ax, y = ay }
+  state.rot = get_rotation(my_ship)
+
+  net_send("spawn", {
+    netId = get_net_id(my_ship),
+    owner = net_my_id(),
+    script = REMOTE_SCRIPT,
+    state = state,
+  }, player_id)
+end
+
+-- Un jugador que entra despues no vio nuestro spawn
+net_on("peer_joined", function(msg) send_spawn_to(msg.playerId) end)
+-- Otro jugador cargo escena (p. ej. salio del menu) y perdio las entidades de
+-- los demas: le reenviamos la nave aunque no seamos el host
+net_on("snapshot_request", function(msg) send_spawn_to(msg.from) end)
+
+net_on("player_stats", function(data)
+  if type(data) == "table" and data.netId then
+    remote_player_stats[data.netId] = data
+  end
+end)
+
 function update()
   -- Global que leen otros scripts (enemy.lua) para perseguir al jugador
   player_entity = this
@@ -21,6 +85,9 @@ function update()
     player_upgrades_module.apply_stats(this)
     stats_applied = true
   end
+
+  my_ship = this
+  ensure_registered(this)
 
   player_shooting_module.update(this)
   player_visual_helpers_module.update(this)
@@ -59,5 +126,6 @@ function on_death()
   -- Sin jugador: los scripts que lo siguen (spawner, iman, enemigos) ya
   -- chequean nil, y asi no leen un id que el registry va a reciclar
   player_entity = nil
+  my_ship = nil
   game_over = true
 end

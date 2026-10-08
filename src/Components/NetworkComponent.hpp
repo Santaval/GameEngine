@@ -12,7 +12,9 @@
 struct NetworkComponent {
   std::string netId;
   std::string ownerId;
+  // false: el dueno no manda "state" (balas: todos las simulan desde "fire")
+  bool syncState;
 
-  NetworkComponent(std::string netId = "", std::string ownerId = "")
-    : netId(std::move(netId)), ownerId(std::move(ownerId)) {}
+  NetworkComponent(std::string netId = "", std::string ownerId = "", bool syncState = true)
+    : netId(std::move(netId)), ownerId(std::move(ownerId)), syncState(syncState) {}
 };

@@ -66,6 +66,15 @@ void Registry::removeEntityFromSystem(Entity entity) {
   }
 }
 
+void Registry::refreshEntity(Entity entity) {
+  // Pendiente: update() la agregara una sola vez; aqui duplicaria la entrada
+  if (this->entitiesToBeAdded.count(entity) > 0) {
+    return;
+  }
+  this->removeEntityFromSystem(entity);
+  this->addEntityToSystems(entity);
+}
+
 void Registry::update() {
   for(auto entity : this->entitiesToBeAdded) {
     this->addEntityToSystems(entity);

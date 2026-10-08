@@ -69,6 +69,20 @@ function player_upgrades_module.apply_stats(entity)
   if new_max > old_max then
     heal(entity, new_max - old_max)
   end
+
+  -- Los demas clientes ajustan la barra de vida y la velocidad de nuestra nave.
+  -- Antes del registro no hay netId: el spawn ya lleva estas stats
+  local net_id = get_net_id(entity)
+  if net_is_online() and net_id then
+    net_send("player_stats", {
+      netId = net_id,
+      max_hp = new_max,
+      max_speed = 60 + 40 * engine_level,
+      engine = engine_level,
+      gun = gun_level,
+      shield = shield_level,
+    })
+  end
 end
 
 -- Cobra el costo, sube el nivel y reaplica las stats. Devuelve si se pudo.

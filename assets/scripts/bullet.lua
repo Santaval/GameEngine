@@ -1,11 +1,5 @@
+local bullet_lifetime = require("bullet_lifetime")
 
-function update()
-end
-
-function on_damage(amount, source)
-  print(string.format("[bullet] -%d HP (quedan %d)", amount, get_health(this)))
-end
-
-function on_death()
-  print("[bullet] destruida")
-end
+-- Las balas replicadas (prefabs/bullet.lua) y las locales comparten esta vida.
+-- El chunk corre una vez por entidad, asi que cada una tiene su contador.
+update = bullet_lifetime.make_update()

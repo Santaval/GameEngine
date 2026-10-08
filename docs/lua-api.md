@@ -479,6 +479,7 @@ net_send("chat", { text = "psst" }, peer_id) -- one player
 | Function | Description |
 | --- | --- |
 | `net_spawn(script_path, state_tbl)` | Builds the entity from a prefab, tags it with a new netId owned by you, and broadcasts `spawn`. Returns the entity (or `nil` if the prefab failed). Offline it only creates the entity locally. |
+| `net_register(e [, script, state_tbl])` | Gives an **existing** entity a netId owned by you (and adds it to the network sync). With a non-empty `script` and an online session it also broadcasts `spawn` for that prefab; `state_tbl` is merged over the entity's own `pos` / `vel` / `rot` / `acc` / `hp`. Returns the netId. Offline it only registers locally. Used by `player.lua` for the ship (no `script` for bullets, which are announced with `fire`). Entities registered without a `script` never send `state`: every client simulates them from the announcing event. |
 | `net_despawn(e)` | Removes a networked entity and tells the others. Only the owner can despawn: calling it on a remote entity while online logs a warning and does nothing. An entity without network identity is just killed. |
 | `is_local(e)` | `true` if you own the entity or it is not networked. Always `true` offline. |
 | `get_net_id(e)` | The entity's netId string, or `nil`. |
@@ -500,6 +501,15 @@ created when the prefab does not have them), and `hp` sets the `health` of an
 entity that has a `health` component.
 
 #### Prefabs
+
+While a prefab is built, the engine exposes the spawn state as the global
+`spawn_state` (restored afterwards), so the prefab's runtime script can read it
+when its chunk loads (`remote_player.lua` reads `name` and `max_hp`). Chunk-level
+`local` variables are per entity, since the script file runs once per entity.
+`this` is **not** the new entity at that point: resolve it inside `update()`.
+
+The engine also handles an incoming `fire` itself: it builds
+`prefabs/bullet.lua` and registers it under `bulletNetId`.
 
 `script_path` is relative to `assets/scripts/prefabs/` (so
 `"player/remote_player.lua"` is `assets/scripts/prefabs/player/remote_player.lua`)

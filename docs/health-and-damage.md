@@ -70,6 +70,11 @@ add_circle_collider(bullet, 30, 64, 32, this)  -- `this` = owner, see Gotchas
 add_damage(bullet, 20, true)
 ```
 
+The engine has no bullet lifetime of its own. Player bullets get one from
+`assets/scripts/bullet_lifetime.lua`: `add_script(bullet, bullet_lifetime.make_update())`
+kills the bullet after 2 s with a plain `destroy_entity`. Every client runs that
+timer by itself, so an expiring bullet is never sent as a `despawn`.
+
 ---
 
 ## Lua API

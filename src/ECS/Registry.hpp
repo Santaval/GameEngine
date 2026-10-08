@@ -74,6 +74,11 @@ class Registry {
     // Add system entities
     void addEntityToSystems(Entity entity);
     void removeEntityFromSystem(Entity entity);
+
+    // Reevalua la pertenencia a sistemas de una entidad ya viva, tras agregarle
+    // o quitarle componentes en runtime (addComponent no lo hace). Una entidad
+    // aun pendiente de alta se ignora: update() la agrega con su firma final.
+    void refreshEntity(Entity entity);
 };
 
 

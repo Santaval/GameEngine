@@ -141,6 +141,9 @@ export class Bot {
           }
           for (const [id, b] of this.ownBullets) entities.push(this.bulletEntity(id, b));
           this.send("snapshot", { entities, settings: { pvp: this.pvp } }, m.from);
+        } else if (m.from && this.shipNetId && !this.dead) {
+          // Not the host: still hand our ship to a player that lost it (e.g. left the menu)
+          this.send("spawn", this.spawnBody(), m.from);
         }
         break;
       case "fire":

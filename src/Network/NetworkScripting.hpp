@@ -33,6 +33,10 @@ class NetworkScripting {
     void dispatch(const std::string& type, const sol::object& arg, const std::string& from);
     void onSpawnMessage(const nlohmann::json& msg);
     void onDespawnMessage(const nlohmann::json& msg);
+    void onSnapshotMessage(const nlohmann::json& msg);
+    void buildRemote(const nlohmann::json& entry, const nlohmann::json& state,
+                     const std::string& from);
+    void onFireMessage(const nlohmann::json& msg);
 
   public:
     NetworkScripting(NetClient& netClient, NetworkRegistry& netRegistry, Registry& registry,
@@ -52,4 +56,9 @@ class NetworkScripting {
 
     std::optional<Entity> spawn(const std::string& script, nlohmann::json state);
     void despawn(Entity entity);
+
+    // Da identidad de red (dueño = yo) a una entidad que ya existe, p. ej. la
+    // nave de la escena. Con `script` no vacio y online, anuncia un spawn con
+    // la cinematica de la entidad mezclada con `state`. Devuelve el netId.
+    std::string registerLocal(Entity entity, const std::string& script, nlohmann::json state);
 };

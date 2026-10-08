@@ -201,8 +201,18 @@ static void testClear() {
   CHECK(g.sys().update(0.1, g.net, true).size() == 1);
 }
 
+// Entidades anunciadas por evento (balas): el dueno no manda "state"
+static void testNoSyncState() {
+  Fixture f;
+  Entity e = f.spawn("me:1", "me", glm::vec2(10, 20));
+  e.getComponent<NetworkComponent>().syncState = false;
+  CHECK(f.sys().update(0.05, f.net, true).empty());
+  CHECK(f.sys().update(0.05, f.net, true).empty());
+}
+
 int main() {
   testOwnerSendRate();
+  testNoSyncState();
   testOfflineAndNonOwned();
   testNoLocalId();
   testBudget();
