@@ -34,6 +34,7 @@ return {
     damage = {
       amount = 20,
       destroy_on_hit = true,
+      player = true,
     },
     script = {
       path = "./assets/scripts/bullet.lua",

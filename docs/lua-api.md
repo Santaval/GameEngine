@@ -202,16 +202,20 @@ Summarised here; the full guide is in
 
 | Function | Returns | Notes |
 | --- | --- | --- |
-| `add_health(e, max, invulnerability?)` | — | Starts full. `invulnerability` in seconds, defaults to `0`. |
+| `add_health(e, max, invulnerability?, player?)` | — | Starts full. `invulnerability` in seconds, defaults to `0`. `player` (default `false`) marks a player ship protected when PvP is off. |
 | `get_health(e)` / `get_max_health(e)` | `int` | `0` when the component is missing. |
 | `is_alive(e)` | `bool` | `true` for an entity with no health — indestructible counts as alive. |
 | `set_health(e, value)` | — | Clamped, ignores invulnerability, fires `on_death` at `0`. |
 | `heal(e, amount)` | — | Cannot revive something already at `0`. |
 | `set_max_health(e, value)` | — | Clamped to `>= 1`. Never kills — if `health` is above the new max, it is clamped down too, without firing `on_death`. |
-| `add_damage(e, amount, destroy_on_hit?)` | — | `destroy_on_hit` defaults to `false`. |
+| `add_damage(e, amount, destroy_on_hit?, player?)` | — | `destroy_on_hit` defaults to `false`. `player` (default `false`) marks a player weapon that does not hurt other players when PvP is off. |
 | `get_damage(e)` / `set_damage(e, amount)` | `int` / — | `set_damage` adds the component if missing. |
 
 **An entity with no health component is indestructible.**
+
+In multiplayer only the owner of an entity changes its health: `set_health`,
+`heal` and `set_max_health` do nothing on other machines, and `on_damage` there
+is visual only. See [health-and-damage.md](health-and-damage.md#in-multiplayer).
 
 ---
 

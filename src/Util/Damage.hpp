@@ -7,6 +7,8 @@
 #include "../Components/HealthComponent.hpp"
 #include "../Components/ScriptComponent.hpp"
 #include "../Game/Game.hpp"
+#include "../Network/DamageSync.hpp"
+#include "../Network/NetworkRegistry.hpp"
 
 // Unico sitio donde se resta vida. Lo usan el DamageSystem (impactos) y los
 // bindings de Lua (set_health / heal / daño manual), asi que las reglas de
@@ -36,6 +38,31 @@ inline void killWithHooks(Entity e) {
   e.kill();
 }
 
+// true si esta maquina puede cambiar la vida de la entidad. En multijugador
+// solo el dueño lo hace y avisa; los demas esperan su "damage" (ver DamageSync).
+// Offline (o sin NetworkComponent) siempre es true.
+inline bool canChangeHealth(Entity e) {
+  NetworkRegistry* net = Game::getInstance().getNetworkRegistry();
+  return !net || net->isLocallyOwned(e);
+}
+
+// Tras cambiar la vida en el dueño: avisa a la red y mata si llego a 0.
+// Lo comparten applyDamage y los bindings (set_health / heal). amount es
+// negativo al curar.
+inline void commitHealth(Entity target, int amount, sol::optional<Entity> source) {
+  DamageSync* sync = Game::getInstance().getDamageSync();
+  std::optional<Entity> src;
+  if (source) src = *source;
+
+  const int hp = target.getComponent<HealthComponent>().health;
+  if (sync) sync->broadcastDamage(target, amount, hp, src);
+
+  if (hp <= 0) {
+    if (sync) sync->broadcastDeath(target, src);
+    killWithHooks(target);
+  }
+}
+
 // Devuelve true si el daño llego a aplicarse
 inline bool applyDamage(Entity target, int amount, sol::optional<Entity> source) {
   // Sin HealthComponent la entidad es indestructible
@@ -45,6 +72,13 @@ inline bool applyDamage(Entity target, int amount, sol::optional<Entity> source)
 
   // Ya murio pero todavia no lo cosecho Registry::update
   if (health.health <= 0) return false;
+
+  // Los no dueños nunca tocan la vida: esperan el "damage" del dueño
+  if (!canChangeHealth(target)) return false;
+
+  // Con pvp apagado las armas de jugador no lastiman a otros jugadores
+  DamageSync* sync = Game::getInstance().getDamageSync();
+  if (sync && source && sync->blocksPvp(target, *source)) return false;
 
   Uint32 now = SDL_GetTicks();
   if (health.invulnerability > 0.0 &&
@@ -59,9 +93,7 @@ inline bool applyDamage(Entity target, int amount, sol::optional<Entity> source)
 
   callScriptHook(target, &ScriptComponent::onDamage, amount, source);
 
-  if (health.health <= 0) {
-    killWithHooks(target);
-  }
+  commitHealth(target, amount, source);
 
   return true;
 }

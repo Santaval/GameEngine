@@ -6,3 +6,4 @@ graphify-out
 tests/network_registry_test
 tests/lua_json_test
 tests/net_sync_test
+tests/damage_sync_test

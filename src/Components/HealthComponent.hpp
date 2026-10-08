@@ -15,12 +15,14 @@ struct HealthComponent
   int maxHealth;
   double invulnerability;  // segundos de gracia tras recibir daño (0 = sin gracia)
   Uint32 lastDamageTicks;  // SDL_GetTicks() del ultimo golpe recibido
+  bool isPlayer;           // nave de jugador: protegida por la regla de pvp (ver DamageSync)
 
-  HealthComponent(int maxHealth = 1, int health = -1, double invulnerability = 0.0) {
+  HealthComponent(int maxHealth = 1, int health = -1, double invulnerability = 0.0, bool isPlayer = false) {
     this->maxHealth = maxHealth;
     // health < 0 significa "empieza a tope"
     this->health = (health < 0) ? maxHealth : health;
     this->invulnerability = invulnerability;
     this->lastDamageTicks = 0;
+    this->isPlayer = isPlayer;
   }
 };

@@ -167,6 +167,7 @@ local player = {
       health = {
         max = 100,
         invulnerability = 0.5,
+        player = true,
       },
       -- Al embestir, la nave tambien lastima (sin destroy_on_hit: sobrevive
       -- al choque)

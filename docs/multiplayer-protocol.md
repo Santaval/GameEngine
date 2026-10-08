@@ -191,6 +191,10 @@ sequenceDiagram
 6. **If B dies.** When `newHp <= 0`, B broadcasts `death { netId: "B:1",
    killer: "A" }` and then despawns its ship as the owner (rules 3 and 4).
 
+The engine enforces rule 4 on receipt: a `damage` or `death` whose `from` is not
+the owner of the target is ignored, and the shooter despawns its bullet on
+`damage.source` (see `DamageSync` in `src/Network/DamageSync.hpp`).
+
 ---
 
 ## Host migration

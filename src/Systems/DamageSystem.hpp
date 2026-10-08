@@ -44,6 +44,9 @@ class DamageSystem : public System {
 
       applyDamage(target, damage.amount, attacker);
 
+      // Esto solo quita la bala en esta maquina (killWithHooks nunca manda
+      // "despawn"). Si la bala es de otro jugador, el dueño la borra al recibir
+      // el "damage" del blanco; si es mia, DamageSync la despawnea en su momento.
       if (damage.destroyOnHit) {
         damage.spent = true;
         killWithHooks(attacker);

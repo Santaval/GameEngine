@@ -160,6 +160,7 @@ local player = {
       health = {
         max = 100,
         invulnerability = 0.5,
+        player = true,
       },
       damage = {
         amount = cfg.SHIP_RAM_DAMAGE,

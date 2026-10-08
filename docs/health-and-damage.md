@@ -304,12 +304,57 @@ the thing that will limit how many destructible entities a scene can hold.
 
 ---
 
+## In multiplayer
+
+Damage follows the protocol's receiver-authoritative rule: **only the owner of an
+entity changes its HP**, using its own local collision.
+
+- `applyDamage` returns `false` on any machine that does not own the target
+  (`NetworkRegistry::isLocallyOwned`). The owner subtracts the HP, runs
+  `on_damage`, and broadcasts `damage { target, amount, newHp, source? }`; at `0`
+  it also broadcasts `death { netId, killer? }`. Offline, entities without a
+  `NetworkComponent` and everything while there is no player id behave exactly as
+  before.
+- On the other machines `DamageSync` applies the owner's `damage`: HP is set to
+  `newHp` (clamped), `lastDamageTicks` is updated and `on_damage` is called.
+  **That call is visual only** (flash, sound): its result must never change HP.
+  A `damage` or `death` that does not come from the target's owner is ignored.
+- If `damage.source` is a bullet this player owns, it is despawned (protocol
+  step 5), so the shooter does not keep a bullet that already hit.
+- `set_health`, `heal` and `set_max_health` are owner-only too (they log a
+  `[Net]` line and do nothing otherwise). `set_health` / `heal` are broadcast as
+  `damage` (negative `amount` when healing) and `death`.
+- Invulnerability is enforced by the owner only, so a hit that lands during the
+  owner's grace window is simply never reported. Because the owner decides, a hit
+  is only visible to others after one network round trip.
+
+### PvP
+
+`room_settings.pvp` (also read from `snapshot.settings`) is tracked by
+`DamageSync`. With PvP off, a hit is ignored when the attacker's
+`DamageComponent` has `player = true`, the target's `HealthComponent` has
+`player = true`, and both are owned by different players. The flags are needed
+because the host is a player and also owns world entities such as asteroids, so
+"owned by another player" alone cannot tell a bullet from an asteroid. World
+damage never sets `player` and always hits.
+
+```lua
+health = { max = 100, invulnerability = 0.5, player = true }   -- a ship
+damage = { amount = 20, destroy_on_hit = true, player = true } -- a ship's bullet
+```
+
+From Lua: `add_health(e, max, invulnerability?, player?)` and
+`add_damage(e, amount, destroy_on_hit?, player?)`.
+
+---
+
 ## Where the code lives
 
 | File | Role |
 | --- | --- |
-| `src/Components/HealthComponent.hpp` | HP, max HP, invulnerability window. |
-| `src/Components/DamageComponent.hpp` | Damage amount, `destroyOnHit`, `spent`. |
+| `src/Components/HealthComponent.hpp` | HP, max HP, invulnerability window, `isPlayer`. |
+| `src/Components/DamageComponent.hpp` | Damage amount, `destroyOnHit`, `fromPlayer`, `spent`. |
+| `src/Network/DamageSync.hpp` | Multiplayer side: incoming `damage` / `death`, `damage` / `death` broadcasts, the PvP rule. |
 | `src/Util/Damage.hpp` | `applyDamage` / `killWithHooks` — the only place HP is subtracted, and where the script hooks are called. |
 | `src/Systems/DamageSystem.hpp` | Turns a `CollisionEvent` into damage. |
 | `src/Binding/HealthBindings.hpp` | The Lua functions listed above. |

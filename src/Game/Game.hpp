@@ -18,6 +18,7 @@
 class NetClient;
 class NetworkRegistry;
 class NetworkScripting;
+class DamageSync;
 
 const int FPS = 30;
 const int MILISECS_PER_FRAMES = 1000 / FPS;
@@ -55,6 +56,9 @@ class Game {
         // Puente Lua <-> red. Declarado despues de lua: guarda funciones de Lua y
         // tiene que destruirse antes que el estado
         std::unique_ptr<NetworkScripting> networkScripting;
+        // Daño/muerte con autoridad del dueño. Sus callbacks usan networkScripting
+        // y netClient, asi que se destruye antes que ellos (declarado despues)
+        std::unique_ptr<DamageSync> damageSync;
         std::string serverUrl;
 
         // Escena pedida desde Lua (load_scene); se carga al inicio del
@@ -91,6 +95,7 @@ class Game {
      NetClient* getNetClient() const { return netClient.get(); }
      NetworkRegistry* getNetworkRegistry() const { return networkRegistry.get(); }
      NetworkScripting* getNetworkScripting() const { return networkScripting.get(); }
+     DamageSync* getDamageSync() const { return damageSync.get(); }
      SceneLoader* getSceneLoader() const { return sceneLoader.get(); }
      void quit() { isRunning = false; }
      double getDeltaTime() const { return deltaTime; }

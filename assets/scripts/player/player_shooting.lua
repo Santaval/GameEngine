@@ -24,8 +24,9 @@ local function spawn_bullet(owner)
   add_sprite(bullet, "bullet", 64, 32, 0, 192)
   add_animation(bullet, 8, 5, true)
   add_circle_collider(bullet, 30, 64, 32, owner)
-  -- true = la bala se destruye al impactar contra algo que tenga vida
-  add_damage(bullet, player_shooting_module.bullet_damage, true)
+  -- destroy_on_hit = true: la bala se destruye al impactar contra algo que tenga vida
+  -- player = true: es un arma de jugador (respeta la regla de pvp)
+  add_damage(bullet, player_shooting_module.bullet_damage, true, true)
 end
 
 function player_shooting_module.update(entity)

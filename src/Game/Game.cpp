@@ -3,6 +3,7 @@
 #include <iostream>
 
 #include "../Network/NetClient.hpp"
+#include "../Network/DamageSync.hpp"
 #include "../Network/NetworkRegistry.hpp"
 #include "../Network/NetworkScripting.hpp"
 #include "../Components/TransformComponent.hpp"
@@ -115,6 +116,37 @@ void Game::setup() {
     // Correccion de deriva: los "state" de los duenos llegan por poll()
     this->netClient->subscribe("state", [this](const nlohmann::json& msg) {
         this->registry->getSystem<NetSyncSystem>().onState(msg, *this->networkRegistry);
+    });
+
+    // Daño y muerte: solo el dueño de cada entidad decide su vida
+    this->damageSync = std::make_unique<DamageSync>(*this->networkRegistry,
+        [this](const nlohmann::json& msg) { this->netClient->send(msg); },
+        [this]() { return this->netClient->isOnline(); },
+        [](Entity e, int amount) {
+            // Solo visual: el resultado del hook no puede tocar la vida
+            callScriptHook(e, &ScriptComponent::onDamage, amount, sol::optional<Entity>(sol::nullopt));
+        },
+        [](Entity e) { killWithHooks(e); },
+        [this](const std::string& netId) {
+            auto entity = this->networkRegistry->find(netId);
+            if (entity) {
+                this->networkScripting->despawn(*entity);
+            } else {
+                // Ya murio aqui: las demas maquinas aun tienen su copia
+                this->netClient->send({{"t", "despawn"}, {"netId", netId}});
+            }
+        });
+    this->netClient->subscribe("damage", [this](const nlohmann::json& msg) {
+        this->damageSync->onDamage(msg, SDL_GetTicks());
+    });
+    this->netClient->subscribe("death", [this](const nlohmann::json& msg) {
+        this->damageSync->onDeath(msg);
+    });
+    this->netClient->subscribe("room_settings", [this](const nlohmann::json& msg) {
+        this->damageSync->onRoomSettings(msg);
+    });
+    this->netClient->subscribe("snapshot", [this](const nlohmann::json& msg) {
+        this->damageSync->onSnapshot(msg);
     });
 
     sol::table loaded = this->lua["package"]["loaded"];

@@ -147,6 +147,7 @@ function player_gravity_zones_module.on_collision(entity, other)
   if planet == nil or (planet.damage or 0) <= 0 then return end
 
   last_planet_hit = clock
+  -- En multijugador set_health solo funciona en el dueño de la nave (aqui lo es)
   set_health(entity, get_health(entity) - planet.damage)
   print(string.format("[player] -%d HP por chocar contra un planeta (quedan %d)", planet.damage, get_health(entity)))
 end

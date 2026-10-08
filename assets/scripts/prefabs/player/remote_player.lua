@@ -5,6 +5,12 @@
 return function(state)
   return {
     components = {
+      -- Sin esto la nave remota seria indestructible para las balas locales.
+      -- Solo su dueño le resta vida; aqui se refleja lo que el dueño informa
+      health = {
+        max = 100,
+        player = true,
+      },
       circle_collider = {
         radius = 170,
         width = 430,

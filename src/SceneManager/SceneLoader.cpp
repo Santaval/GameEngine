@@ -222,7 +222,9 @@ void SceneLoader::addHealthComponent(Entity entity, const sol::table& components
   int current = health["current"].get_or(-1);
   double invulnerability = health["invulnerability"].get_or(0.0);
 
-  entity.addComponent<HealthComponent>(maxHealth, current, invulnerability);
+  bool isPlayer = health["player"].get_or(false);
+
+  entity.addComponent<HealthComponent>(maxHealth, current, invulnerability, isPlayer);
 }
 
 void SceneLoader::addDamageComponent(Entity entity, const sol::table& components) {
@@ -233,7 +235,9 @@ void SceneLoader::addDamageComponent(Entity entity, const sol::table& components
   int amount = damage["amount"].get_or(0);
   bool destroyOnHit = damage["destroy_on_hit"].get_or(false);
 
-  entity.addComponent<DamageComponent>(amount, destroyOnHit);
+  bool fromPlayer = damage["player"].get_or(false);
+
+  entity.addComponent<DamageComponent>(amount, destroyOnHit, fromPlayer);
 }
 
 void SceneLoader::addGravityComponent(Entity entity, const sol::table& components) {

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <iostream>
 #include <sol/sol.hpp>
 
 #include "../ECS/Entity.hpp"
@@ -10,8 +11,9 @@
 // getComponent no valida nada (ver Registry), asi que los getters devuelven un
 // valor neutro cuando falta el componente en vez de leer basura
 
-inline void addHealth(Entity e, int maxHealth, sol::optional<double> invulnerability) {
-  e.addComponent<HealthComponent>(maxHealth, -1, invulnerability.value_or(0.0));
+inline void addHealth(Entity e, int maxHealth, sol::optional<double> invulnerability,
+                      sol::optional<bool> player) {
+  e.addComponent<HealthComponent>(maxHealth, -1, invulnerability.value_or(0.0), player.value_or(false));
 }
 
 inline int getHealth(Entity e) {
@@ -32,19 +34,25 @@ inline bool isAlive(Entity e) {
 
 // Fija la vida saltandose la invulnerabilidad (scripts, cheats, respawn).
 // Llegar a 0 por aqui tambien dispara on_death.
+// En multijugador solo el dueño puede hacerlo: es la misma regla que en
+// applyDamage, y el cambio se difunde como "damage" / "death".
 inline void setHealth(Entity e, int value) {
   if (!e.hasComponent<HealthComponent>()) return;
 
   auto& health = e.getComponent<HealthComponent>();
   if (health.health <= 0) return;
 
+  if (!canChangeHealth(e)) {
+    std::cout << "[Net] set_health: entity is owned by another player, ignored" << std::endl;
+    return;
+  }
+
+  const int before = health.health;
   health.health = value;
   if (health.health < 0) health.health = 0;
   if (health.health > health.maxHealth) health.health = health.maxHealth;
 
-  if (health.health <= 0) {
-    killWithHooks(e);
-  }
+  commitHealth(e, before - health.health, sol::nullopt);
 }
 
 inline void heal(Entity e, int amount) {
@@ -57,13 +65,19 @@ inline void setMaxHealth(Entity e, int value) {
   if (!e.hasComponent<HealthComponent>()) return;
   if (value < 1) value = 1;
 
+  if (!canChangeHealth(e)) {
+    std::cout << "[Net] set_max_health: entity is owned by another player, ignored" << std::endl;
+    return;
+  }
+
   auto& health = e.getComponent<HealthComponent>();
   health.maxHealth = value;
   if (health.health > health.maxHealth) health.health = health.maxHealth;
 }
 
-inline void addDamage(Entity e, int amount, sol::optional<bool> destroyOnHit) {
-  e.addComponent<DamageComponent>(amount, destroyOnHit.value_or(false));
+inline void addDamage(Entity e, int amount, sol::optional<bool> destroyOnHit,
+                      sol::optional<bool> player) {
+  e.addComponent<DamageComponent>(amount, destroyOnHit.value_or(false), player.value_or(false));
 }
 
 inline int getDamage(Entity e) {
