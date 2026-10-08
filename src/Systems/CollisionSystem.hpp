@@ -64,7 +64,7 @@ class CollisionSystem : public System {
         const auto& transform = entity.getComponent<TransformComponent>();
 
         // transform.position es la esquina superior izquierda del sprite
-        // (ver RenderSystem y make_asteroid en asteroid_field.lua), así que
+        // (ver RenderSystem y prefabs/asteroid.lua), así que
         // el centro se obtiene SUMANDO medio ancho/alto, no restando.
         glm::vec2 center = glm::vec2(
           transform.position.x + (collider.width / 2) * transform.scale.x,

@@ -201,10 +201,32 @@ the owner of the target is ignored, and the shooter despawns its bullet on
 
 The host is the earliest-joined player still connected. When it disconnects
 the server broadcasts `peer_left` and then `host_changed { hostId }` naming
-the next oldest player. The new host **adopts** every entity whose owner was the
-old host (asteroids, enemies, loot, the director) by rewriting the owner locally
-and taking over simulation and authoritative events for them. NetIds keep the
-old prefix and stay valid. Players' own ships and bullets are unaffected.
+the next oldest player. NetIds keep the old prefix and stay valid. The engine
+logic lives in `WorldSync` (`src/Network/WorldSync.hpp`):
+
+- **World entities.** Entities the host owns on behalf of the world (asteroids,
+  ring rocks, enemies, loot) are announced with `"world": true` inside
+  `spawn.state` (`net_spawn(prefab, {..., world = true})`). Ships and bullets
+  are not world entities.
+- **`peer_left` cleanup.** Every client removes (plain kill, no `on_death`) the
+  non-world entities owned by the player that left: its ship and bullets. Since
+  `peer_left` arrives before `host_changed`, they are gone before adoption.
+  World entities stay.
+- **`host_changed`.** Every client (not just the new host) rewrites the owner
+  of the world entities owned by the old host to the new host. Otherwise
+  receivers would drop the new host's `state`, `damage` and `death` (they check
+  `from == ownerId`). The new host also broadcasts the announcement
+  `{t:"custom", type:"host_adopt", data:{oldHostId}}`.
+- **`host_adopt`.** Idempotent safety net: accepted only when `from` is the
+  current host; reassigns the world entities of `data.oldHostId` to `from`.
+- **`world_reset`.** `{t:"custom", type:"world_reset", data:{}}`, sent by the
+  host before it loads a scene (restart after game over). Accepted only from
+  the host; every client removes the world entities that host owned, so no
+  orphaned copies of the old world remain.
+- **Reconcile on `welcome`.** World entities created while connecting or
+  offline (owner `""`), or owned by the previous connection's player id, are
+  adopted if the welcome says we are the host; otherwise they are removed and
+  come back through the host's `snapshot`.
 
 ---
 
@@ -256,6 +278,18 @@ mutex-protected queue. `NetClient::poll()` runs at the start of `Game::update()`
 before `Registry::update()` and the scripts, and is the only place that updates
 state (`myPlayerId`, `hostId`, `peers`), logs and calls handlers registered with
 `subscribe(type, handler)`. Never touch the registry from the socket thread.
+
+### World snapshot
+
+The engine host answers `snapshot_request` with `snapshot` messages
+(`to` = requester, `settings.pvp`). Each entity it owns with a prefab script
+(and HP > 0) becomes `{netId, owner, script, state}`, where `state` is the
+state it was announced with overlaid with the current `pos`, `rot`, `vel`,
+`acc` and `hp`. The list is split in chunks so every message stays under about
+12 KB (the relay closes the connection at 16 KB). Receivers dedupe by netId.
+
+Single-instance testing with the bot needs the **engine to be the host** (start
+the engine before the bot), because the bot spawns no world.
 
 ### Player ships
 

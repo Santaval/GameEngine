@@ -236,6 +236,7 @@ std::optional<Entity> NetworkScripting::spawn(const std::string& script, json st
   const std::string netId = this->netRegistry.nextNetId();
   const std::string owner = this->netRegistry.getLocalPlayerId();
   this->netRegistry.registerEntity(*entity, netId, owner);
+  this->describeEntity(*entity, script, state);
 
   if (this->netClient.isOnline()) {
     this->netClient.send({
@@ -260,7 +261,7 @@ std::string NetworkScripting::registerLocal(Entity entity, const std::string& sc
   // Entidad ya viva: addComponent no la mete en NetSyncSystem por si solo
   this->registry.refreshEntity(entity);
 
-  if (script.empty() || !this->netClient.isOnline()) {
+  if (script.empty()) {
     return netId;
   }
 
@@ -290,7 +291,12 @@ std::string NetworkScripting::registerLocal(Entity entity, const std::string& sc
   if (!merged.contains("rot") || !merged["rot"].is_number()) {
     merged["rot"] = 0;
   }
+  // Tambien offline: si luego somos host, el snapshot describe esta entidad
+  this->describeEntity(entity, script, merged);
 
+  if (!this->netClient.isOnline()) {
+    return netId;
+  }
   this->netClient.send({
     {"t", "spawn"},
     {"netId", netId},
@@ -342,7 +348,17 @@ void NetworkScripting::buildRemote(const json& entry, const json& state, const s
   std::optional<Entity> entity = this->buildFromPrefab(entry["script"].get<std::string>(), state);
   if (entity) {
     this->netRegistry.registerEntity(*entity, netId, entry["owner"].get<std::string>());
+    this->describeEntity(*entity, entry["script"].get<std::string>(), state);
   }
+}
+
+// Guarda como se anuncio la entidad para poder describirla en un snapshot
+void NetworkScripting::describeEntity(Entity entity, const std::string& script, const json& state) {
+  auto& net = entity.getComponent<NetworkComponent>();
+  net.script = script;
+  net.spawnState = state.is_object() ? state : json::object();
+  net.world = net.spawnState.contains("world") && net.spawnState["world"].is_boolean() &&
+              net.spawnState["world"].get<bool>();
 }
 
 // Respuesta del host a nuestro snapshot_request: cada entidad se construye como un spawn

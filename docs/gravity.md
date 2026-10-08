@@ -21,11 +21,13 @@ affected by planets but do not pull each other into clumps.
 ## Planets swallow asteroids
 
 Planets have a circle collider (`PLANET_BODY_RADIUS` in `scene_01.lua`). When
-an asteroid touches one it vanishes with no loot drop: `asteroid_on_collision`
-in `asteroid.lua` checks `is_gravity_source(other)` and calls
-`asteroid_vanish`, the same helper the spawner uses for off-map cleanup. The
-spawner's live count stays correct because `on_death` still runs. The ship,
-bullets and pickups still pass through planets.
+an asteroid touches one it vanishes with no loot drop: the `on_collision` hook
+in `asteroid.lua` checks `is_gravity_source(other)` and calls its local
+`vanish`, the same helper used for off-map cleanup. Only the asteroid's owner
+(the host, or everyone offline) removes it, with `net_despawn`; other clients
+wait for that despawn. The spawner's live count prunes ids that no longer
+resolve, so it stays correct. The ship, bullets and pickups still pass through
+planets.
 
 ## The formula
 
@@ -102,7 +104,7 @@ Touching a planet's body costs the ship `damage` HP (per planet in
 `scene_01.lua` `PLANETS`, 15 by default) at most every 0.5 s, from the
 player's `on_collision`. Planets get no `damage` component on purpose: that
 would also hit asteroids through `DamageSystem` and could drop their loot
-before `asteroid_vanish` clears it.
+before `vanish` clears it.
 
 ## Mining
 

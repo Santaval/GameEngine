@@ -333,6 +333,20 @@ entity changes its HP**, using its own local collision.
   owner's grace window is simply never reported. Because the owner decides, a hit
   is only visible to others after one network round trip.
 
+### World entities
+
+Asteroids, ring rocks, pickups and enemies are **world entities**: the host
+creates them with `net_spawn(..., { world = true })` and owns them, so their HP
+belongs to the host. A bullet fired by a non-host player still hits the local
+copy of an asteroid, and the host (the owner) applies and broadcasts the damage.
+Hooks that have gameplay side effects (`on_death` dropping loot, for example)
+must therefore start with `if not is_local(this) then return end`: every client
+receives the `death`, but only the owner may act on it. If the host leaves, the
+engine reassigns its world entities to the new host, so `is_local` becomes
+`true` there and the entities keep taking damage. Anything a world entity
+spawns when it dies (loot, asteroid fragments) must be created by the owner
+with `net_spawn`.
+
 ### PvP
 
 `room_settings.pvp` (also read from `snapshot.settings`) is tracked by

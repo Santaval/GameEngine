@@ -1,6 +1,7 @@
 -- =====================================================================
---  Constructores de entidades para las escenas (tablas del SceneLoader):
---  asteroides, planetas y el reparto de un campo sin solapamientos.
+--  Constructores para las escenas: el estado de spawn de los asteroides
+--  (se crean con net_spawn, ver prefabs/asteroid.lua), los planetas (tablas
+--  del SceneLoader) y el reparto de un campo sin solapamientos.
 --  Lo usan scenes/scene_01.lua (campo rectangular) y
 --  scenes/solar_system.lua (cinturones en anillo).
 -- =====================================================================
@@ -63,61 +64,24 @@ function field.find_spot(placed, opts)
   return nil
 end
 
--- Asteroide centrado en (cx, cy). velocity(cx, cy) devuelve vx, vy; se llama
--- despues de elegir el tipo para no alterar la secuencia del random (mismo
--- campo con la misma semilla)
-function field.make_asteroid(cx, cy, scale, velocity)
-  local frameSize = ASTEROID_SHEET.frameSize
-  local drawSize = frameSize * scale
-  local asteroidType = cfg.pickAsteroidType()
-  local frame = asteroidType.frame
+-- Estado de spawn de un asteroide centrado en (cx, cy), para
+-- net_spawn("asteroid.lua", estado) (ver prefabs/asteroid.lua). velocity(cx, cy)
+-- devuelve vx, vy; se llama despues de elegir el tipo para no alterar la
+-- secuencia del random (mismo campo con la misma semilla). pos es la esquina
+-- superior izquierda del sprite, asi que se descuenta medio frame para centrar
+-- la roca. world = true: lo posee el host y lo simulan todos
+function field.asteroid_state(cx, cy, scale, velocity)
+  local drawSize = ASTEROID_SHEET.frameSize * scale
+  local _, kind = cfg.pickAsteroidType()
   local vx, vy = velocity(cx, cy)
 
   return {
-    components = {
-      -- transform.position es la esquina superior izquierda del sprite,
-      -- asi que se descuenta medio frame para centrar la roca en (cx, cy)
-      transform = {
-        position = { x = cx - drawSize / 2, y = cy - drawSize / 2 },
-        scale = { x = scale, y = scale },
-        rotation = randRange(0, 2 * math.pi),
-      },
-      rigid_body = {
-        velocity = { x = vx, y = vy },
-      },
-      sprite = {
-        assetId = ASTEROID_SHEET.assetId,
-        width = frameSize,
-        height = frameSize,
-        src_rect = { x = frame * frameSize, y = 0 },
-        rotation = 0,
-      },
-      circle_collider = {
-        radius = ASTEROID_SHEET.bodyRadius,
-        width = frameSize,
-        heigth = frameSize,
-      },
-      health = {
-        max = cfg.healthFor(asteroidType, scale),
-        invulnerability = cfg.ASTEROID_INVULNERABILITY,
-      },
-      -- El asteroide sobrevive al choque (sin destroy_on_hit): el que tiene
-      -- que preocuparse es quien se lo lleve por delante
-      damage = {
-        amount = cfg.ASTEROID_DAMAGE,
-      },
-      gravity = {
-        mass = scale * cfg.GRAVITY.ASTEROID_MASS_PER_SCALE,
-        attracts = false,
-        affected = true,
-      },
-      loot = asteroidType.loot,
-      script = {
-        path = "./assets/scripts/asteroid.lua"
-      }
-      -- Sin animation: el AnimationSystem sobrescribe src_rect.x y se perderia
-      -- la variante elegida (ademas los frames 4-8 son la explosion).
-    },
+    pos = { x = cx - drawSize / 2, y = cy - drawSize / 2 },
+    vel = { x = vx, y = vy },
+    rot = randRange(0, 2 * math.pi),
+    kind = kind,
+    scale = scale,
+    world = true,
   }
 end
 

@@ -58,6 +58,13 @@ scene_planets = PLANETS
 scene_asteroid_generators = nil
 scene_bounds = nil
 
+-- Estado compartido del mundo en red (lo rellenan asteroid.lua y
+-- remote_player.lua, lo leen el spawner y los enemigos). Se reinicia al
+-- cargar la escena para no arrastrar ids de la partida anterior
+drifting_asteroids = {}
+ring_slots = {}
+player_ships = {}
+
 -- ---------------------------------------------------------------------
 --  Generacion (constructores compartidos en asteroid_field.lua)
 -- ---------------------------------------------------------------------
@@ -101,7 +108,7 @@ local function buildAsteroidField()
     local cx, cy, scale, radius = field.find_spot(placed, FIELD_OPTS)
     if cx then
       placed[#placed + 1] = { x = cx, y = cy, radius = radius }
-      asteroids[#asteroids + 1] = field.make_asteroid(cx, cy, scale, randomDrift)
+      asteroids[#asteroids + 1] = field.asteroid_state(cx, cy, scale, randomDrift)
     end
   end
 
@@ -205,14 +212,13 @@ end
 
 entities[#entities + 1] = player
 
--- Los asteroides generados se anexan detras del jugador
-for _, asteroid in ipairs(buildAsteroidField()) do
-  entities[#entities + 1] = asteroid
-end
+-- Los asteroides iniciales ya no son entidades de la escena: el host los
+-- crea con net_spawn (asteroid_spawner.lua) para que todos los clientes
+-- los vean. Aqui solo se publica su estado de spawn
+scene_initial_asteroids = buildAsteroidField()
 
 -- Director invisible de los generadores de asteroides: solo tiene script
--- (ScriptSystem no pide nada mas). Va al final para que asteroid.lua ya
--- este cargado y sus hooks asteroid_on_* existan.
+-- (ScriptSystem no pide nada mas)
 entities[#entities + 1] = {
   components = {
     script = {

@@ -94,46 +94,40 @@ end
 This is exactly what `player.lua` does, right below the equipment lines.
 
 **Mineral pickup — a destroyed asteroid drops one pickup per entry of its
-`loot`, and each pickup hands its loot over on contact**
-(`assets/scripts/asteroid.lua`, trimmed):
+`loot`, and each pickup hands its loot over on contact.** Only the asteroid's
+owner (the host, or everyone offline) drops them, through the prefab
+`prefabs/pickup.lua` (`assets/scripts/asteroid.lua`, trimmed):
 
 ```lua
-function on_death()
+local function asteroid_on_death()
+  if not is_local(this) then return end      -- remote copies drop nothing
   local x, y = get_position(this)
   for i = 1, get_loot_count(this) do
     local name, quantity = get_loot_at(this, i)
-    local pickup = create_entity()
-    -- add_transform / add_sprite / add_rigid_body / add_circle_collider ...
-    set_loot(pickup, name, quantity)
-    add_script(pickup, pickup_magnet)          -- must come before set_on_collision
-    set_on_collision(pickup, collect_pickup)
+    net_spawn("pickup.lua", { pos = { x = x, y = y }, item = name,
+                              quantity = quantity, world = true })
   end
-end
-
-function collect_pickup(other)
-  if not has_inventory(other) then return end  -- asteroids/bullets don't collect
-  -- add_item each loot entry, set_loot(this, name, leftover), and
-  -- destroy_entity(this) once nothing is left (full hold: stays afloat)
 end
 ```
 
-What each asteroid drops comes from the scene (`ASTEROID_TYPES` in
-`scene_01.lua`, see the `loot` component in
-[scene-format.md](scene-format.md#loot)). Pickups carry a `LootComponent`,
-never an inventory: otherwise they would pass `has_inventory(other)` and
-collect each other.
+The pickup's runtime script is `assets/scripts/pickup.lua`. Its `on_collision`
+reacts only to the local ship (`has_inventory(other) and is_local(other)`)
+with room in its hold. If the pickup is ours, `loot_net.grant` adds the items.
+Otherwise it sends `pickup_request` to the owner, who grants the first request
+with a `loot_taken` broadcast. See `loot_net.lua` and the Network section of
+[lua-api.md](lua-api.md).
 
-`collect_pickup` is a plain global, not `on_collision` — see
-[Gotchas](#gotchas-and-limits) for why that distinction matters here.
+What each asteroid drops comes from `ASTEROID_TYPES` in `asteroid_config.lua`
+(see the `loot` component in [scene-format.md](scene-format.md#loot)).
+Pickups carry a `LootComponent`, never an inventory: otherwise they would pass
+`has_inventory(other)` and collect each other.
 
-**Magnet.** Each pickup's update, `pickup_magnet`, pulls it towards the
-ship's centre (read from the global `player_entity`) once it is within
+**Magnet.** Each pickup's `update()` in `pickup.lua` pulls it towards the
+local ship's centre (read from the global `player_entity`) once it is within
 `MAGNET_RADIUS`. Its speed ramps from `MAGNET_MIN_SPEED` at the edge to
 `MAGNET_MAX_SPEED` on top of the ship. It does nothing while the hold is full,
-so pickups that cannot be collected don't stick to the ship. All of these
-constants live at the top of `asteroid.lua`. `add_script` has to run before
-`set_on_collision`, because it recreates the `ScriptComponent` and would wipe
-the collision hook.
+so pickups that cannot be collected don't stick to the ship. Each client runs
+the magnet on its own copy, towards its own ship.
 
 ---
 
@@ -162,18 +156,15 @@ scene that starts an entity over its own cap gets exactly that.
 **`on_collision` fires every frame two colliders keep overlapping**, not
 once per contact (`CollisionSystem` emits a `CollisionEvent` per overlapping
 pair, every frame, same as it always has for damage). A pickup has to either
-destroy itself on success (`destroy_entity`, as `collect_pickup` does) or
-otherwise guard against being processed dozens of times while the two
-entities drift past each other.
+remove itself on success (`loot_net.grant` empties the loot and calls
+`net_despawn`) or otherwise guard against being processed dozens of times
+while the two entities drift past each other. Non-owners throttle their
+`pickup_request` to one per second.
 
-**Why `collect_pickup` is not named `on_collision`.** `asteroid.lua` is the
-script file loaded for *every* asteroid entity via the scene's `script`
-component. If the pickup hook were the global `on_collision`, every asteroid
-would pick it up too (`SceneLoader::addScriptComponent` reads whatever global
-`on_collision` is defined after running the file) and asteroids would start
-colliding with each other. `set_on_collision(pickup, collect_pickup)`
-attaches the hook to the one runtime-created pickup entity instead, leaving
-every asteroid's own `on_collision` at `lua_nil`.
+**Pickups have their own script file.** `pickup.lua` defines the global
+`on_collision` for pickups only. `SceneLoader::addScriptComponent` reads
+whatever global `on_collision` is defined after running a file, so the hook
+must not live in `asteroid.lua`, which every asteroid loads.
 
 **Entity ids are recycled.** Every getter here is guarded and returns a
 neutral value (`0`, `false`, or `"", 0`) instead of reading a dead entity's

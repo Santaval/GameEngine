@@ -5,6 +5,12 @@
 --  cada uno, cada tanto (tiempo aleatorio), lanza un asteroide hacia un
 --  punto al azar del mapa. Nunca spawnea a la vista ni cerca del jugador.
 --
+--  Multijugador: solo el host siembra y genera (offline siempre lo es). Los
+--  asteroides se crean con net_spawn("asteroid.lua", ...) con world = true,
+--  asi que son del host y todos los clientes los simulan. Si el host se va, el
+--  nuevo host retoma los generadores (se arman al primer frame que es host).
+--  El campo inicial lo publica la escena en scene_initial_asteroids.
+--
 --  Una escena puede reemplazar los generadores y los limites del mapa con
 --  dos globals (los usa scenes/solar_system.lua):
 --    scene_asteroid_generators = { {x, y, heading, spread, speed = {min, max}}, ... }
@@ -13,6 +19,7 @@
 -- =====================================================================
 
 local cfg = require("asteroid_config")
+local field = require("asteroid_field")
 local FIELD = cfg.FIELD
 local randRange = cfg.randRange
 
@@ -29,7 +36,8 @@ local SPAWN_INTERVAL = { min = 2, max = 6 }
 local SPAWN_SPEED = { min = 5, max = 20 }
 
 -- Tope de asteroides vivos creados por los generadores (el campo inicial
--- de la escena no cuenta)
+-- de la escena no cuenta). Se cuentan en drifting_asteroids, que llena cada
+-- asteroide con despawn_far en todos los clientes
 local MAX_ALIVE = 40
 
 -- No spawnear si el jugador esta a menos de esta distancia del generador
@@ -39,16 +47,19 @@ local PLAYER_SAFE_RADIUS = 500
 -- que tiene que cubrir medio asteroide grande: 96 * 3 / 2 = 144)
 local SCREEN_MARGIN = 150
 
--- Al alejarse esto del FIELD el asteroide se borra sin soltar loot. Tiene
--- que ser mayor que SPAWN_MARGIN o moririan al nacer
-local DESPAWN_MARGIN = 600
+-- Siembra del campo inicial en red: asteroides por segundo, para no pasar el
+-- limite del relay (120 msg/s). Offline se crean todos de golpe
+local SEED_RATE = 30
 
 -- ---------------------------------------------------------------------
 --  Estado (locals del archivo: las closures los mantienen entre frames)
 -- ---------------------------------------------------------------------
 
 local generators = nil
-local alive = 0
+-- Campo inicial: ya sembrado (o este cliente nunca fue host)
+local seeded = false
+local seed_index = 1
+local seed_budget = 0
 
 local function buildGenerators()
   local list = {}
@@ -90,78 +101,57 @@ local function isOnScreen(x, y)
      and y > camY - SCREEN_MARGIN and y < camY + h + SCREEN_MARGIN
 end
 
-local function isPlayerNear(x, y)
-  if player_entity == nil or not is_alive(player_entity) then return false end
+local function near(e, x, y)
+  if e == nil or not is_alive(e) then return false end
 
-  local px, py = get_position(player_entity)
+  local px, py = get_position(e)
   local dx, dy = px - x, py - y
   return dx * dx + dy * dy < PLAYER_SAFE_RADIUS * PLAYER_SAFE_RADIUS
 end
 
-local function isFarOutside(cx, cy)
-  if scene_bounds ~= nil then
-    local dx, dy = cx - scene_bounds.x, cy - scene_bounds.y
-    return dx * dx + dy * dy > scene_bounds.radius * scene_bounds.radius
+-- La nave local o la de cualquier otro jugador (player_ships)
+local function isPlayerNear(x, y)
+  if near(player_entity, x, y) then return true end
+  for id in pairs(player_ships or {}) do
+    if near(find_by_net_id(id), x, y) then return true end
   end
-  return cx < FIELD.x - DESPAWN_MARGIN or cx > FIELD.x + FIELD.width + DESPAWN_MARGIN
-      or cy < FIELD.y - DESPAWN_MARGIN or cy > FIELD.y + FIELD.height + DESPAWN_MARGIN
+  return false
+end
+
+-- Asteroides vivos creados por los generadores. Se poda lo que ya no existe
+local function countAlive()
+  local count = 0
+  for id in pairs(drifting_asteroids) do
+    local e = find_by_net_id(id)
+    if e ~= nil and is_alive(e) then
+      count = count + 1
+    else
+      drifting_asteroids[id] = nil
+    end
+  end
+  return count
 end
 
 -- ---------------------------------------------------------------------
---  Creacion de un asteroide en runtime (mismo asteroide que makeAsteroid
---  de scene_01.lua, pero con la API de entidades en vez de una tabla)
+--  Creacion de un asteroide en runtime: net_spawn del prefab con el mismo
+--  estado que los del campo inicial (asteroid_field.asteroid_state). El
+--  duenio (host) lo borra al salir del mapa, ver asteroid.lua
 -- ---------------------------------------------------------------------
 
 local function spawnAsteroid(cx, cy, vx, vy)
-  local sheet = cfg.ASTEROID_SHEET
-  local frameSize = sheet.frameSize
   local scale = randRange(cfg.ASTEROID_SCALE.min, cfg.ASTEROID_SCALE.max)
-  local drawSize = frameSize * scale
-  local asteroidType = cfg.pickAsteroidType()
+  local state = field.asteroid_state(cx, cy, scale, function() return vx, vy end)
+  state.despawn_far = true
 
-  local e = create_entity()
-  -- position es la esquina sup-izq: se descuenta medio frame para centrar
-  add_transform(e, cx - drawSize / 2, cy - drawSize / 2, scale, scale, randRange(0, 2 * math.pi))
-  add_rigid_body(e, vx, vy, 0, 0)
-  add_gravity(e, scale * cfg.GRAVITY.ASTEROID_MASS_PER_SCALE, false, true)
-  add_sprite(e, sheet.assetId, frameSize, frameSize, asteroidType.frame * frameSize, 0)
-  add_circle_collider(e, sheet.bodyRadius, frameSize, frameSize)
-  add_health(e, cfg.healthFor(asteroidType, scale), cfg.ASTEROID_INVULNERABILITY)
-  add_damage(e, cfg.ASTEROID_DAMAGE)
-  for name, quantity in pairs(asteroidType.loot) do
-    set_loot(e, name, quantity)
-  end
-
-  -- on_death puede llegar dos veces (kill() es diferido: una bala y el
-  -- despawn en el mismo frame, o el update del frame siguiente), asi que
-  -- cada asteroide lleva su propia bandera para descontarse una sola vez
-  local dead = false
-  local half = drawSize / 2
-
-  -- add_script primero: recrea el ScriptComponent y borraria los hooks
-  add_script(e, function()
-    if dead then return end
-    local x, y = get_position(this)
-    if isFarOutside(x + half, y + half) then
-      -- Se fue del mapa: se borra sin loot para que asteroid_on_death no
-      -- deje pickups perdidos en el vacio
-      asteroid_vanish(this)
-    end
-  end)
-  set_on_damage(e, asteroid_on_damage)
-  set_on_collision(e, asteroid_on_collision)
-  set_on_death(e, function()
-    if dead then return end
-    dead = true
-    alive = alive - 1
-    asteroid_on_death()
-  end)
-
-  alive = alive + 1
+  local e = net_spawn("asteroid.lua", state)
+  -- Se anota ya y no en su primer update, para que el tope MAX_ALIVE valga
+  -- aunque varios generadores disparen en el mismo frame
+  local id = e and get_net_id(e)
+  if id then drifting_asteroids[id] = true end
 end
 
 local function trySpawn(gen)
-  if alive >= MAX_ALIVE then return end
+  if countAlive() >= MAX_ALIVE then return end
   if isPlayerNear(gen.x, gen.y) or isOnScreen(gen.x, gen.y) then return end
 
   local speedRange = gen.speed or SPAWN_SPEED
@@ -184,17 +174,48 @@ local function trySpawn(gen)
   spawnAsteroid(gen.x, gen.y, dx / d * speed, dy / d * speed)
 end
 
+-- Crea el campo inicial publicado por la escena. Online lo reparte en
+-- varios frames (SEED_RATE por segundo); offline lo crea todo de una vez
+local function seedField()
+  local list = scene_initial_asteroids or {}
+  local online = net_is_online()
+
+  if online then
+    seed_budget = seed_budget + get_delta_time() * SEED_RATE
+  end
+
+  while seed_index <= #list do
+    if online then
+      if seed_budget < 1 then return end
+      seed_budget = seed_budget - 1
+    end
+    net_spawn("asteroid.lua", list[seed_index])
+    seed_index = seed_index + 1
+  end
+
+  seeded = true
+end
+
 function update()
+  drifting_asteroids = drifting_asteroids or {}
+
+  -- Solo el host siembra y genera. Quien no lo era al empezar nunca siembra,
+  -- ni siquiera si despues pasa a ser host (el mundo ya existe: lo recibio
+  -- por snapshot); solo retoma los generadores
+  if not net_is_host() then
+    seeded = true
+    return
+  end
+
+  if not seeded then seedField() end
+
   -- Mismo guard que enemy.lua: hasta que el jugador corra su primer frame
   -- ni player_entity existe ni la camara esta centrada en el, y los chequeos
   -- de distancia / pantalla darian cualquier cosa
   if player_entity == nil then return end
 
+  -- Los generadores se arman al primer frame como host (tambien tras migrar)
   if generators == nil then
-    -- Normalmente asteroid.lua ya lo cargo el campo inicial de la escena;
-    -- si no hay ninguno se carga aca, en runtime, donde pisar los globals
-    -- update/on_death ya no afecta al SceneLoader
-    if asteroid_on_death == nil then require("asteroid") end
     generators = buildGenerators()
   end
 

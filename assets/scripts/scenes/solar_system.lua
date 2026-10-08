@@ -32,6 +32,13 @@ solar.validate(PLANETS)
 -- de Saturno y el minimapa: Lua no puede listar entidades
 scene_planets = PLANETS
 
+-- Estado compartido del mundo en red (lo rellenan asteroid.lua y
+-- remote_player.lua, lo leen el spawner y los enemigos). Se reinicia al
+-- cargar la escena para no arrastrar ids de la partida anterior
+drifting_asteroids = {}
+ring_slots = {}
+player_ships = {}
+
 -- La nave arranca del lado de la Tierra que mira al Sol, justo afuera de su
 -- gravedad
 local spawn_planet = solar.find_planet(PLANETS, solar.PLAYER_SPAWN.planet)
@@ -78,7 +85,7 @@ local function buildBelts()
       local cx, cy, scale, radius = field.find_spot(placed, opts)
       if cx then
         placed[#placed + 1] = { x = cx, y = cy, radius = radius }
-        asteroids[#asteroids + 1] = field.make_asteroid(cx, cy, scale, beltDrift)
+        asteroids[#asteroids + 1] = field.asteroid_state(cx, cy, scale, beltDrift)
       end
     end
   end
@@ -192,12 +199,12 @@ end
 
 entities[#entities + 1] = player
 
-for _, asteroid in ipairs(buildBelts()) do
-  entities[#entities + 1] = asteroid
-end
+-- Los asteroides de los cinturones ya no son entidades de la escena: el host
+-- los crea con net_spawn (asteroid_spawner.lua) para que todos los clientes
+-- los vean. Aqui solo se publica su estado de spawn
+scene_initial_asteroids = buildBelts()
 
--- Directores invisibles (solo script). Van al final para que asteroid.lua ya
--- este cargado y sus hooks asteroid_on_* existan
+-- Directores invisibles (solo script)
 local DIRECTORS = {
   "./assets/scripts/asteroid_spawner.lua",
   "./assets/scripts/saturn_ring.lua",

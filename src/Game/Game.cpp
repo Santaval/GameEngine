@@ -4,6 +4,7 @@
 
 #include "../Network/NetClient.hpp"
 #include "../Network/DamageSync.hpp"
+#include "../Network/WorldSync.hpp"
 #include "../Network/NetworkRegistry.hpp"
 #include "../Network/NetworkScripting.hpp"
 #include "../Components/TransformComponent.hpp"
@@ -149,8 +150,27 @@ void Game::setup() {
         this->damageSync->onSnapshot(msg);
     });
     // Reconexion: el servidor nos olvido y el resto tambien a nosotros
-    this->netClient->subscribe("welcome", [this](const nlohmann::json&) {
+    this->netClient->subscribe("welcome", [this](const nlohmann::json& msg) {
         this->snapshotRequested = false;
+        this->worldSync->onWelcome(msg.value("playerId", std::string()), msg.value("hostId", std::string()));
+    });
+
+    // Mundo del host: migracion, salida de jugadores y snapshot para recien llegados.
+    // Va antes de cualquier net_on de Lua: la adopcion en C++ corre primero
+    this->worldSync = std::make_unique<WorldSync>(*this->networkRegistry, *this->registry,
+        [this](const nlohmann::json& msg) { this->netClient->send(msg); },
+        [this]() { return this->netClient->isOnline(); });
+    this->netClient->subscribe("peer_left", [this](const nlohmann::json& msg) {
+        this->worldSync->onPeerLeft(msg.value("playerId", std::string()));
+    });
+    this->netClient->subscribe("host_changed", [this](const nlohmann::json& msg) {
+        this->worldSync->onHostChanged(msg.value("hostId", std::string()));
+    });
+    this->netClient->subscribe("custom", [this](const nlohmann::json& msg) {
+        this->worldSync->onCustom(msg);
+    });
+    this->netClient->subscribe("snapshot_request", [this](const nlohmann::json& msg) {
+        this->worldSync->onSnapshotRequest(msg, this->damageSync->pvpEnabled());
     });
 
     sol::table loaded = this->lua["package"]["loaded"];
@@ -171,6 +191,8 @@ void Game::loadScene(const std::string& scenePath) {
 
     // Primero se sueltan las entidades: sus ScriptComponent guardan
     // funciones de los scripts que se van a volver a ejecutar
+    // El host avisa que su mundo se descarta; sin esto los demas conservarian copias huerfanas
+    if (this->worldSync) this->worldSync->announceWorldReset();
     this->registry->clear();
     this->networkRegistry->clear();
     this->registry->getSystem<NetSyncSystem>().clear();

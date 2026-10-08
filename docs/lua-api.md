@@ -539,6 +539,46 @@ automatically and tags it with the sender's netId and owner: Lua does not have
 to handle `spawn` (a `net_on("spawn", ...)` handler still fires afterwards).
 Incoming `despawn` removes the entity the same way.
 
+#### World entities (`world = true`)
+
+A spawn state with `world = true` marks a **host-owned world entity** (asteroids,
+ring rocks, pickups, enemies). The host answers a late joiner's snapshot with
+all of them, built again from `spawn_state`, so a prefab for a world entity must
+rebuild itself **entirely from its state** (`prefabs/asteroid.lua` reads `kind`
+and `scale`; `prefabs/pickup.lua` reads `item` and `quantity`; ring rocks carry
+`ring = {x, y, radius, speed}` and `slot`). When the host leaves, the engine
+reassigns the world entities to the new host, and `is_local(e)` becomes `true`
+there. Only world entities are adopted: a player's ship and bullets are removed
+when that player leaves. Spawners must run only `if net_is_host()` (always
+`true` offline), and the hooks of world entities act only `if is_local(this)`.
+
+Shared Lua globals used by the gameplay scripts (reset by each scene on load,
+filled on every client): `drifting_asteroids` (netIds of spawned asteroids, used
+to cap them), `ring_slots` (slot -> netId of the Saturn ring rock) and
+`player_ships` (netIds of the other players' ships, used by enemies to pick the
+nearest target). Always resolve them with `find_by_net_id` and ignore ids that
+return `nil`.
+
+#### Loot flow (`loot_net.lua`)
+
+Pickups are world entities, so loot is granted exactly once:
+
+1. When an asteroid dies, only its owner runs the `on_death` hook of `asteroid.lua` and creates
+   one pickup per loot item with `net_spawn("pickup.lua", {item, quantity, world = true})`.
+2. A client whose ship touches a pickup it does not own sends the custom message
+   `pickup_request {lootNetId}` to the pickup's owner (at most once per second
+   per pickup). If the pickup is its own, it calls `loot_net.grant` directly.
+3. The owner runs `grant(pickup, by)`: it broadcasts `loot_taken {lootNetId, by, items}`
+   and despawns the pickup. The first request wins; later ones find nothing and are
+   ignored. When `by` is the owner itself, items that do not fit stay in the
+   pickup (same as offline).
+4. Only the client named in `by` adds `items` to its ship's inventory, and only if
+   the message comes from the pickup's owner. Items beyond that player's hold
+   capacity are lost in multiplayer.
+
+`loot_net.lua` registers its `net_on` handlers when it is `require`d (from
+`pickup.lua`), so it re-registers itself on every scene load.
+
 Building a prefab with a `script` component redefines the `update` / `on_*`
 globals while it loads (same as `require` of a script mid-update); `this` is
 saved and restored around it.

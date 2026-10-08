@@ -34,6 +34,7 @@ class NetworkScripting {
     void onSpawnMessage(const nlohmann::json& msg);
     void onDespawnMessage(const nlohmann::json& msg);
     void onSnapshotMessage(const nlohmann::json& msg);
+    void describeEntity(Entity entity, const std::string& script, const nlohmann::json& state);
     void buildRemote(const nlohmann::json& entry, const nlohmann::json& state,
                      const std::string& from);
     void onFireMessage(const nlohmann::json& msg);

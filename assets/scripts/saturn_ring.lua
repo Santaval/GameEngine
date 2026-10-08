@@ -1,15 +1,19 @@
 -- =====================================================================
 --  Anillo de Saturno
---  Script de una entidad "director" invisible. En su primer update crea las
---  rocas del anillo en runtime (igual que asteroid_spawner.lua) y cada roca
---  sigue su propio lugar ("slot") en una formacion que gira alrededor de
---  Saturno. Las rocas no sienten la gravedad: el giro es cinematico, por
---  velocidad, asi que tras un rebote contra la nave vuelven a su lugar.
---  Se rompen a tiros y sueltan loot como cualquier asteroide; el hueco se
---  vuelve a llenar despues de un rato, siempre fuera de la pantalla.
+--  Script de una entidad "director" invisible. Dibuja la banda en todos los
+--  clientes; solo el host crea las rocas (net_spawn de asteroid.lua con
+--  world = true y ring = {x, y, radius, speed}) y rellena los huecos. Cada
+--  roca sigue su carril alrededor de Saturno (ver steer_in_lane en
+--  asteroid.lua): el giro es cinematico, por velocidad, asi que tras un
+--  rebote contra la nave vuelven a su carril. Las rocas no sienten la
+--  gravedad. Se rompen a tiros y sueltan loot como cualquier asteroide; el
+--  hueco se vuelve a llenar despues de un rato, siempre fuera de la pantalla.
+--  Si el host se va, el nuevo host reconstruye sus lugares y rellena solo los
+--  que de verdad estan vacios (ring_slots, que llena cada roca).
 -- =====================================================================
 
 local cfg = require("asteroid_config")
+local field = require("asteroid_field")
 local solar = require("solar_system_config")
 local zones = require("player_gravity_zones")
 local randRange = cfg.randRange
@@ -21,11 +25,9 @@ local LANE_JITTER = 8
 -- Desvio angular aleatorio de cada roca respecto de su lugar parejo (rad)
 local ANGLE_JITTER = 0.05
 
--- Correccion hacia el lugar de la roca: px/s de velocidad por px de error
-local POSITION_GAIN = 1.5
--- Que tan rapido la velocidad real converge a la deseada (1/s). Bajo, para
--- que el rebote contra la nave se note antes de volver a la formacion
-local STEER_RATE = 2
+-- Siembra de las rocas en red: rocas por segundo, para no pasar el limite
+-- del relay (120 msg/s). Offline se crean todas de golpe
+local SPAWN_RATE = 30
 
 -- Banda punteada que marca el anillo
 local BAND_COLOR = { 210, 190, 150 }
@@ -43,6 +45,7 @@ local planet = nil
 local inner_r, outer_r = 0, 0
 local slots = nil
 local clock = 0
+local spawn_budget = 0
 
 local function isOnScreen(x, y)
   local camX, camY = get_camera_position()
@@ -70,7 +73,7 @@ local function buildSlots()
       list[#list + 1] = {
         radius = base_r + randRange(-LANE_JITTER, LANE_JITTER),
         angle = lane_offset + (i - 1) * 2 * math.pi / per_lane + randRange(-ANGLE_JITTER, ANGLE_JITTER),
-        alive = false,
+        was_alive = false,
         dead_at = -math.huge,
       }
     end
@@ -79,56 +82,30 @@ local function buildSlots()
   return list
 end
 
-local function spawnRock(slot)
-  local sheet = cfg.ASTEROID_SHEET
-  local frameSize = sheet.frameSize
+-- Un lugar esta ocupado si la roca que lo anoto en ring_slots sigue viva
+local function slotOccupied(index)
+  local id = ring_slots[index]
+  if id == nil then return false end
+  local e = find_by_net_id(id)
+  return e ~= nil and is_alive(e)
+end
+
+local function spawnRock(index, slot)
   local scale = randRange(RING.scale.min, RING.scale.max)
-  local half = frameSize * scale / 2
-  local asteroidType = cfg.pickAsteroidType()
-  local cx, cy = slotPoint(slot)
+  local cx, cy, a = slotPoint(slot)
+  local v_t = RING.angular_speed * slot.radius
 
-  local e = create_entity()
-  -- position es la esquina sup-izq: se descuenta medio frame para centrar
-  add_transform(e, cx - half, cy - half, scale, scale, randRange(0, 2 * math.pi))
-  add_rigid_body(e, 0, 0, 0, 0)
-  add_sprite(e, sheet.assetId, frameSize, frameSize, asteroidType.frame * frameSize, 0)
-  add_circle_collider(e, sheet.bodyRadius, frameSize, frameSize)
-  add_health(e, cfg.healthFor(asteroidType, scale), cfg.ASTEROID_INVULNERABILITY)
-  add_damage(e, cfg.ASTEROID_DAMAGE)
-  for name, quantity in pairs(asteroidType.loot) do
-    set_loot(e, name, quantity)
-  end
-
-  -- on_death puede llegar dos veces (kill() es diferido), igual que en
-  -- asteroid_spawner.lua: la bandera evita liberar el lugar dos veces
-  local dead = false
-
-  -- add_script primero: recrea el ScriptComponent y borraria los hooks
-  add_script(e, function()
-    if dead then return end
-    local tx, ty, a = slotPoint(slot)
-    local x, y = get_collider_center(this)
-
-    -- Velocidad de la formacion (tangente) + correccion hacia el lugar
-    local v_t = RING.angular_speed * slot.radius
-    local want_x = -math.sin(a) * v_t + (tx - x) * POSITION_GAIN
-    local want_y = math.cos(a) * v_t + (ty - y) * POSITION_GAIN
-
-    local vx, vy = get_velocity(this)
-    local k = math.min(1, STEER_RATE * get_delta_time())
-    set_velocity(this, vx + (want_x - vx) * k, vy + (want_y - vy) * k)
+  local state = field.asteroid_state(cx, cy, scale, function()
+    return -math.sin(a) * v_t, math.cos(a) * v_t
   end)
-  set_on_damage(e, asteroid_on_damage)
-  set_on_collision(e, asteroid_on_collision)
-  set_on_death(e, function()
-    if dead then return end
-    dead = true
-    slot.alive = false
-    slot.dead_at = clock
-    asteroid_on_death()
-  end)
+  state.ring = { x = planet.x, y = planet.y, radius = slot.radius, speed = RING.angular_speed }
+  state.slot = index
 
-  slot.alive = true
+  local e = net_spawn("asteroid.lua", state)
+  -- Se anota ya y no en el primer update de la roca, para no duplicarla
+  local id = e and get_net_id(e)
+  if id then ring_slots[index] = id end
+  slot.dead_at = -math.huge
 end
 
 local function drawBand()
@@ -145,30 +122,48 @@ local function drawBand()
 end
 
 function update()
-  if slots == nil then
+  ring_slots = ring_slots or {}
+
+  if planet == nil then
+    if slots ~= nil then return end
     planet = solar.find_planet(scene_planets or {}, RING.planet)
     if planet == nil then
       print("[saturn_ring] no hay planeta " .. RING.planet .. " en scene_planets")
       slots = {}
       return
     end
-    -- Los hooks asteroid_on_* viven en asteroid.lua; normalmente ya lo cargo
-    -- la escena con los asteroides de los cinturones
-    if asteroid_on_death == nil then require("asteroid") end
-
     inner_r = planet.body_radius * RING.inner
     outer_r = planet.body_radius * RING.outer
-    slots = buildSlots()
-    for _, slot in ipairs(slots) do spawnRock(slot) end
   end
 
-  if planet == nil then return end
   clock = clock + get_delta_time()
 
-  for _, slot in ipairs(slots) do
-    if not slot.alive and clock - slot.dead_at >= RING.respawn_time then
-      local x, y = slotPoint(slot)
-      if not isOnScreen(x, y) then spawnRock(slot) end
+  -- Solo el host crea y rellena. Los lugares se arman al primer frame como
+  -- host (tambien tras migrar) y se rellenan solo los que estan vacios
+  if net_is_host() then
+    if slots == nil then slots = buildSlots() end
+
+    local online = net_is_online()
+    if online then spawn_budget = math.min(spawn_budget + get_delta_time() * SPAWN_RATE, SPAWN_RATE) end
+
+    for index, slot in ipairs(slots) do
+      if slotOccupied(index) then
+        slot.was_alive = true
+      else
+        -- El hueco empieza a contar cuando se nota por primera vez vacio
+        if slot.was_alive then
+          slot.was_alive = false
+          slot.dead_at = clock
+        end
+        local first = slot.dead_at == -math.huge
+        local x, y = slotPoint(slot)
+        if (first or clock - slot.dead_at >= RING.respawn_time)
+            and (first or not isOnScreen(x, y))
+            and (not online or spawn_budget >= 1) then
+          if online then spawn_budget = spawn_budget - 1 end
+          spawnRock(index, slot)
+        end
+      end
     end
   end
 

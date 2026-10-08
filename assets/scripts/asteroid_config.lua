@@ -41,7 +41,7 @@ config.ASTEROID_INVULNERABILITY = 0.5
 config.ASTEROID_DAMAGE = 20
 
 -- Dano que hace la nave al embestir un asteroide (el asteroide solo suelta
--- loot si lo rompen a tiros, ver asteroid_on_damage en asteroid.lua)
+-- loot si lo rompen a tiros, ver on_damage en asteroid.lua)
 config.SHIP_RAM_DAMAGE = 10
 
 -- Tipos de asteroide. weight es la probabilidad relativa de aparicion,
@@ -67,7 +67,9 @@ function config.randRange(min, max)
   return min + math.random() * (max - min)
 end
 
--- Elige un tipo de ASTEROID_TYPES respetando los weight
+-- Elige un tipo de ASTEROID_TYPES respetando los weight. Devuelve el tipo y su
+-- indice en ASTEROID_TYPES (el indice es lo que viaja por la red, ver
+-- prefabs/asteroid.lua)
 function config.pickAsteroidType()
   local total = 0
   for _, asteroidType in ipairs(config.ASTEROID_TYPES) do
@@ -75,12 +77,12 @@ function config.pickAsteroidType()
   end
 
   local roll = math.random() * total
-  for _, asteroidType in ipairs(config.ASTEROID_TYPES) do
+  for index, asteroidType in ipairs(config.ASTEROID_TYPES) do
     roll = roll - asteroidType.weight
-    if roll < 0 then return asteroidType end
+    if roll < 0 then return asteroidType, index end
   end
 
-  return config.ASTEROID_TYPES[#config.ASTEROID_TYPES]
+  return config.ASTEROID_TYPES[#config.ASTEROID_TYPES], #config.ASTEROID_TYPES
 end
 
 -- Vida maxima de un asteroide segun su tipo y tamano

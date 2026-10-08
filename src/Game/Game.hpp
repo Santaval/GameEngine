@@ -19,6 +19,7 @@ class NetClient;
 class NetworkRegistry;
 class NetworkScripting;
 class DamageSync;
+class WorldSync;
 
 const int FPS = 30;
 const int MILISECS_PER_FRAMES = 1000 / FPS;
@@ -59,6 +60,7 @@ class Game {
         // Daño/muerte con autoridad del dueño. Sus callbacks usan networkScripting
         // y netClient, asi que se destruye antes que ellos (declarado despues)
         std::unique_ptr<DamageSync> damageSync;
+        std::unique_ptr<WorldSync> worldSync;
         std::string serverUrl;
         // Pedido de entidades ya existentes ("snapshot_request") hecho para la
         // escena actual; se repite al cargar escena o al reconectar
@@ -99,6 +101,7 @@ class Game {
      NetworkRegistry* getNetworkRegistry() const { return networkRegistry.get(); }
      NetworkScripting* getNetworkScripting() const { return networkScripting.get(); }
      DamageSync* getDamageSync() const { return damageSync.get(); }
+     WorldSync* getWorldSync() const { return worldSync.get(); }
      SceneLoader* getSceneLoader() const { return sceneLoader.get(); }
      void quit() { isRunning = false; }
      double getDeltaTime() const { return deltaTime; }

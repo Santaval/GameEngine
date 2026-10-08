@@ -24,6 +24,12 @@ local function apply_stats(entity)
 end
 
 function update()
+  -- Los enemigos buscan a la nave mas cercana entre la local y estas
+  -- (ver enemy.lua); se anota cada frame y ellos podan las que mueran
+  player_ships = player_ships or {}
+  local id = get_net_id(this)
+  if id ~= nil then player_ships[id] = true end
+
   -- "this" aun no es esta entidad al cargar el chunk, por eso el nombre se
   -- resuelve aqui
   if not name then
