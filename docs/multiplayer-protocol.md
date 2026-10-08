@@ -210,3 +210,8 @@ Listens on `PORT` (default 7777). Limits and close codes:
 
 Invalid, server-only-type or mis-addressed messages are dropped and logged
 (JSON lines on stdout) without disconnecting the client.
+
+To test a single game instance, run a fake player next to it with
+`npm run bot -- --host --pvp` (flags: `--url`, `--name`, `--host`, `--pvp`,
+`--radius`, `--cx`, `--cy`, `--fire-interval`, `--duration`). See
+`server/README.md`.
