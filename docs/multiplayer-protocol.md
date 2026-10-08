@@ -215,3 +215,29 @@ To test a single game instance, run a fake player next to it with
 `npm run bot -- --host --pvp` (flags: `--url`, `--name`, `--host`, `--pvp`,
 `--radius`, `--cx`, `--cy`, `--fire-interval`, `--duration`). See
 `server/README.md`.
+
+
+---
+
+## Engine client
+
+The engine connects with `NetClient` (`src/Network/`), enabled by
+`./engine --server ws://localhost:7777` or `GAME_SERVER=ws://localhost:7777`.
+Without either, nothing is created on the network and the game runs offline.
+
+```
+cd server && npm install && npm run dev      # relay
+cd server && npm run bot -- --host           # optional fake player
+./engine --server ws://localhost:7777
+```
+
+On connect it sends `hello` (`name`, `version`) and logs `[Net] connected`,
+`[Net] welcome`, `peer_joined`, `peer_left`, `host_changed` and
+`[Net] disconnected`. It reconnects automatically and sends a new `hello` each
+time.
+
+Threading rule: IXWebSocket's thread only parses messages and pushes them to a
+mutex-protected queue. `NetClient::poll()` runs at the start of `Game::update()`,
+before `Registry::update()` and the scripts, and is the only place that updates
+state (`myPlayerId`, `hostId`, `peers`), logs and calls handlers registered with
+`subscribe(type, handler)`. Never touch the registry from the socket thread.

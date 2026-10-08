@@ -2,6 +2,7 @@
 
 #include <iostream>
 
+#include "../Network/NetClient.hpp"
 #include "../Components/TransformComponent.hpp"
 #include "../Components/SpriteComponent.hpp"
 #include "../Components/RigidBodyComponent.hpp"
@@ -27,12 +28,14 @@ Game::Game() {
     this->eventManager = std::make_unique<EventManager>();
     this->controllerManager = std::make_unique<ControllerManager>();
     this->registry = std::make_unique<Registry>(); 
+    this->netClient = std::make_unique<NetClient>();
 
     this->sceneLoader = std::make_unique<SceneLoader>(); 
     std::cout << "[Game] Game init" << std::endl;
 }
 
 Game::~Game() {
+    this->netClient.reset();
     this->assetManager.reset();
     this->controllerManager.reset();
     this->eventManager.reset();
@@ -103,6 +106,11 @@ void Game::setup() {
     sol::table loaded = this->lua["package"]["loaded"];
     for (const auto& entry : loaded) {
         this->builtinModules.insert(entry.first.as<std::string>());
+    }
+
+    if (!this->serverUrl.empty()) {
+        std::cout << "[Net] connecting to " << this->serverUrl << std::endl;
+        this->netClient->connect(this->serverUrl, "player");
     }
 
     this->loadScene("./assets/scripts/scenes/menu.lua");
@@ -232,6 +240,9 @@ void Game::update() {
 
     this->milisecsPreviousFrame = SDL_GetTicks();
 
+    // Red: los handlers corren aqui, en el hilo principal, antes de todo lo demas
+    this->netClient->poll();
+
     // Reset events subscriptions
     this->eventManager->reset();
     this->registry->getSystem<DamageSystem>().subscribeToCollisionEvent(this->eventManager);
@@ -264,6 +275,8 @@ void Game::run() {
 }
 
 void Game::destroy() {
+    this->netClient->disconnect();
+
     // Las texturas y las fuentes tienen que morir antes que el renderer y antes de TTF_Quit
     this->registry->getSystem<TextRenderSystem>().clearCache();
     this->assetManager->clearAll();

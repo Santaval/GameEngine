@@ -21,11 +21,20 @@ entirely in Lua.
 ```sh
 make        # builds ./engine
 make run    # ./engine
+make deps   # fetches IXWebSocket + nlohmann/json (make build does it automatically)
 make clean
+make clean-deps   # forces IXWebSocket to be rebuilt
 ```
 
-Needs `libsdl2-dev`, `libsdl2-image-dev`, `libsdl2-ttf-dev` and `liblua5.3-dev`.
-GLM, sol2 and the Lua headers are vendored in `libs/`.
+Needs `libsdl2-dev`, `libsdl2-image-dev`, `libsdl2-ttf-dev`, `zlib1g-dev` and a
+Lua dev package (`liblua5.3-dev` or 5.4). GLM, sol2 and the Lua headers are
+vendored in `libs/`. IXWebSocket and nlohmann/json are not committed:
+`scripts/fetch-deps.sh` downloads pinned versions into `libs/` (needs `curl`),
+and IXWebSocket is compiled once into `libs/IXWebSocket/libixwebsocket.a`.
+
+Multiplayer is opt-in: `./engine --server ws://host:7777` (or the `GAME_SERVER`
+environment variable). Without it the engine runs offline and prints nothing
+from the network layer. See [multiplayer-protocol.md](multiplayer-protocol.md).
 
 Paths in scene files are relative to the working directory, so run the binary
 from the repository root.
@@ -51,6 +60,8 @@ game.
 
 `Game::update()` runs, in this order:
 
+0. `NetClient::poll()` — only when online: drains the inbound network queue and
+   runs the network handlers on the main thread.
 1. Event subscriptions are reset and re-registered.
 2. `Registry::update()` — entities created last frame join their systems, and
    entities killed last frame are removed.

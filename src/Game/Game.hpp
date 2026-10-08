@@ -15,6 +15,8 @@
 #include "../Util/TextBuffer.hpp"
 #include "../Util/RectBuffer.hpp"
 
+class NetClient;
+
 const int FPS = 30;
 const int MILISECS_PER_FRAMES = 1000 / FPS;
 
@@ -43,6 +45,10 @@ class Game {
         sol::state lua;
 
         std::unique_ptr<SceneLoader> sceneLoader;
+
+        // Multijugador: vacio = modo offline (no se conecta nada)
+        std::unique_ptr<NetClient> netClient;
+        std::string serverUrl;
 
         // Escena pedida desde Lua (load_scene); se carga al inicio del
         // proximo frame, nunca en medio de ScriptSystem::update
@@ -74,6 +80,8 @@ class Game {
      void run();
      void destroy();
      void requestScene(const std::string& scenePath) { pendingScene = scenePath; }
+     void setServerUrl(const std::string& url) { serverUrl = url; }
+     NetClient* getNetClient() const { return netClient.get(); }
      void quit() { isRunning = false; }
      double getDeltaTime() const { return deltaTime; }
      Registry* getRegistry() const { return registry.get(); }
