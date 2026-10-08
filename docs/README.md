@@ -12,6 +12,7 @@ entirely in Lua.
 | [inventory.md](inventory.md) | Named item quantities, an optional capacity, and the mineral pickup gameplay. |
 | [gravity.md](gravity.md) | Mass-based attraction between planets, ship, asteroids and bullets. |
 | [asteroid-spawner.md](asteroid-spawner.md) | Generators outside the map that keep spawning asteroids at random intervals. |
+| [multiplayer-protocol.md](multiplayer-protocol.md) | Wire protocol and ownership rules for the relay server and multiplayer clients. |
 
 ---
 
