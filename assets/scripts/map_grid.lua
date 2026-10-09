@@ -87,6 +87,7 @@ grid.SALT_NEBULA = 6
 grid.SALT_REACTOR = 7
 grid.SALT_PORTAL = 8
 grid.SALT_NEXUS = 9
+grid.SALT_SUPPLY = 10
 
 -- Generador mulberry32 sembrado con `state` (entero de 32 bits). Devuelve un
 -- objeto con next() en [0,1), range(a,b) real y int(a,b) entero (ambos

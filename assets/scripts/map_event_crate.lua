@@ -21,7 +21,7 @@ local local_crates = {}
 function crate.spawn(p, key)
   local w = CRATE.size
   local h = w * CRATE.sheet.src_h / CRATE.sheet.frame_w
-  local e = net_spawn("loot_crate_pal.lua", { pos = { p.x - w / 2, p.y - h / 2 }, world = true })
+  local e = net_spawn("loot_crate_pal.lua", { pos = { p.x - w / 2, p.y - h / 2 }, world = true, kind = "pal" })
   if e == nil then return false end
   local id = get_net_id(e)
   if id ~= nil then p.crate = id else local_crates[key] = e end

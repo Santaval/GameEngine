@@ -2,8 +2,8 @@
 -- Se arma solo con el estado de spawn, asi que un cliente que entra tarde la
 -- reconstruye igual. pos del estado sobreescribe el transform (esquina sup-izq).
 -- Sin rigid_body: se queda quieta. Muestra el frame 0 de la hoja (la animacion
--- de apertura llega con #27). El loot sale de LOOT_CRATE_PAL.
--- state: world.
+-- de apertura la dibuja map_supply_world.lua, #27). El loot sale de LOOT_CRATE_PAL.
+-- state: world, kind ("pal", lo lee loot_crate.lua).
 local cfg = require("map_config")
 
 local L = cfg.LOOT_CRATE_PAL

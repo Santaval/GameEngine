@@ -60,7 +60,7 @@ only, masking every step with `& 0xFFFFFFFF`:
 - `hash(seed, cx, cy)` mixes the three integers with murmur3's `fmix32`.
   An optional fourth argument `salt` adds one more `fmix32` round, so each
   generation concern gets its own independent stream (`SALT_BIOME`,
-  `SALT_PLANET`, `SALT_ROCKS`, `SALT_DRIFT`, `SALT_WRECK`, `SALT_NEBULA`, `SALT_REACTOR`, `SALT_PORTAL`). Without a salt the
+  `SALT_PLANET`, `SALT_ROCKS`, `SALT_DRIFT`, `SALT_WRECK`, `SALT_NEBULA`, `SALT_REACTOR`, `SALT_PORTAL`, `SALT_NEXUS`, `SALT_SUPPLY`). Without a salt the
   result is bit-identical to the original hash.
 - `rng(state)` is mulberry32 seeded with that hash. `next()` is `integer / 2^32`.
 
@@ -631,7 +631,8 @@ supplies the gameplay and visuals.
   (frame 0 of `loot_crate_pal.png`) carrying `LOOT_CRATE_PAL.loot`. The local ship
   that touches it gets the loot through the pickup flow of `loot_net.lua`
   (single delivery, `pickup_request` if the crate is remote). No magnet. The
-  opening animation and the other crate kinds are left for #27.
+  opening animation is drawn by `map_supply_world.lua` (see
+  [Supply containers](#supply-containers)).
 
 ### Pal Signal
 
@@ -697,6 +698,49 @@ For `OVERCHARGED.duration` (60 s) a mining planet yields `mult` (x2).
   `2 * body_radius * size_factor`, `front` layer; plus a dotted ring expanding
   from `1.1 * body_radius` to the gravity `range` and fading, in the colour of
   the mineral (blue iron, red gunpowder, green plasma) via `zones.draw_ring`.
+
+## Supply containers
+
+Issue #27. Still world crates that give one random resource and come back after
+being opened. They share the crate script (`loot_crate.lua`) and the pickup flow
+of `loot_net.lua` with the Pal crate, so only the owner (the host) decides who
+gets the loot and two players opening at once cannot both receive it.
+
+- Placement: `map_supply.lua`, `supply.slots(seed)` (pure and memoized, no
+  `math.random`). One crate at most per sector whose biome is in
+  `SUPPLY_CRATE.biomes` (`deep_void`, `debris`), i.e. 1 per 4 chunks. Stream
+  `hash(seed, sx, sy, SALT_SUPPLY)` (10): up to `tries` (40) darts inside the
+  sector, `edge_pad` (400) from its border and outside `STORM_BAND`. A dart is
+  rejected within `planet.range + planet_clear` (400) of a planet, within
+  `rock radius + crate radius + rock_clear` (120) of any rock of the sector's 4
+  chunks (radius = `ASTEROID_SHEET.bodyRadius * scale`), or inside a portal
+  end's clear zone. With no valid dart the sector has no crate. Slots are
+  `{ slot = "sx:sy", x, y }`.
+- Crate: `prefabs/supply_crate.lua` (`supply_crate.png`, same 6-frame sheet as the
+  Pal crate: frame 0 closed, 1..5 opening). State: `pos`, `world`, `kind =
+  "supply"`, `slot`, `item`, `quantity`; the loot is `{ [item] = quantity }`, so
+  a late joiner or a new host rebuilds it from the spawn state. Item from
+  `SUPPLY_CRATE.items` (iron, gunpowder, plasma), quantity `8..20`.
+- Registry: every crate adds itself each frame to the global `loot_crates`
+  (`key -> { e, x, y, kind, slot }`; key = netId, or the entity offline, where
+  `get_net_id` is nil). The Pal crate is tagged `kind = "pal"` in
+  `map_event_crate.lua`.
+- Respawn (`map_supply_world.lua`, host only, wrapped in `pcall`): each frame it
+  spawns the crate of every slot that has no live crate, if it was never opened
+  or `respawn` (90 s) have passed since `supply_opened[slot]`. It waits 1 s after
+  the seed arrives so snapshot or adopted crates register first.
+- Opening: `loot_net.grant` calls the global `loot_crate_opened(e)` just before
+  `net_despawn` (only the owner gets there, so once per crate). The owner plays
+  the animation, records `supply_opened[slot]` and sends `crate_opened { x, y,
+  kind, slot }`. Clients accept it only from the host, play the animation and
+  record the slot too.
+- Animation: local list of openings drawn with `draw_image` (screen coordinates,
+  `front` layer, `src` rect of frames 1..5 at `open_fps` 10), then the last frame
+  fades out over 0.4 s. Works for both crate kinds.
+- Late joiners / migration: on `snapshot_request` the host sends `supply_state {
+  opened = slot -> seconds since opened }`; the joiner fills `supply_opened`
+  with it. Every client keeps the open times, so a new host after a migration
+  keeps the respawn timers (crates that exist are adopted as live).
 
 ## Known gap
 

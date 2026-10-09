@@ -192,7 +192,7 @@ config.STORM_CONTRACTION = {
   crate_clear = 400, crate_tries = 40,
 }
 
--- Caja de loot alto (#25; #27 la extiende): una entidad del host que se recoge
+-- Caja de loot alto (#25; #27 le suma la animacion de apertura): una entidad del host que se recoge
 -- por contacto con el flujo de loot_net.lua
 --   size: ancho (px de mundo) del dibujo
 --   sheet: hoja de frames en fila; frame_w px de ancho cada uno, count frames,
@@ -204,6 +204,35 @@ config.LOOT_CRATE_PAL = {
   sheet = { frame_w = 362, count = 6, src_y = 189, src_h = 308 },
   radius = 140,
   loot = { iron = 30, gunpowder = 15, plasma = 8 },
+}
+
+-- Contenedores de suministros (#27, ver map_supply.lua, map_supply_world.lua y
+-- docs/aval-cup.md): una caja por sector deep_void o debris (1 por cada 4
+-- chunks), lejos de los planetas. Da un recurso al azar y reaparece tras abrirse.
+-- Se abre por contacto con el mismo flujo de loot_net.lua que la caja de Pal
+--   size / sheet / radius: como LOOT_CRATE_PAL (supply_crate.png tiene la misma
+--     hoja: frame 0 cerrada, frames 1..5 la apertura)
+--   biomes: sectores donde sale
+--   items / quantity: recurso (de asteroid_config.lua) al azar y cantidad
+--     min..max que suelta cada vez
+--   respawn: segundos hasta que reaparece tras abrirse
+--   planet_clear: distancia minima (px) al pozo de gravedad de un planeta
+--   rock_clear: holgura (px) entre el borde de la caja y el de una roca
+--   edge_pad: margen (px) al borde del sector; tries: intentos de colocacion
+--   open_fps: velocidad de la animacion de apertura (frames 1..5)
+config.SUPPLY_CRATE = {
+  size = 56,
+  sheet = { frame_w = 362, count = 6, src_y = 189, src_h = 308 },
+  radius = 110,
+  biomes = { "deep_void", "debris" },
+  items = { "iron", "gunpowder", "plasma" },
+  quantity = { min = 8, max = 20 },
+  respawn = 90,
+  planet_clear = 400,
+  rock_clear = 120,
+  edge_pad = 400,
+  tries = 40,
+  open_fps = 10,
 }
 
 -- Jugadores

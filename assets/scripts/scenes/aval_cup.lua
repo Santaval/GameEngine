@@ -42,6 +42,11 @@ unstable_portal_life_fix = {}
 -- registra aqui su pick / fire (ver docs/aval-cup.md)
 map_events = {}
 map_event_types = {}
+-- Cajas de loot (#27): loot_crates es clave (netId, o la entidad sin red) ->
+-- {e, x, y, kind, slot}, lo llena loot_crate.lua; supply_opened es slot ->
+-- instante (reloj de map_supply_world.lua) en que se abrio el contenedor
+loot_crates = {}
+supply_opened = {}
 
 -- Sin cinturones ni generadores: nadie crea asteroides en runtime salvo los
 -- fragmentos de una roca partida
@@ -142,6 +147,7 @@ local DIRECTORS = {
   "./assets/scripts/map_portal_world.lua",
   "./assets/scripts/map_event_world.lua",
   "./assets/scripts/map_event_director.lua",
+  "./assets/scripts/map_supply_world.lua",
   "./assets/scripts/game_director.lua",
 }
 for _, path in ipairs(DIRECTORS) do
@@ -195,6 +201,7 @@ scene = {
     {assetId="icon-nexus", filePath="./assets/sprites/hud/icon_nexus.png"},
     {assetId="event-banner", filePath="./assets/sprites/hud/event_banner.png"},
     {assetId="loot-crate-pal", filePath="./assets/sprites/items/loot_crate_pal.png"},
+    {assetId="supply-crate", filePath="./assets/sprites/items/supply_crate.png"},
     {assetId="icon-event-contraction", filePath="./assets/sprites/hud/icon_event_contraction.png"},
     {assetId="icon-event-pal-signal", filePath="./assets/sprites/hud/icon_event_pal_signal.png"},
     {assetId="icon-event-debris", filePath="./assets/sprites/hud/icon_event_debris.png"},

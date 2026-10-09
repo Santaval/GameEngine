@@ -66,6 +66,10 @@ function loot_net.grant(e, by)
   if net_is_online() then
     net_send("loot_taken", { lootNetId = get_net_id(e), by = by, items = items })
   end
+  -- Si era una caja de loot (#27) el director anima la apertura y la anota.
+  -- Solo el duenio llega aqui, asi que suena una vez; un pickup normal no esta
+  -- en loot_crates y el gancho lo ignora
+  if loot_crate_opened ~= nil then pcall(loot_crate_opened, e) end
   net_despawn(e)
 end
 
