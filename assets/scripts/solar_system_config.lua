@@ -93,36 +93,45 @@ config.SATURN_RING = {
 config.PLAYER_SPAWN = { planet = "Tierra", altitude = 140 }
 config.SAFE_ZONE_RADIUS = 250
 
+-- Datos de un cuerpo de BODIES que no dependen de su posicion: scale, frame,
+-- frame_body_radius, body_radius, mass, range, damage, mineral y mine_interval
+-- (los usan build_planets y los planetas de los biomas, ver map_biomes.lua)
+function config.planet_from_body(b)
+  local frame = b.frame or config.PLANET_FRAME
+  local frame_body_radius = b.frame_body_radius or config.PLANET_BODY_RADIUS
+  -- scale_for esta pensado para los png de 48: un png mas grande se escala menos
+  local scale = config.scale_for(b.radius) * config.PLANET_FRAME / frame
+  local body_radius = frame_body_radius * scale
+
+  return {
+    scale = scale,
+    frame = frame,
+    frame_body_radius = frame_body_radius,
+    body_radius = body_radius,
+    mass = b.mass or math.floor(config.MASS_PER_SCALE * config.scale_for(b.radius) / 10 + 0.5) * 10,
+    range = b.range or math.floor((config.RANGE_PER_BODY * body_radius + config.RANGE_EXTRA) / 10 + 0.5) * 10,
+    damage = b.damage or config.PLANET_DAMAGE,
+    mineral = b.mineral,
+    mine_interval = b.mineral and config.MINE_INTERVAL or nil,
+  }
+end
+
 -- Cuerpos con x, y, scale, mass, range, body_radius... en el formato que
 -- esperan player_gravity_zones / player_mining (scene_planets)
 function config.build_planets()
   local planets = {}
   for _, b in ipairs(config.BODIES) do
-    local frame = b.frame or config.PLANET_FRAME
-    local frame_body_radius = b.frame_body_radius or config.PLANET_BODY_RADIUS
-    -- scale_for esta pensado para los png de 48: un png mas grande se escala menos
-    local scale = config.scale_for(b.radius) * config.PLANET_FRAME / frame
-    local body_radius = frame_body_radius * scale
+    local p = config.planet_from_body(b)
     local dist = b.au > 0 and config.au_to_px(b.au) or 0
     local angle = math.rad(b.angle)
 
-    planets[#planets + 1] = {
-      name = b.name,
-      assetId = b.assetId,
-      x = config.SUN_CENTER.x + dist * math.cos(angle),
-      y = config.SUN_CENTER.y + dist * math.sin(angle),
-      angle = angle,
-      distance = dist,
-      scale = scale,
-      frame = frame,
-      frame_body_radius = frame_body_radius,
-      body_radius = body_radius,
-      mass = b.mass or math.floor(config.MASS_PER_SCALE * config.scale_for(b.radius) / 10 + 0.5) * 10,
-      range = b.range or math.floor((config.RANGE_PER_BODY * body_radius + config.RANGE_EXTRA) / 10 + 0.5) * 10,
-      damage = b.damage or config.PLANET_DAMAGE,
-      mineral = b.mineral,
-      mine_interval = b.mineral and config.MINE_INTERVAL or nil,
-    }
+    p.name = b.name
+    p.assetId = b.assetId
+    p.x = config.SUN_CENTER.x + dist * math.cos(angle)
+    p.y = config.SUN_CENTER.y + dist * math.sin(angle)
+    p.angle = angle
+    p.distance = dist
+    planets[#planets + 1] = p
   end
   return planets
 end

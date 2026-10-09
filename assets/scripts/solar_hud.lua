@@ -3,8 +3,8 @@
 --  minimapa abajo a la derecha con el Sol, los planetas (color segun su
 --  mineral), los cinturones y la nave, y el nombre de cada planeta en el
 --  mundo debajo de su cuerpo. En la Aval Cup (scene_map ~= nil) el minimapa
---  cubre el mundo cuadrado y dibuja la rejilla de sectores y la franja de
---  tormenta en vez de los cinturones.
+--  cubre el mundo cuadrado y dibuja el bioma de cada sector (map_biomes), la
+--  rejilla de sectores y la franja de tormenta en vez de los cinturones.
 -- =====================================================================
 
 local solar = require("solar_system_config")
@@ -76,6 +76,19 @@ local function build_belt_points()
   return list
 end
 
+-- Tinte de cada sector segun su bioma (map_biomes, lo fija aval_cup_world)
+local function draw_biome_tints(ox, oy, k)
+  local size = scene_map.SECTOR_SIZE * k
+  for sx = 0, scene_map.SECTORS - 1 do
+    for sy = 0, scene_map.SECTORS - 1 do
+      local c = scene_map.BIOME_COLORS[map_biomes[sx][sy]]
+      if c ~= nil then
+        draw_rect(ox + sx * size, oy + sy * size, size, size, c[1], c[2], c[3], 90)
+      end
+    end
+  end
+end
+
 -- Rejilla de sectores (4 lineas verticales y 4 horizontales interiores, con 1 px
 -- de margen en los bordes) y la franja de tormenta del borde del mundo
 local function draw_sector_grid(ox, oy, k)
@@ -102,6 +115,7 @@ local function draw_minimap(planets)
   local k = map_frame()
 
   if scene_map ~= nil then
+    if map_biomes ~= nil then draw_biome_tints(ox, oy, k) end
     draw_sector_grid(ox, oy, k)
   else
     for _, p in ipairs(belt_points) do

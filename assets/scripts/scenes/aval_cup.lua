@@ -1,15 +1,17 @@
 -- =====================================================================
 --  Escena de la Aval Cup: mapa de 20 000 x 20 000 px (rejilla de sectores y
 --  chunks, ver docs/aval-cup.md). El contenido no vive aqui: lo genera
---  aval_cup_world.lua a partir de la semilla de la partida. Por ahora cada
---  chunk lleva asteroides provisionales; los biomas llegan despues.
+--  aval_cup_world.lua a partir de la semilla de la partida: cada sector tiene
+--  un bioma (map_biomes.lua) y cada chunk su campo de rocas, con algunas a la
+--  deriva y pecios (map_chunks.lua).
 -- =====================================================================
 
 local cfg = require("asteroid_config")
 local map = require("map_config")
 
--- Globals para los modulos del jugador, el minimapa y los asteroides. El
--- mapa no tiene planetas: solar_hud sigue corriendo con una lista vacia
+-- Globals para los modulos del jugador, el minimapa y los asteroides.
+-- scene_planets lo llena aval_cup_world.lua con los planetas de los sectores
+-- Planetary (solar_hud y las zonas de gravedad del jugador lo leen)
 scene_planets = {}
 scene_map = map
 
@@ -30,7 +32,7 @@ scene_asteroid_generators = nil
 scene_bounds = { x = map.WORLD_SIZE / 2, y = map.WORLD_SIZE / 2, radius = map.WORLD_SIZE * 0.75 }
 
 -- La nave sale en el centro del mundo (las reglas de aparicion llegan despues)
-local SPAWN = { x = map.WORLD_SIZE / 2, y = map.WORLD_SIZE / 2 }
+local SPAWN = map.PLAYER_SPAWN
 
 -- ---------------------------------------------------------------------
 --  Jugador (mismo que solar_system.lua salvo la posicion)
@@ -128,6 +130,9 @@ scene = {
     {assetId="spaceship-movement", filePath="./assets/sprites/spaceship/player/movement.png"},
     {assetId="bullet", filePath="./assets/sprites/bullets/bullets.png"},
     {assetId="asteroid", filePath="./assets/sprites/asteroid/asteroid.png"},
+    {assetId="wreck-cargo-hull", filePath="./assets/sprites/asteroid/wreck_cargo_hull.png"},
+    {assetId="wreck-robot-arm", filePath="./assets/sprites/asteroid/wreck_robot_arm.png"},
+    {assetId="drift-dust", filePath="./assets/sprites/vfx/drift_dust.png"},
     {assetId="mineral", filePath="./assets/sprites/minerals/tech.png"},
     {assetId="planet-iron", filePath="./assets/sprites/planets/iron.png"},
     {assetId="planet-gunpowder", filePath="./assets/sprites/planets/gunpowder.png"},

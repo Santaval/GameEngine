@@ -23,8 +23,8 @@ template <typename... TArgs>
 inline void callScriptHook(Entity e, sol::function ScriptComponent::* hook, TArgs&&... args) {
   if (!e.hasComponent<ScriptComponent>()) return;
 
-  const auto& script = e.getComponent<ScriptComponent>();
-  const sol::function& fn = script.*hook;
+  // Copia: el hook puede crear entidades con script y realojar el pool
+  sol::function fn = e.getComponent<ScriptComponent>().*hook;
   if (fn == sol::lua_nil) return;
 
   Game::getInstance().getLua()["this"] = e;

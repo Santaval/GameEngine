@@ -63,14 +63,26 @@ local function fmix32(h)
 end
 
 -- Hash de 32 bits de (semilla, chunk): mismo trio -> mismo valor en cualquier
--- cliente. Se mezcla cada componente con un primo distinto
-function grid.hash(seed, cx, cy)
+-- cliente. Se mezcla cada componente con un primo distinto. salt (opcional)
+-- separa flujos independientes (biomas, planetas, deriva, pecios): sin salt el
+-- resultado es el de siempre
+function grid.hash(seed, cx, cy, salt)
   seed, cx, cy = toint(seed), toint(cx), toint(cy)
   local h = fmix32((seed & MASK) ~ 0x9E3779B9)
   h = fmix32(h ~ (((cx + 1) * 0x27D4EB2F) & MASK))
   h = fmix32(h ~ (((cy + 1) * 0x165667B1) & MASK))
+  if salt ~= nil then
+    h = fmix32(h ~ (((toint(salt) + 1) * 0x85EBCA77) & MASK))
+  end
   return h
 end
+
+-- Sales de cada flujo aleatorio de la generacion
+grid.SALT_BIOME = 1
+grid.SALT_PLANET = 2
+grid.SALT_ROCKS = 3
+grid.SALT_DRIFT = 4
+grid.SALT_WRECK = 5
 
 -- Generador mulberry32 sembrado con `state` (entero de 32 bits). Devuelve un
 -- objeto con next() en [0,1), range(a,b) real y int(a,b) entero (ambos
@@ -98,6 +110,19 @@ function grid.rng(state)
   end
 
   return obj
+end
+
+-- Elige un elemento de list = { {weight = n, ...}, ... } con probabilidad
+-- proporcional a su weight, usando el rng r. Devuelve el elemento y su indice
+function grid.pick_weighted(r, list)
+  local total = 0
+  for _, item in ipairs(list) do total = total + item.weight end
+  local roll = r.next() * total
+  for i, item in ipairs(list) do
+    roll = roll - item.weight
+    if roll < 0 then return item, i end
+  end
+  return list[#list], #list
 end
 
 -- Rectangulo del mundo que cubren los chunks a UPDATE_RADIUS_CHUNKS del chunk

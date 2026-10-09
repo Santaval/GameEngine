@@ -2,10 +2,9 @@
 
 Foundation of the Aval Cup map (issue #16): a fixed world split into sectors
 and chunks, a deterministic seed shared by every client, and culling so only
-the chunks near the local player are simulated. Biomas and real content
-(issue #17) and spawn rules (issue #28) come later: today every chunk holds
-**placeholder** static asteroids so seeding, culling and destroy-sync can be
-exercised end to end.
+the chunks near the local player are simulated. Issue #17 adds biomes per
+sector and the procedural content of each chunk (asteroids, drifting rocks,
+planets and wrecks). Spawn rules (issue #28) come later.
 
 Scene: `assets/scripts/scenes/aval_cup.lua` (menu option "A - Aval Cup").
 Director: `assets/scripts/aval_cup_world.lua`.
@@ -31,7 +30,8 @@ Helpers in `map_grid.lua` (all read `map_config`):
 | `world_to_chunk(x, y)` | `cx, cy` in `0..9`, clamped to the world |
 | `sector_bounds(sx, sy)` / `chunk_bounds(cx, cy)` | `x, y, w, h` in world px |
 | `chunk_key(cx, cy)` | `"cx:cy"` |
-| `hash(seed, cx, cy)` | 32-bit integer, see below |
+| `hash(seed, cx, cy, salt?)` | 32-bit integer, see below |
+| `pick_weighted(r, list)` | Element of `list` (`{weight = n, ...}`) picked with rng `r`, and its index |
 | `rng(state)` | object with `next()` in `[0,1)`, `range(a,b)` and `int(a,b)` (inclusive) |
 | `active_bounds(x, y)` | `minX, minY, maxX, maxY`: the chunks within `UPDATE_RADIUS_CHUNKS` of the chunk containing `(x, y)`, clamped to the world |
 
@@ -58,20 +58,128 @@ stream is shared with the rest of the game). `map_grid.lua` does integer math
 only, masking every step with `& 0xFFFFFFFF`:
 
 - `hash(seed, cx, cy)` mixes the three integers with murmur3's `fmix32`.
+  An optional fourth argument `salt` adds one more `fmix32` round, so each
+  generation concern gets its own independent stream (`SALT_BIOME`,
+  `SALT_PLANET`, `SALT_ROCKS`, `SALT_DRIFT`, `SALT_WRECK`). Without a salt the
+  result is bit-identical to the original hash.
 - `rng(state)` is mulberry32 seeded with that hash. `next()` is `integer / 2^32`.
 
 `tests/map_determinism.lua` checks that the same seed gives the same world, a
-different seed a different one, and the grid helpers.
+different seed a different one, the grid helpers, and the content rules below
+(biomes, planets, spacing, drift, wrecks) over many seeds.
 
-## Chunk content (placeholder)
+## Biomes
+
+Every sector has a biome, assigned by `map_biomes.assign(seed)` from a single
+rng (`hash(seed, 0, 0, SALT_BIOME)`). The weights are in `BIOMES`:
+
+| Biome | Weight | Content |
+| --- | --- | --- |
+| `debris` | 35 | Default field; can have wrecks |
+| `planetary` | 20 | 1-3 planets |
+| `dense_belt` | 15 | 10-14 large rocks per chunk instead of 4-6 |
+| `deep_void` | 15 | Large rocks only, no medium/small ones |
+| `nebula` | 10 | Same rocks as debris (visuals come later) |
+| `reactor` | 5 | Can have wrecks |
+
+Rules:
+
+- The **center sector** (2, 2) is picked first, between `CENTER_BIOMES`
+  (`planetary` and `reactor`, weights 20:5).
+- The other sectors follow in reading order. Each one picks (by weight) among
+  the biomes that none of its **orthogonal** neighbours already assigned has:
+  up, down, left and right. Diagonal neighbours may repeat. `debris`
+  (`BIOME_REPEAT_OK`) is always allowed, so there is always a valid choice.
+- `map_biomes.layout(seed)` returns `{ biomes = grid[sx][sy], planets = list }`
+  and is memoized per seed (every chunk asks for it). The director publishes
+  `biomes` as the global `map_biomes`, and the minimap tints each sector with
+  `BIOME_COLORS`.
+
+## Asteroids
 
 `map_chunks.generate_chunk(seed, cx, cy)` is a pure function of its arguments.
-It draws `PLACEHOLDER_ROCKS` asteroids per chunk by rejection sampling
-(`ROCK_MIN_GAP`, `ROCK_SCALE`, a fixed number of tries per rock), keeps them out
-of the `STORM_BAND` strip at the world edge, and returns spawn states:
-`pos`, `vel = 0`, `rot`, `kind` (`pickAsteroidType(rng:next())`), `scale`,
-`world = true`, `cull = true` and `chunk_id = "cx:cy:i"`.
-`generate_world(seed)` returns `{ ["cx:cy"] = states }` for the 10 x 10 chunks.
+It keeps the content out of the `STORM_BAND` strip at the world edge and
+returns spawn states: `pos`, `vel`, `rot`, `kind`
+(`pickAsteroidType(rng:next())`), `scale`, `world = true`, `cull = true` and
+`chunk_id = "cx:cy:i"`. `generate_world(seed)` returns
+`{ ["cx:cy"] = states }` for the 10 x 10 chunks.
+
+| Size | Scale | Per chunk | Min spacing (centres) |
+| --- | --- | --- | --- |
+| Large | 1.0..1.5 | 4-6 (`LARGE_ROCKS`), 10-14 in `dense_belt` | 300 (`LARGE_SPACING`) |
+| Medium | 0.6..1.0 | 6-10 medium + small, half each (`SMALL_ROCKS`); none in `deep_void` | 120 (`SMALL_SPACING`) |
+| Small | 0.3..0.6 | (same) | 120 |
+
+Medium and small rocks keep `max(SMALL_SPACING, rA + rB + 20)` from large rocks.
+
+Rocks are placed with **Poisson-disk sampling** (dart throwing):
+`asteroid_field.poisson_points` throws up to `ROCK_TRIES` (30, fixed so the
+result is deterministic) darts per rock, with the scale sampled per try, and
+rejects a dart that is too close to a previous rock or inside a planet's
+gravity well (`planet.range + rock radius`). It uses only the rng it is given,
+never `math.random`. The sampling rect is **inset by `min_dist / 2`** on every
+side, so the spacing also holds across chunk borders. A rock that finds no
+spot after 30 tries is dropped, so a chunk can hold fewer rocks than the roll.
+
+Rocks, drift and wrecks each use their own rng stream (different salts), so
+retuning one does not reshuffle the others.
+
+## Drift and dust
+
+Each rock drifts with probability `DRIFT.chance` (0.2), at a speed in
+`DRIFT.speed` (20-40 px/s). The generator tries up to `DRIFT.tries` (12) random
+angles and keeps the first whose **ray** (the infinite half-line from the rock)
+stays farther than `planet.range + radius` from every planet centre, so a
+drifting rock never enters a gravity well. If no angle works the rock stays
+static. A drifting rock has `vel`, `drift = true`, `despawn_far = true` and **no
+`cull`**: it is simulated everywhere, so it does not freeze when you look away.
+The host deletes it when it leaves `scene_bounds` and broadcasts the
+destruction through the usual `map_rock_destroyed` path.
+
+Every client gives a drifting rock a **dust trail** (`drift-dust`, an 8-frame
+32x32 strip): a local entity placed behind the rock, opposite to its velocity,
+rotated to the heading and animated. `asteroid.lua` destroys it in `on_death`
+(which also runs when the director calls `destroy_entity`) and in `vanish`.
+`DUST_ANGLE_OFFSET` aligns the diagonal of the art with the heading; tune it by
+eye if the art changes.
+
+## Planets
+
+`planetary` sectors hold `PLANETS_PER_SECTOR` (1-3) planets, picked by
+`map_biomes.planets(seed, grid)` with an rng per sector
+(`hash(seed, sx, sy, SALT_PLANET)`). Each planet takes a template from
+`solar_system_config.BODIES` (everything but the Sun) and derives its scale,
+mass and range with `solar_system_config.planet_from_body` (the same formulas as
+`build_planets`). It is named `"<template> <sx>-<sy>"` and carries its `role`
+and `sector`. Placement is rejection sampling (`PLANET_TRIES`): centres at least
+`PLANET_SPACING_FACTOR` (2.5) x the sum of their ranges apart. A sector can end
+up with fewer planets than rolled, but always at least one (the sector centre
+is the fallback).
+
+**Edge rule.** Asking for the planet to be at least one chunk (2000 px) from the
+sector edge would only leave the sector centre free in a 4000 px sector, so 1-3
+planets could not fit. Instead the whole gravity well stays inside the sector:
+the centre is at least `range + PLANET_EDGE_PAD` (100) from every sector edge.
+No gravity well may cover the player spawn (`PLAYER_SPAWN`, the world centre):
+planets keep `range + SPAWN_CLEAR_PAD` (300) away from it. If the centre
+sector's first planet finds no spot, the smallest body is placed just outside
+that margin, to the right of the spawn.
+
+Roles (`PLANET_ROLES`, weights 3:1:1): `mining`, `merchant`, `tech`. Only
+`mining` planets keep `mineral` and `mine_interval` and can be mined.
+**Merchant and tech planets are only tagged**: their behaviour comes in later
+issues. The director creates each planet with `spawn_local("planet.lua", p)`
+(no cull, no script) and appends it to `scene_planets`, which the minimap and the
+gravity zones read.
+
+## Wrecks
+
+In `debris` and `reactor` chunks, with probability `WRECK_CHANCE` (1/3), one
+large rock becomes a wreck (`state.wreck` is an index in `WRECK_TYPES`: cargo
+hull or robot arm). A wreck never drifts, has 2.5x health and is drawn from its
+own 96x96 sheet (frame 0, collider radius `WRECK_SHEET.bodyRadius`). When shot
+dead (not rammed by a ship) the host drops the type's `bonus` pickups **in
+addition to** the normal split into fragments (plain rocks of the same kind).
 
 ## Local rocks and destroy sync
 
@@ -130,15 +238,32 @@ collisions.
 | `STORM_CONTRACTION_SAFE_RADIUS` | 1500 | Storm (not used yet) |
 | `DEATH_DROP_FRACTION` | 0.6 | Players (not used yet) |
 | `SPAWN_SHIELD` | 5 | Players (not used yet) |
-| `PLACEHOLDER_ROCKS` | 4..8 | Rocks per chunk |
-| `ROCK_MIN_GAP` | 300 | Min gap between rocks (px) |
-| `ROCK_SCALE` | 0.6..1.5 | Rock scale range |
+| `BIOMES` | see [Biomes](#biomes) | Id, name and weight of each biome |
+| `BIOME_REPEAT_OK`, `CENTER_BIOMES` | `debris`, `planetary`/`reactor` | Adjacency exception and centre sector pool |
+| `BIOME_COLORS` | per biome | Minimap tint |
+| `ROCK_SIZES` | 1.0..1.5 / 0.6..1.0 / 0.3..0.6 | Scale of large / medium / small rocks |
+| `LARGE_ROCKS`, `LARGE_ROCKS_DENSE` | 4..6, 10..14 | Large rocks per chunk |
+| `LARGE_SPACING` | 300 | Min distance between large rocks (px) |
+| `SMALL_ROCKS`, `SMALL_SPACING` | 6..10, 120 | Medium and small rocks per chunk and spacing |
+| `ROCK_TRIES` | 30 | Darts per rock |
+| `DRIFT` | 0.2, 20..40, 12 | Chance, speed (px/s) and heading tries |
+| `WRECK_CHANCE`, `WRECK_BIOMES` | 1/3, `debris`/`reactor` | Wrecks per chunk |
+| `PLANETS_PER_SECTOR` | 1..3 | Planets per Planetary sector |
+| `PLANET_SPACING_FACTOR`, `PLANET_TRIES`, `PLANET_EDGE_PAD` | 2.5, 40, 100 | Planet placement |
+| `PLAYER_SPAWN`, `SPAWN_CLEAR_PAD` | world centre, 300 | Spawn point kept clear of gravity wells |
+| `PLANET_ROLES` | mining 3, merchant 1, tech 1 | Role weights |
 
-The minimap in `solar_hud.lua` shows the 5 x 5 sector grid, the storm band as an
-inset outline and the current sector when `scene_map` is set.
+The minimap in `solar_hud.lua` shows the biome of each sector as a tint, the
+5 x 5 sector grid, the storm band as an inset outline, the planets and the
+current sector or nearest planet when `scene_map` is set.
 
 ## Known gap
 
 Chunk rocks are not synchronized once they exist. If a ship bump nudges a
 static rock, its position is not reconciled between clients, so copies can
 drift apart. Only destruction is synchronized.
+
+Drifting rocks are simulated everywhere (they are not culled), so clients that
+were present from the start stay roughly in step. But a late joiner builds them
+at their seed position, so for them they are out of sync with older clients
+until they leave the world.

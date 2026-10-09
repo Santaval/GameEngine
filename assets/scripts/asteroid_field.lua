@@ -64,6 +64,66 @@ function field.find_spot(placed, opts)
   return nil
 end
 
+-- Reparto Poisson-disk (dart throwing) DETERMINISTA: no usa math.random, solo
+-- opts.rng (de map_grid.rng). Devuelve hasta opts.count puntos {x, y, radius,
+-- scale}, cada uno con opts.tries intentos; si un punto no encuentra hueco se
+-- pierde (salen menos). opts:
+--   rng, rect = {x, y, width, height}, count, min_dist (entre centros), tries,
+--   scale = {min, max} (se sortea por intento), existing (puntos {x, y, radius}
+--   ya colocados), reject(x, y, radius) -> true para descartar el punto,
+--   cross_dist(radius, other) -> distancia minima contra un punto de existing
+--   (por defecto min_dist)
+-- El rect se encoge min_dist / 2 por cada lado: asi la separacion tambien vale
+-- entre puntos de rects vecinos (chunks contiguos)
+function field.poisson_points(opts)
+  local rng = opts.rng
+  local inset = opts.min_dist / 2
+  local minX, maxX = opts.rect.x + inset, opts.rect.x + opts.rect.width - inset
+  local minY, maxY = opts.rect.y + inset, opts.rect.y + opts.rect.height - inset
+
+  local points = {}
+  if maxX <= minX or maxY <= minY then return points end
+
+  for _ = 1, opts.count do
+    for _ = 1, opts.tries do
+      local scale = rng.range(opts.scale.min, opts.scale.max)
+      local radius = ASTEROID_SHEET.bodyRadius * scale
+      local x = rng.range(minX, maxX)
+      local y = rng.range(minY, maxY)
+
+      local free = not (opts.reject and opts.reject(x, y, radius))
+
+      if free then
+        for _, other in ipairs(points) do
+          local dx, dy = x - other.x, y - other.y
+          if dx * dx + dy * dy < opts.min_dist * opts.min_dist then
+            free = false
+            break
+          end
+        end
+      end
+
+      if free and opts.existing then
+        for _, other in ipairs(opts.existing) do
+          local min = opts.cross_dist and opts.cross_dist(radius, other) or opts.min_dist
+          local dx, dy = x - other.x, y - other.y
+          if dx * dx + dy * dy < min * min then
+            free = false
+            break
+          end
+        end
+      end
+
+      if free then
+        points[#points + 1] = { x = x, y = y, radius = radius, scale = scale }
+        break
+      end
+    end
+  end
+
+  return points
+end
+
 -- Estado de spawn de un asteroide centrado en (cx, cy), para
 -- net_spawn("asteroid.lua", estado) (ver prefabs/asteroid.lua). velocity(cx, cy)
 -- devuelve vx, vy; se llama despues de elegir el tipo para no alterar la

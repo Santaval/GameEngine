@@ -23,11 +23,14 @@ class ScriptSystem : public System {
    for(auto entity : this->getEntities()) {
     // Roca de un chunk lejano: dormida
     if(isDormant(entity)) continue;
-    const auto& script = entity.getComponent<ScriptComponent>();
+    // Copia (no referencia): el script puede crear entidades con script
+    // (spawn_local, net_spawn) y el pool de ScriptComponent se realoja
+    // mientras corre, dejando colgada una referencia
+    sol::function update = entity.getComponent<ScriptComponent>().update;
 
-    if(script.update != sol::lua_nil) {
+    if(update != sol::lua_nil) {
       lua["this"] = entity;
-     script.update();
+     update();
     }
    }
   }

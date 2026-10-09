@@ -41,6 +41,17 @@ config.ASTEROID_SHEET = {
   bodyRadius = 26,  -- radio de la roca dentro del frame de 96x96
 }
 
+-- Pecios (rocas grandes especiales de los biomas debris y reactor, ver
+-- map_chunks.lua): spritesheet de 768x96 como el de los asteroides (3
+-- variantes y 5 frames de explosion), pero un solo sprite por pecio. healthMul
+-- multiplica la vida y bonus es el loot EXTRA que sueltan al romperse a tiros,
+-- ademas de partirse como cualquier roca grande
+config.WRECK_SHEET = { frameSize = 96, bodyRadius = 34 }
+config.WRECK_TYPES = {
+  { assetId = "wreck-cargo-hull", healthMul = 2.5, bonus = { iron = 3, gunpowder = 1 } },
+  { assetId = "wreck-robot-arm", healthMul = 2.5, bonus = { plasma = 2, iron = 2 } },
+}
+
 -- Vida de un asteroide de escala 1.0: la vida real se escala con el tamano,
 -- asi que las rocas grandes aguantan mas balazos que las pequenas
 config.ASTEROID_HEALTH = 60

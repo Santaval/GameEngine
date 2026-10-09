@@ -26,6 +26,16 @@ local MIN_KNOCKBACK = 60
 -- que ser mayor que SPAWN_MARGIN del spawner o moririan al nacer
 local DESPAWN_MARGIN = 600
 
+-- Estela de polvo de las rocas a la deriva (sprite drift-dust, tira de 8
+-- frames de 32x32): su tamano respecto a la roca, la distancia extra (px) a la
+-- que queda detras del borde de la roca y el giro (rad) que alinea la
+-- diagonal del dibujo (inclinado unos 35 grados hacia arriba a la derecha) con
+-- el rumbo
+local DUST_FRAME = 32
+local DUST_SCALE = 1.2
+local DUST_GAP = 12
+local DUST_ANGLE_OFFSET = math.rad(35)
+
 -- Rocas del anillo de Saturno: correccion hacia su carril (px/s de velocidad
 -- por px de error) y que tan rapido la velocidad real converge a la deseada
 -- (1/s). Bajo, para que el rebote contra la nave se note antes de volver
@@ -47,6 +57,11 @@ local function owns(e)
   if chunk_id ~= nil then return net_is_host() end
   return is_local(e)
 end
+
+-- Estela de polvo (entidad local de cada cliente, solo en rocas con drift) y
+-- si la roca la rompio una nave (el pecio no suelta sus extras en ese caso)
+local dust = nil
+local rammed = false
 
 -- on_death puede llegar dos veces (kill() es diferido: una bala y el
 -- despawn en el mismo frame, o el update del frame siguiente): la bandera
@@ -74,11 +89,53 @@ local function clear_loot(e)
   end
 end
 
+-- Borra la estela de polvo, si existe. Tambien vale si la roca la borra el
+-- director (destroy_entity dispara on_death)
+local function destroy_dust()
+  if dust ~= nil and is_alive(dust) then destroy_entity(dust) end
+  dust = nil
+end
+
+-- Crea la estela en (x, y) (esquina sup-izq): una entidad local con el sprite
+-- animado, sin red
+local function create_dust(x, y)
+  local scale = DUST_SCALE * (state.scale or 1)
+  dust = create_entity()
+  add_transform(dust, x, y, scale, scale, 0)
+  add_sprite(dust, "drift-dust", DUST_FRAME, DUST_FRAME, 0, 0)
+  add_animation(dust, 8, 8, true)
+  add_rigid_body(dust, 0, 0, 0, 0)
+end
+
+-- Coloca la estela detras de la roca, segun su velocidad. No hay set_position:
+-- se le da la velocidad justa para llegar al punto en este frame
+local function update_dust()
+  local vx, vy = get_velocity(this)
+  local speed = math.sqrt(vx * vx + vy * vy)
+  if speed < 0.001 then return end
+
+  local ux, uy = vx / speed, vy / speed
+  local cx, cy = get_collider_center(this)
+  local back = cfg.ASTEROID_SHEET.bodyRadius * (state.scale or 1) + DUST_GAP
+  local size = DUST_FRAME * DUST_SCALE * (state.scale or 1)
+  -- position es la esquina sup-izq del sprite: se descuenta medio tamano
+  local tx, ty = cx - ux * back - size / 2, cy - uy * back - size / 2
+
+  if dust == nil then create_dust(tx, ty) end
+  if not is_alive(dust) then return end
+
+  local x, y = get_position(dust)
+  local dt = math.max(get_delta_time(), 0.001)
+  set_velocity(dust, (tx - x) / dt, (ty - y) / dt)
+  set_rotation_absolute(dust, math.atan(vy, vx) + DUST_ANGLE_OFFSET)
+end
+
 -- Desaparece sin soltar loot. Solo el duenio lo borra; las copias esperan el
 -- despawn del duenio (el mismo planeta lo traga en todos los clientes)
 local function vanish(e)
   if not owns(e) then return end
   dead = true
+  destroy_dust()
   clear_loot(e)
   if chunk_id ~= nil then
     -- No esta en la red: se borra aqui y el host avisa el id a los demas
@@ -130,6 +187,7 @@ function update()
   end
 
   if ring ~= nil then steer_in_lane() end
+  if state.drift then update_dust() end
 
   -- Solo el duenio decide que se fue del mapa
   if despawn_far and owns(this) then
@@ -146,6 +204,7 @@ local function asteroid_on_damage(amount, source)
   -- Un choque de la nave que lo rompe no suelta loot: on_death corre
   -- despues de este hook y ya no encuentra nada
   if owns(this) and is_ship(source) and get_health(this) <= 0 then
+    rammed = true
     clear_loot(this)
   end
 end
@@ -182,12 +241,43 @@ local function split(e)
   return true
 end
 
--- Suelta un pickup por cada item del loot del asteroide (ver ASTEROID_TYPES
--- en asteroid_config.lua) salvo que se parta en fragmentos (split). vanish
--- marca dead antes de borrar, asi que ese caso no llega aqui. Solo el duenio:
--- las copias reciben el death pero no repiten el loot. Los pickups son del
--- host y los ven todos
+-- Suelta un pickup por cada { name, quantity } de items, repartidos en fila
+-- alrededor de la posicion de la roca. Son del host y los ven todos
+local function drop_items(items)
+  local x, y = get_position(this)
+  local count = #items
+
+  for i, item in ipairs(items) do
+    local offset = (i - (count + 1) / 2) * PICKUP_SPREAD
+    net_spawn("pickup.lua", {
+      pos = { x = x + offset, y = y },
+      item = item[1],
+      quantity = item[2],
+      world = true,
+    })
+  end
+end
+
+-- Extras del pecio (WRECK_TYPES.bonus), en orden alfabetico para que el
+-- reparto sea estable
+local function wreck_bonus()
+  local wreck = state.wreck and cfg.WRECK_TYPES[state.wreck]
+  if wreck == nil then return {} end
+  local names = {}
+  for name in pairs(wreck.bonus) do names[#names + 1] = name end
+  table.sort(names)
+  local items = {}
+  for _, name in ipairs(names) do items[#items + 1] = { name, wreck.bonus[name] } end
+  return items
+end
+
+-- Al morir: un pecio roto a tiros suelta sus extras ademas de partirse; una
+-- roca que se parte no suelta loot propio (lo sueltan sus fragmentos) y si no
+-- se parte suelta el de su tipo (ver ASTEROID_TYPES en asteroid_config.lua).
+-- vanish marca dead antes de borrar, asi que ese caso no llega aqui. Solo el
+-- duenio: las copias reciben el death pero no repiten el loot
 local function asteroid_on_death()
+  destroy_dust()
   -- El director suelta su referencia: el id de la entidad se recicla y no debe
   -- usarse luego para borrar otra cosa
   if chunk_id ~= nil and map_rock_gone ~= nil then map_rock_gone(chunk_id) end
@@ -200,22 +290,18 @@ local function asteroid_on_death()
   -- fragmentos, esos llegan del host por net_spawn
   if chunk_id ~= nil and map_world_destroyed ~= nil then map_world_destroyed(chunk_id) end
 
+  -- Extras del pecio (no si lo rompio una nave: ahi no hay loot)
+  if state.wreck and not rammed then drop_items(wreck_bonus()) end
+
   -- Una roca que se parte no suelta loot: lo sueltan sus fragmentos
   if split(this) then return end
 
-  local x, y = get_position(this)
-  local count = get_loot_count(this)
-
-  for i = 1, count do
+  local items = {}
+  for i = 1, get_loot_count(this) do
     local name, quantity = get_loot_at(this, i)
-    local offset = (i - (count + 1) / 2) * PICKUP_SPREAD
-    net_spawn("pickup.lua", {
-      pos = { x = x + offset, y = y },
-      item = name,
-      quantity = quantity,
-      world = true,
-    })
+    items[#items + 1] = { name, quantity }
   end
+  drop_items(items)
 end
 
 -- Choque elastico (con perdida) entre el asteroide y la nave a lo largo de la

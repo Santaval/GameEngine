@@ -1,6 +1,7 @@
--- Prueba de determinismo del mapa (issue #16). Se corre desde la raiz del repo:
+-- Prueba del mapa (issues #16 y #17): determinismo, biomas, planetas y
+-- contenido de los chunks. Se corre desde la raiz del repo:
 --   lua5.3 tests/map_determinism.lua
--- Sin motor: solo map_config, map_grid, map_chunks y asteroid_config.
+-- Sin motor: solo map_config, map_grid, map_biomes, map_chunks y los config.
 
 package.path = "./assets/scripts/?.lua;" .. package.path
 
@@ -25,9 +26,13 @@ end
 local cfg = require("map_config")
 local grid = require("map_grid")
 local chunks = require("map_chunks")
+local biomes = require("map_biomes")
+local solar = require("solar_system_config")
+local asteroid_cfg = require("asteroid_config")
 
--- Serializa todo el mundo a un string: posiciones, tipos, escalas, rotaciones e ids
-local function serialize(world)
+-- Serializa todo el mundo a un string: posiciones, tipos, escalas, rotaciones,
+-- velocidades, pecios, deriva, ids y planetas
+local function serialize(world, seed)
   local keys = {}
   for key in pairs(world) do keys[#keys + 1] = key end
   -- Orden estable sin table.sort: insercion simple
@@ -43,34 +48,39 @@ local function serialize(world)
   local parts = {}
   for _, key in ipairs(keys) do
     for _, s in ipairs(world[key]) do
-      parts[#parts + 1] = string.format("%s|%.6f,%.6f|k%d|s%.6f|r%.6f", s.chunk_id,
-        s.pos.x, s.pos.y, s.kind, s.scale, s.rot)
+      parts[#parts + 1] = string.format("%s|%.6f,%.6f|k%d|s%.6f|r%.6f|v%.6f,%.6f|w%s|d%s|c%s",
+        s.chunk_id, s.pos.x, s.pos.y, s.kind, s.scale, s.rot, s.vel.x, s.vel.y,
+        tostring(s.wreck), tostring(s.drift), tostring(s.cull))
     end
+  end
+  -- Los planetas tambien forman parte del mundo
+  for _, p in ipairs(biomes.layout(seed).planets) do
+    parts[#parts + 1] = string.format("%s|%.6f,%.6f|%s|%d", p.name, p.x, p.y, p.role, p.range)
   end
   return table.concat(parts, ";")
 end
 
 -- Misma semilla -> mismo mundo; otra semilla -> otro mundo
-local a = serialize(chunks.generate_world(12345))
-local b = serialize(chunks.generate_world(12345))
-local c = serialize(chunks.generate_world(54321))
+local a = serialize(chunks.generate_world(12345), 12345)
+local b = serialize(chunks.generate_world(12345), 12345)
+local c = serialize(chunks.generate_world(54321), 54321)
 check(#a > 0, "el mundo no esta vacio")
 check(a == b, "generate_world(12345) es identico en dos llamadas")
 check(a ~= c, "una semilla distinta da un mundo distinto")
 
--- Cada chunk tiene rocas dentro de los limites y fuera de la franja de tormenta
+-- Cada roca esta dentro del mundo y todos los chunks existen
 local world = chunks.generate_world(12345)
 local total = 0
-for cy = 0, cfg.SECTORS * cfg.CHUNKS_PER_SECTOR - 1 do
-  for cx = 0, cfg.SECTORS * cfg.CHUNKS_PER_SECTOR - 1 do
+local CHUNKS = cfg.SECTORS * cfg.CHUNKS_PER_SECTOR
+for cy = 0, CHUNKS - 1 do
+  for cx = 0, CHUNKS - 1 do
     local list = world[grid.chunk_key(cx, cy)]
     check(list ~= nil, "existe el chunk " .. cx .. ":" .. cy)
     total = total + #list
-    check(#list <= cfg.PLACEHOLDER_ROCKS.max, "no mas rocas que el maximo en " .. cx .. ":" .. cy)
     for _, s in ipairs(list) do
       check(s.pos.x >= 0 and s.pos.x < cfg.WORLD_SIZE and s.pos.y >= 0 and s.pos.y < cfg.WORLD_SIZE,
         "roca dentro del mundo: " .. s.chunk_id)
-      check(s.cull == true and s.world == true, "roca con cull y world: " .. s.chunk_id)
+      check(s.world == true, "roca con world: " .. s.chunk_id)
     end
   end
 end
@@ -109,6 +119,223 @@ eq(minX, 0, "active_bounds minX"); eq(minY, 0, "active_bounds minY")
 eq(maxX, 6000, "active_bounds maxX"); eq(maxY, 6000, "active_bounds maxY")
 minX, minY, maxX, maxY = grid.active_bounds(10000, 10000)
 eq(minX, 6000, "active_bounds centro minX"); eq(maxX, 16000, "active_bounds centro maxX")
+
+-- ---------------------------------------------------------------------
+--  Biomas, planetas y contenido de los chunks (issue #17)
+-- ---------------------------------------------------------------------
+
+local SEEDS = 200
+local valid = {}
+for _, b in ipairs(cfg.BIOMES) do valid[b.id] = true end
+local function contains(list, v)
+  for _, x in ipairs(list) do if x == v then return true end end
+  return false
+end
+local function dist(ax, ay, bx, by) return math.sqrt((ax - bx) ^ 2 + (ay - by) ^ 2) end
+
+-- La sal no cambia el hash sin sal y si lo cambia con sal
+eq(grid.hash(1, 2, 3, nil), grid.hash(1, 2, 3), "hash sin sal igual")
+check(grid.hash(1, 2, 3, 1) ~= grid.hash(1, 2, 3), "hash con sal distinto")
+check(grid.hash(1, 2, 3, 1) ~= grid.hash(1, 2, 3, 2), "sales distintas dan hashes distintos")
+-- Valores fijos del hash sin sal (calculados antes de anadir la sal)
+eq(grid.hash(12345, 4, 7), 1997987304, "hash(12345,4,7) no cambia")
+eq(grid.hash(0, 0, 0), 3502349708, "hash(0,0,0) no cambia")
+
+-- Biomas: ids validos, centro planetary/reactor y vecinos ortogonales distintos
+-- salvo debris (las diagonales pueden repetir)
+for seed = 1, SEEDS do
+  local layout = biomes.layout(seed)
+  local bg = layout.biomes
+  local mid = cfg.SECTORS // 2
+  check(contains(cfg.CENTER_BIOMES, bg[mid][mid]), "centro planetary o reactor, semilla " .. seed)
+  for sy = 0, cfg.SECTORS - 1 do
+    for sx = 0, cfg.SECTORS - 1 do
+      check(valid[bg[sx][sy]], "bioma valido, semilla " .. seed)
+      for _, d in ipairs({ { 1, 0 }, { 0, 1 } }) do
+        local o = bg[sx + d[1]] and bg[sx + d[1]][sy + d[2]]
+        if o ~= nil and o == bg[sx][sy] and o ~= cfg.BIOME_REPEAT_OK then
+          check(false, string.format("vecinos repetidos %s en (%d,%d), semilla %d", o, sx, sy, seed))
+        end
+      end
+    end
+  end
+
+  -- Planetas: 1-3 por sector Planetary y ninguno fuera; separacion y pozo dentro del sector
+  local perSector = {}
+  for _, p in ipairs(layout.planets) do
+    local k = p.sector.x .. ":" .. p.sector.y
+    perSector[k] = (perSector[k] or 0) + 1
+    check(bg[p.sector.x][p.sector.y] == "planetary", "planeta solo en Planetary, semilla " .. seed)
+    local bx, by, bw, bh = grid.sector_bounds(p.sector.x, p.sector.y)
+    check(p.x - p.range >= bx and p.x + p.range <= bx + bw
+      and p.y - p.range >= by and p.y + p.range <= by + bh,
+      "pozo de gravedad dentro del sector, semilla " .. seed)
+    check(p.role == "mining" or p.mineral == nil, "solo mining mantiene mineral")
+    check(dist(p.x, p.y, cfg.PLAYER_SPAWN.x, cfg.PLAYER_SPAWN.y) >= p.range + cfg.SPAWN_CLEAR_PAD - 1e-6,
+      "ningun pozo cubre la aparicion, semilla " .. seed)
+  end
+  for sy = 0, cfg.SECTORS - 1 do
+    for sx = 0, cfg.SECTORS - 1 do
+      local n = perSector[sx .. ":" .. sy] or 0
+      if bg[sx][sy] == "planetary" then
+        check(n >= cfg.PLANETS_PER_SECTOR.min and n <= cfg.PLANETS_PER_SECTOR.max,
+          "1-3 planetas por sector Planetary, semilla " .. seed)
+      else
+        check(n == 0, "sin planetas fuera de Planetary, semilla " .. seed)
+      end
+    end
+  end
+  for i = 1, #layout.planets do
+    for j = i + 1, #layout.planets do
+      local a, b = layout.planets[i], layout.planets[j]
+      if a.sector.x == b.sector.x and a.sector.y == b.sector.y then
+        check(dist(a.x, a.y, b.x, b.y) >= cfg.PLANET_SPACING_FACTOR * (a.range + b.range) - 1e-6,
+          "separacion entre planetas, semilla " .. seed)
+      end
+    end
+  end
+end
+
+-- build_planets no cambia tras sacar planet_from_body (Tierra: valores conocidos)
+local earth = solar.find_planet(solar.build_planets(), "Tierra")
+eq(earth.scale, 3.0, "Tierra scale"); eq(earth.body_radius, 66.0, "Tierra body_radius")
+eq(earth.mass, 1500, "Tierra mass"); eq(earth.range, 510, "Tierra range")
+eq(earth.x, 23800.0, "Tierra x"); eq(earth.mineral, "iron", "Tierra mineral")
+eq(earth.mine_interval, 2, "Tierra mine_interval")
+
+-- Chunks: cuenta por bioma, separacion global, planetas, deriva y pecios
+local bodyRadius = asteroid_cfg.ASTEROID_SHEET.bodyRadius
+local CELL = cfg.CHUNK_SIZE
+local drift_total, rock_total = 0, 0
+for seed = 1, 5 do
+  local layout = biomes.layout(seed)
+  local w = chunks.generate_world(seed)
+  local function bucket(map, x, y, item)
+    local key = math.floor(x / CELL) .. ":" .. math.floor(y / CELL)
+    map[key] = map[key] or {}
+    table.insert(map[key], item)
+  end
+  local function near(map, x, y, fn)
+    local gx, gy = math.floor(x / CELL), math.floor(y / CELL)
+    for ix = gx - 1, gx + 1 do
+      for iy = gy - 1, gy + 1 do
+        for _, o in ipairs(map[ix .. ":" .. iy] or {}) do fn(o) end
+      end
+    end
+  end
+
+  for cy = 0, CHUNKS - 1 do
+    for cx = 0, CHUNKS - 1 do
+      local sx, sy = grid.world_to_sector(cx * cfg.CHUNK_SIZE, cy * cfg.CHUNK_SIZE)
+      local biome = layout.biomes[sx][sy]
+      local list = w[grid.chunk_key(cx, cy)]
+      local nLarge, nSmall = 0, 0
+      for _, s in ipairs(list) do
+        local scale = s.scale
+        local x = s.pos.x + asteroid_cfg.ASTEROID_SHEET.frameSize * scale / 2
+        local y = s.pos.y + asteroid_cfg.ASTEROID_SHEET.frameSize * scale / 2
+        local radius = bodyRadius * scale
+        if scale >= cfg.ROCK_SIZES.large.min then
+          nLarge = nLarge + 1
+        else
+          nSmall = nSmall + 1
+        end
+
+        rock_total = rock_total + 1
+        for _, p in ipairs(layout.planets) do
+          check(dist(x, y, p.x, p.y) >= p.range + radius, "roca fuera del pozo de un planeta: " .. s.chunk_id)
+        end
+
+        if s.drift then
+          drift_total = drift_total + 1
+          local speed = math.sqrt(s.vel.x ^ 2 + s.vel.y ^ 2)
+          check(speed >= cfg.DRIFT.speed.min - 1e-6 and speed <= cfg.DRIFT.speed.max + 1e-6, "velocidad de deriva")
+          check(s.cull ~= true and s.despawn_far == true, "la deriva no se duerme y se borra al salir")
+          check(not s.wreck, "un pecio no deriva")
+          local ux, uy = s.vel.x / speed, s.vel.y / speed
+          for _, p in ipairs(layout.planets) do
+            local rx, ry = p.x - x, p.y - y
+            local t = rx * ux + ry * uy
+            local d = t < 0 and dist(x, y, p.x, p.y) or dist(rx, ry, t * ux, t * uy)
+            check(d > p.range + radius, "el rumbo de una roca no cruza un planeta: " .. s.chunk_id)
+          end
+        else
+          check(s.cull == true, "roca estatica con cull: " .. s.chunk_id)
+          eq(s.vel.x, 0, "roca estatica sin velocidad")
+        end
+
+        if s.wreck then
+          check(biome == "debris" or biome == "reactor", "pecio solo en debris/reactor: " .. s.chunk_id)
+          check(scale >= cfg.ROCK_SIZES.large.min, "pecio grande: " .. s.chunk_id)
+          check(asteroid_cfg.WRECK_TYPES[s.wreck] ~= nil, "pecio valido")
+        end
+      end
+
+      local largeMax = (biome == "dense_belt" and cfg.LARGE_ROCKS_DENSE or cfg.LARGE_ROCKS).max
+      local largeMin = (biome == "dense_belt" and cfg.LARGE_ROCKS_DENSE or cfg.LARGE_ROCKS).min
+      check(nLarge <= largeMax, "rocas grandes <= maximo en " .. cx .. ":" .. cy)
+      if biome == "deep_void" then
+        eq(nSmall, 0, "sin rocas pequenas en deep_void " .. cx .. ":" .. cy)
+      else
+        check(nSmall <= cfg.SMALL_ROCKS.max, "rocas pequenas <= maximo en " .. cx .. ":" .. cy)
+      end
+
+      -- Lejos del borde del mundo y de cualquier pozo: salen todas las rocas
+      local bx, by, bw, bh = grid.chunk_bounds(cx, cy)
+      local clear = cx > 0 and cy > 0 and cx < CHUNKS - 1 and cy < CHUNKS - 1
+      for _, p in ipairs(layout.planets) do
+        if p.x + p.range > bx and p.x - p.range < bx + bw and p.y + p.range > by and p.y - p.range < by + bh then
+          clear = false
+        end
+      end
+      if clear then
+        check(nLarge >= largeMin, "rocas grandes >= minimo en " .. cx .. ":" .. cy)
+        if biome ~= "deep_void" then
+          check(nSmall >= cfg.SMALL_ROCKS.min, "rocas pequenas >= minimo en " .. cx .. ":" .. cy)
+        end
+      end
+    end
+  end
+
+  -- Separacion en todo el mundo (no solo por chunk), con cubos de CELL px
+  local all = {}
+  for _, list in pairs(w) do
+    for _, s in ipairs(list) do
+      local scale = s.scale
+      local cxp = s.pos.x + asteroid_cfg.ASTEROID_SHEET.frameSize * scale / 2
+      local cyp = s.pos.y + asteroid_cfg.ASTEROID_SHEET.frameSize * scale / 2
+      all[#all + 1] = { x = cxp, y = cyp, large = scale >= cfg.ROCK_SIZES.large.min, id = s.chunk_id }
+    end
+  end
+  local grid_map = {}
+  for _, o in ipairs(all) do bucket(grid_map, o.x, o.y, o) end
+  for _, o in ipairs(all) do
+    near(grid_map, o.x, o.y, function(q)
+      if q ~= o and q.id < o.id then
+        local d = dist(o.x, o.y, q.x, q.y)
+        if o.large and q.large then
+          check(d >= cfg.LARGE_SPACING - 1e-6, "separacion entre rocas grandes: " .. o.id .. " " .. q.id)
+        elseif not o.large and not q.large then
+          check(d >= cfg.SMALL_SPACING - 1e-6, "separacion entre rocas pequenas: " .. o.id .. " " .. q.id)
+        end
+      end
+    end)
+  end
+end
+
+-- Aproximadamente una de cada cinco rocas deriva (DRIFT.chance = 0.2)
+local share = drift_total / rock_total
+check(share >= 0.1 and share <= 0.3, "proporcion de deriva en [0.1, 0.3]: " .. share)
+
+-- Se generan pecios
+local wrecks = 0
+for seed = 1, 20 do
+  for _, list in pairs(chunks.generate_world(seed)) do
+    for _, s in ipairs(list) do if s.wreck then wrecks = wrecks + 1 end end
+  end
+end
+check(wrecks > 0, "se generan pecios")
+
 
 if failures == 0 then
   print("map_determinism: all passed")

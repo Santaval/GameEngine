@@ -3,9 +3,10 @@
 --  - Semilla: el host (u offline) elige una con random_seed() y la fija en los
 --    ajustes de la sala (net_set_match_seed); los demas la leen de
 --    net_room_settings().seed (llega por room_settings o por el snapshot).
---  - Mapa: con la semilla se genera TODO el mundo (map_chunks) y cada roca se
---    crea LOCAL con spawn_local, sin red: todos los clientes construyen lo
---    mismo. Solo viajan los cambios (rocas destruidas).
+--  - Mapa: con la semilla se reparten los biomas y los planetas (map_biomes) y
+--    se genera TODO el mundo (map_chunks); planetas y rocas se crean LOCALES
+--    con spawn_local, sin red: todos los clientes construyen lo mismo. Solo
+--    viajan los cambios (rocas destruidas).
 --  - Destruccion: el host manda; asteroid.lua llama a map_world_destroyed(id)
 --    cuando una roca de chunk muere en el host, y el director avisa a todos
 --    (map_rock_destroyed) y a los recien llegados (map_destroyed).
@@ -15,6 +16,7 @@
 -- =====================================================================
 
 local chunks = require("map_chunks")
+local biomes = require("map_biomes")
 local grid = require("map_grid")
 local ui = require("ui_helpers")
 
@@ -99,8 +101,18 @@ end
 
 -- Genera el mundo entero y crea las rocas que no estan destruidas
 local function build_world()
+  -- Planetas: la tabla se vacia en el sitio (la leen solar_hud y las zonas de
+  -- gravedad del jugador) por si la escena se reinicia
+  local layout = biomes.layout(seed)
+  for k in pairs(scene_planets) do scene_planets[k] = nil end
+  for _, p in ipairs(layout.planets) do
+    spawn_local("planet.lua", p)
+    scene_planets[#scene_planets + 1] = p
+  end
+  map_biomes = layout.biomes
+
   local world = chunks.generate_world(seed)
-  local count = 0
+  local count, wrecks, drifting = 0, 0, 0
   for _, list in pairs(world) do
     for _, state in ipairs(list) do
       if not map_destroyed[state.chunk_id] then
@@ -108,13 +120,16 @@ local function build_world()
         if e ~= nil then
           rocks[state.chunk_id] = e
           count = count + 1
+          if state.wreck then wrecks = wrecks + 1 end
+          if state.drift then drifting = drifting + 1 end
         end
       end
     end
   end
   map_seed = seed
   built = true
-  print(string.format("[aval_cup] map_seed=%d, %d rocas", seed, count))
+  print(string.format("[aval_cup] map_seed=%d, %d rocas (%d pecios, %d a la deriva), %d planetas",
+    seed, count, wrecks, drifting, #layout.planets))
 end
 
 -- Area activa alrededor del jugador; muerto, se conserva la ultima
