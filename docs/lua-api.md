@@ -302,7 +302,7 @@ get it through `set_loot` and hand it to whoever collects them.
 | `set_text_color(e, r, g, b, a?)` | — | |
 | `draw_rect(x, y, w, h, r?, g?, b?, a?, filled?)` | — | **Screen** coordinates. `filled` defaults to `true`. Lasts one frame. |
 | `draw_rect_world(x, y, w, h, r?, g?, b?, a?, filled?)` | — | **World** coordinates, scrolls with the camera. Lasts one frame. |
-| `draw_image(asset_id, x, y, w, h, a?, layer?, opts?)` | — | **Screen** coordinates, stretched to `w` x `h`. `a` (0-255) defaults to `255`. `layer` is `"back"` (under the entities) or `"front"` (default: over the entities, under the HUD rects and text). `opts = { src = {x, y, w, h}, angle = deg }` draws only that texture rect and rotates clockwise around the centre of the `w` x `h` destination. Lasts one frame. |
+| `draw_image(asset_id, x, y, w, h, a?, layer?, opts?)` | — | **Screen** coordinates, stretched to `w` x `h`. `a` (0-255) defaults to `255`. `layer` is `"back"` (under the entities), `"front"` (default: over the entities, under the HUD rects and text) or `"hud"` (over the HUD rects, under the text). `opts = { src = {x, y, w, h}, angle = deg }` draws only that texture rect and rotates clockwise around the centre of the `w` x `h` destination. Lasts one frame. |
 
 `font_id` defaults to `"default"`; colour channels default to `255`.
 

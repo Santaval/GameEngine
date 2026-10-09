@@ -228,6 +228,7 @@ collisions.
 | `CHUNKS_PER_SECTOR`, `CHUNK_SIZE` | 2, 2000 | Chunk grid |
 | `STORM_BAND` | 500 | Edge strip consumed by the storm (no content) |
 | `STORM` | table | Border storm: `damage` 4, `tick` 1 s, `tile_size` 250, sprite frames, `edge_height` 90, `edge_overlap` 0.5, `fps` 6, `alpha`, `tint_alpha` |
+| `WANDERING_STORM` | table | Wandering Storms: `count` 2, `radius` 1000..2000, `speed` 35..55, `turn_rate`, `damage` 3, `tick` 1 s, `push_speed` 110, `push_accel` 220, `front_pad`, `spawn_clear`, `edge_height`, `tile_alpha`, `icon_size` |
 | `UPDATE_RADIUS_CHUNKS` | 2 | Chunks around the player that are simulated |
 | `STABLE_PORTAL_PAIRS`, `NEXUS_COUNT` | 12, 1 | Portals (not used yet) |
 | `PORTAL_CLEAR_RADIUS` | 600 | Portals (not used yet) |
@@ -380,7 +381,35 @@ culls fragments that leave the world.
   `in_border(x, y)`, `new_damage()`, `tick_damage(state, entity, inside, dt)`,
   `frame(clock)`, `src(frame_cfg, i)`, `draw_fill(camX, camY, sw, sh, frame, inside_fn)`,
   `draw_edge_segment(x1, y1, x2, y2, inward_angle, camX, camY, sw, sh, frame)`,
-  `draw_tint(w, h, alpha)`.
+  `draw_tint(w, h, alpha)`. #21 adds optional `damage, tick` to `tick_damage`,
+  optional `ox, oy, alpha` to `draw_fill`, `draw_edge_ring(cx, cy, r, height, ...)`,
+  `wandering()` and `in_wandering(x, y, pad?)`.
+
+### Wandering Storms
+
+Round Oxblood clouds 1-2 chunks across (`WANDERING_STORM.radius` 1000..2000)
+that drift slowly over the map and force players to keep moving.
+
+- Lifecycle: the host keeps `WANDERING_STORM.count` (2) alive from
+  `map_storm_world.lua` with `net_spawn("wandering_storm.lua", {pos, vel, radius, world = true})`.
+  The first ones appear at a random interior point at least `spawn_clear` from
+  `PLAYER_SPAWN`; replacements enter from a random edge, heading to the middle of
+  the map. The owner random-walks the heading (`turn_rate`) and despawns the
+  storm once it is well outside the world. They are `world = true`, so late
+  joiners get them from the snapshot and, if the host leaves, the new host keeps
+  moving and refilling them (the count comes from `wandering_storms`, which every
+  client fills). The entity has no sprite: its transform position is the cloud
+  centre, and the radius travels in the spawn state.
+- Damage: while the local ship is inside, `WANDERING_STORM.damage` (3) HP every
+  `tick` (1 s), on a separate timer from the border storm.
+- Front push: ships in the front half of the cloud (up to `front_pad` beyond the
+  radius) are accelerated (`push_accel`) up to `push_speed` along the heading.
+- Visuals: `storm-tile` fill that moves with the cloud plus a ragged
+  `storm-edge` ring facing outward. Tint and "TORMENTA" show inside either storm.
+- Minimap: a faint outline of the cloud and the `icon-storm` icon, drawn on the
+  `"hud"` image layer so it sits above the minimap panel.
+- Portals (#22): `storm.in_wandering(x, y, pad?)` tells whether a point is inside
+  any wandering storm.
 
 ## Known gap
 

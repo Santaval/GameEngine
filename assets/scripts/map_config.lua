@@ -36,6 +36,31 @@ config.STORM = {
   tint_alpha = 60,
 }
 
+-- Tormentas errantes (ver map_storm.lua, wandering_storm.lua y docs/aval-cup.md)
+--   count: tormentas vivas a la vez (el host las repone)
+--   radius / speed: radio (px, 1-2 chunks de ancho) y velocidad (px/s) al nacer
+--   turn_rate: giro maximo del rumbo (rad/s), paseo aleatorio del duenio
+--   damage / tick: dano por tiempo dentro de la nube
+--   push_speed / push_accel / front_pad: la mitad delantera empuja a las naves
+--     a al menos push_speed (px/s) a lo largo del rumbo, ganando push_accel
+--     (px/s^2) como maximo; front_pad es el margen (px) mas alla del radio
+--   spawn_clear: distancia minima a PLAYER_SPAWN de las tormentas iniciales
+--   edge_height: alto (px de mundo) del anillo irregular
+--   tile_alpha / icon_size: opacidad de las teselas e icono del minimapa (px)
+config.WANDERING_STORM = {
+  count = 2,
+  radius = { min = 1000, max = 2000 },
+  speed = { min = 35, max = 55 },
+  turn_rate = 0.05,
+  damage = 3, tick = 1.0,
+  push_speed = 110,
+  push_accel = 220,
+  front_pad = 250,
+  spawn_clear = 4000,
+  edge_height = 260,
+  tile_alpha = 215, icon_size = 14,
+}
+
 -- Solo se simulan y se dibujan los chunks a esta distancia (en chunks) del
 -- jugador local; el resto duerme (CullComponent, set_active_area)
 config.UPDATE_RADIUS_CHUNKS = 2

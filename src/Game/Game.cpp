@@ -288,9 +288,9 @@ void Game::processInput() {
 }
 
 // Dibuja los comandos de draw_image de una capa (coordenadas de pantalla)
-void Game::drawSprites(bool front) {
+void Game::drawSprites(int layer) {
     for (const auto& cmd : this->spriteBuffer.getCommands()) {
-        if (cmd.front != front) continue;
+        if (cmd.layer != layer) continue;
         SDL_Texture* texture = this->assetManager->getTexture(cmd.assetId);
         if (texture == nullptr) continue;
 
@@ -309,7 +309,7 @@ void Game::render() {
     SDL_RenderClear(this->renderer);
 
     // Imagenes de la capa "back" (fondos, nubes): bajo las entidades
-    this->drawSprites(false);
+    this->drawSprites(0);
 
     this->registry->getSystem<RenderSystem>().update(this->renderer, this->assetManager, this->camera);
 
@@ -322,7 +322,7 @@ void Game::render() {
     }
 
     // Imagenes de la capa "front": sobre las entidades y bajo el HUD
-    this->drawSprites(true);
+    this->drawSprites(1);
 
     // Paneles del HUD (rectangulos): van antes del texto para que el texto quede encima
     SDL_SetRenderDrawBlendMode(this->renderer, SDL_BLENDMODE_BLEND);
@@ -340,6 +340,9 @@ void Game::render() {
             SDL_RenderDrawRect(this->renderer, &sdlRect);
         }
     }
+
+    // Imagenes de la capa "hud": sobre los paneles del HUD (iconos del minimapa)
+    this->drawSprites(2);
 
     // El texto va después de los sprites para que quede encima
     this->registry->getSystem<TextRenderSystem>().update(this->renderer, this->assetManager,

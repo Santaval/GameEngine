@@ -24,6 +24,9 @@ player_ships = {}
 map_destroyed = {}
 -- Sitios del Reactor Remains: los publica map_reactor_world.lua (el minimapa los lee)
 reactor_sites = nil
+-- Tormentas errantes (#21): netId -> true / netId -> radio; las llena wandering_storm.lua
+wandering_storms = {}
+wandering_storm_radius = {}
 
 -- Sin cinturones ni generadores: nadie crea asteroides en runtime salvo los
 -- fragmentos de una roca partida
@@ -160,6 +163,7 @@ scene = {
     {assetId="reactor-ring", filePath="./assets/sprites/reactor/reactor_ring.png"},
     {assetId="storm-tile", filePath="./assets/sprites/storm/storm_tile.png"},
     {assetId="storm-edge", filePath="./assets/sprites/storm/storm_edge.png"},
+    {assetId="icon-storm", filePath="./assets/sprites/hud/icon_storm.png"},
     {assetId="reactor-pulse", filePath="./assets/sprites/vfx/reactor_pulse.png"},
   },
 

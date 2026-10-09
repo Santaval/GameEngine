@@ -11,6 +11,7 @@ local solar = require("solar_system_config")
 local ui = require("ui_helpers")
 local grid = require("map_grid")
 local nebula = require("map_nebula")
+local storm = require("map_storm")
 
 local MAP_SIZE = 220
 local MARGIN = 20
@@ -132,6 +133,17 @@ local function draw_minimap(planets)
       local mx, my = to_map(site.x, site.y, ox, oy)
       draw_rect(mx - 3, my - 3, 6, 6, REACTOR_COLOR[1], REACTOR_COLOR[2], REACTOR_COLOR[3], 255, false)
       draw_rect(mx - 1, my - 1, 2, 2, REACTOR_COLOR[1], REACTOR_COLOR[2], REACTOR_COLOR[3], 255)
+    end
+  end
+  -- Tormentas errantes (wandering_storms, lo llena wandering_storm.lua)
+  if scene_map ~= nil and wandering_storms ~= nil then
+    local icon = scene_map.WANDERING_STORM.icon_size
+    local s = STORM_COLOR
+    for _, w in ipairs(storm.wandering()) do
+      local mx, my = to_map(w.x, w.y, ox, oy)
+      local rr = w.r * k
+      draw_rect(mx - rr, my - rr, rr * 2, rr * 2, s[1], s[2], s[3], 140, false)
+      draw_image("icon-storm", mx - icon / 2, my - icon / 2, icon, icon, 255, "hud")
     end
   end
   for _, p in ipairs(planets) do

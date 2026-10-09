@@ -6,13 +6,14 @@
 
 #include "../Game/Game.hpp"
 
-// Coordenadas de pantalla. layer: "back" (bajo las entidades) o "front" (por defecto,
-// sobre las entidades y bajo el HUD). a por defecto 255.
+// Coordenadas de pantalla. layer: "back" (bajo las entidades), "front" (por defecto,
+// sobre las entidades y bajo el HUD) o "hud" (sobre los rectangulos del HUD, bajo el texto). a por defecto 255.
 // opts = { src = {x, y, w, h}, angle = grados }: rect fuente y giro horario alrededor del centro
 inline void drawImage(const std::string& assetId, float x, float y, float w, float h,
   sol::optional<int> a, sol::optional<std::string> layer, sol::optional<sol::table> opts) {
     int alpha = std::clamp(a.value_or(255), 0, 255);
-    bool front = layer.value_or("front") != "back";
+    std::string layerName = layer.value_or("front");
+    int layerId = layerName == "back" ? 0 : (layerName == "hud" ? 2 : 1);
     bool hasSrc = false;
     SDL_Rect src = { 0, 0, 0, 0 };
     double angle = 0.0;
@@ -28,7 +29,7 @@ inline void drawImage(const std::string& assetId, float x, float y, float w, flo
         angle = opts->get_or("angle", 0.0);
     }
     Game::getInstance().getSpriteBuffer().push(assetId, static_cast<int>(x), static_cast<int>(y),
-      static_cast<int>(w), static_cast<int>(h), static_cast<Uint8>(alpha), front, hasSrc, src, angle);
+      static_cast<int>(w), static_cast<int>(h), static_cast<Uint8>(alpha), layerId, hasSrc, src, angle);
 }
 
 inline void registerImageBindings(sol::state& lua) {

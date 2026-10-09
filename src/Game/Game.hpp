@@ -90,7 +90,7 @@ class Game {
         ~Game();
         void processInput();
         void render();
-        void drawSprites(bool front);
+        void drawSprites(int layer);
         void update();
         void setup();
         void loadScene(const std::string& scenePath);
