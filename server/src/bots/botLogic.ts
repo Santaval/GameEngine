@@ -36,8 +36,8 @@ export const STORM_DAMAGE = 4;
 export const STORM_TICK_SEC = 1;
 /** Center of the world = PLAYER_SPAWN in map_config.lua. */
 export const DEFAULT_CENTER = { x: 10000, y: 10000 };
-/** scenes/aval_cup.lua starts the ship at engine 1: player_upgrades.lua gives 60 + 40 * level. */
-export const MAX_SPEED = 100;
+/** scenes/aval_cup.lua starts the ship at engine 1: player_upgrades.lua gives 100 + 40 * level. */
+export const MAX_SPEED = 140;
 export const THRUST = 100;
 /** scenes/aval_cup.lua gun = 3: damage 5 + 5 * 3, fire_rate 0.5 + 0.5 * 3 (player_upgrades.lua). */
 export const BULLET_SPEED = 1000; // player_shooting.lua

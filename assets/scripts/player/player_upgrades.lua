@@ -48,13 +48,24 @@ function player_upgrades_module.can_afford(entity, index)
   return true
 end
 
+-- Velocidad maxima y empuje del motor por nivel (nivel 1 = 140 px/s). Si
+-- cambia, actualizar MAX_SPEED en server/src/bots/botLogic.ts
+local function engine_speed(level)
+  return 100 + 40 * level
+end
+
+-- Vida maxima por nivel de escudo: +20 por nivel (nivel 4 = 100 HP)
+local function shield_max_health(level)
+  return 20 + 20 * level
+end
+
 -- Aplica el nivel de cada herramienta a las stats reales del jugador. Se usa
 -- tanto despues de comprar como una vez al arrancar, para que los niveles
 -- iniciales de la escena tambien manden (ver player.lua).
 function player_upgrades_module.apply_stats(entity)
   local engine_level = get_equipment_level(entity, "engine")
-  player_movement_module.thrust = 60 + 40 * engine_level
-  set_max_speed(entity, 60 + 40 * engine_level)
+  player_movement_module.thrust = engine_speed(engine_level)
+  set_max_speed(entity, engine_speed(engine_level))
 
   local gun_level = get_equipment_level(entity, "gun")
   player_shooting_module.bullet_damage = 5 + 5 * gun_level
@@ -64,7 +75,7 @@ function player_upgrades_module.apply_stats(entity)
   -- nuevo, y solo despues se cura la diferencia si el tope subio
   local shield_level = get_equipment_level(entity, "shield")
   local old_max = get_max_health(entity)
-  local new_max = 60 + 10 * shield_level
+  local new_max = shield_max_health(shield_level)
   set_max_health(entity, new_max)
   if new_max > old_max then
     heal(entity, new_max - old_max)
@@ -77,7 +88,7 @@ function player_upgrades_module.apply_stats(entity)
     net_send("player_stats", {
       netId = net_id,
       max_hp = new_max,
-      max_speed = 60 + 40 * engine_level,
+      max_speed = engine_speed(engine_level),
       engine = engine_level,
       gun = gun_level,
       shield = shield_level,

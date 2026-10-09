@@ -90,7 +90,7 @@ local player = {
       },
       rigid_body = {
         velocity = { x = 0, y = 0},
-        max_speed=100
+        max_speed=140
       },
       sprite = {
         assetId = "spaceship-idle",
