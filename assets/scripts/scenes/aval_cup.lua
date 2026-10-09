@@ -140,6 +140,7 @@ local DIRECTORS = {
   "./assets/scripts/map_visuals.lua",
   "./assets/scripts/map_storm_world.lua",
   "./assets/scripts/map_portal_world.lua",
+  "./assets/scripts/map_event_world.lua",
   "./assets/scripts/map_event_director.lua",
   "./assets/scripts/game_director.lua",
 }
@@ -197,6 +198,9 @@ scene = {
     {assetId="icon-event-contraction", filePath="./assets/sprites/hud/icon_event_contraction.png"},
     {assetId="icon-event-pal-signal", filePath="./assets/sprites/hud/icon_event_pal_signal.png"},
     {assetId="icon-event-debris", filePath="./assets/sprites/hud/icon_event_debris.png"},
+    {assetId="pal-beacon", filePath="./assets/sprites/vfx/pal_beacon.png"},
+    {assetId="debris-arrow", filePath="./assets/sprites/hud/debris_arrow.png"},
+    {assetId="aura-overcharged", filePath="./assets/sprites/vfx/aura_overcharged.png"},
   },
 
   -- El tamaño se fija al cargar: hace falta un fontId por cada tamaño

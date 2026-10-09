@@ -1,4 +1,5 @@
 local zones = require("player_gravity_zones")
+local overcharged = require("map_overcharged")
 
 local player_mining_module = {}
 
@@ -23,6 +24,8 @@ local timer = 0
 local planet = nil
 local mining = false
 local cargo_full = false
+-- Multiplicador del mineral del planeta actual (2 con Planeta sobrecargado, #26)
+local mult = 1
 local clock = 0
 local popups = {}
 
@@ -49,10 +52,11 @@ function player_mining_module.update(entity)
   timer = timer - planet.mine_interval
 
   -- add_item ya recorta a la capacidad: 0 significa bodega llena
-  cargo_full = add_item(entity, planet.mineral, 1) == 0
+  mult = overcharged.multiplier(planet)
+  cargo_full = add_item(entity, planet.mineral, mult) == 0
   if not cargo_full then
     local x, y = get_collider_center(entity)
-    popups[#popups + 1] = { x = x, y = y - 40, text = "+1 " .. planet.mineral, t = 0, color = color_for(planet.mineral) }
+    popups[#popups + 1] = { x = x, y = y - 40, text = "+" .. mult .. " " .. planet.mineral, t = 0, color = color_for(planet.mineral) }
   end
 end
 
@@ -99,7 +103,9 @@ function player_mining_module.draw(entity)
   if cargo_full then
     draw_text(w / 2 - 60, h - 100, "Bodega llena", "default", 255, 60, 60)
   else
-    draw_text(w / 2 - 70, h - 100, "Minando " .. planet.mineral, "default", color[1], color[2], color[3])
+    local label = "Minando " .. planet.mineral
+    if overcharged.multiplier(planet) > 1 then label = label .. " (x" .. overcharged.multiplier(planet) .. ")" end
+    draw_text(w / 2 - 70, h - 100, label, "default", color[1], color[2], color[3])
   end
 end
 

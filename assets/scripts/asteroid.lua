@@ -4,6 +4,8 @@
 --  muerte, el loot y cuando se borra) y los demas lo simulan con lo que
 --  llega por la red. Los datos propios salen de spawn_state; los locals del
 --  chunk son por entidad porque este archivo corre una vez por asteroide.
+--  Con state.ttl (lluvia de escombros, #26) la roca vive ese tiempo (s) y el
+--  duenio la borra sin loot al cumplirse.
 --  El loot (pickup.lua / loot_net.lua) y el iman viven en sus propios archivos.
 -- =====================================================================
 
@@ -45,6 +47,9 @@ local STEER_RATE = 2
 -- Datos de esta roca (spawn_state lo fija el motor mientras arma el prefab)
 local state = spawn_state or {}
 local despawn_far = state.despawn_far == true
+-- Vida maxima (s) de la roca, o nil si no caduca, y lo que lleva vivida
+local ttl = state.ttl
+local age = 0
 local ring = state.ring
 local slot = state.slot
 local half = cfg.ASTEROID_SHEET.frameSize * (state.scale or 1) / 2
@@ -188,6 +193,15 @@ function update()
 
   if ring ~= nil then steer_in_lane() end
   if state.drift then update_dust() end
+
+  -- Solo el duenio decide que caduco
+  if ttl ~= nil then
+    age = age + get_delta_time()
+    if age >= ttl and owns(this) then
+      vanish(this)
+      return
+    end
+  end
 
   -- Solo el duenio decide que se fue del mapa
   if despawn_far and owns(this) then

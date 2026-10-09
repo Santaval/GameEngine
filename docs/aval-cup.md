@@ -243,6 +243,9 @@ collisions.
 | `STORM_CONTRACTION_SAFE_RADIUS` | 1500 | Radius (px) of the final safe circle of a contraction |
 | `STORM_CONTRACTION` | table | `warning` 30 s, `shrink` 60 s, `hold` 15 s, `damage` 5, `tick` 1 s, `start_radius` (sector half-diagonal), `edge_height` 260, `tile_alpha` 225, `highlight` colour and alpha, `ring_dot_spacing`, `crate_clear` 400, `crate_tries` 40 |
 | `LOOT_CRATE_PAL` | table | High-loot crate: `size` 72, `sheet` (frame width, count and the `src_y` / `src_h` strip of the crate), collider `radius`, `loot` (30 iron, 15 gunpowder, 8 plasma) |
+| `PAL_SIGNAL` | table | Pal Signal: `duration` 90 s, `crate_clear` 400, `crate_tries` 40, `edge_pad` 500, `beam` (draw `w` x `h` 64x512 px and the `pal_beacon.png` sheet: `frame_w` 181, `frame_h` 1448, `count` 6), `fps` 8, `alpha` 220 |
+| `DEBRIS_RAIN` | table | Debris Rain: `warning` 5 s, `rain` 20 s, `tail` 5 s, `rate` 3 rocks/s, `speed` 320..420, `scale` 0.25..0.5, `spread` 0.08 rad, `ttl` 25 s, `arrow_size` 48, `arrow_margin` 24, `arrow_count` 3, `warn_pad` 2000 |
+| `OVERCHARGED` | table | Overcharged Planet: `duration` 60 s, `mult` 2, `sheet` (aura frame width, count and the `src_y` / `src_h` band), `size_factor` 1.6, `fps` 8, `alpha` 200, `ring_dot_spacing` 30, `colors` per mineral |
 | `DEATH_DROP_FRACTION` | 0.6 | Players (not used yet) |
 | `SPAWN_SHIELD` | 5 | Players (not used yet) |
 | `BIOMES` | see [Biomes](#biomes) | Id, name and weight of each biome |
@@ -554,8 +557,9 @@ host carries on.
 - Types: `EVENTS.types` knows all 6 (Reactor Pulse, Portal Collapse, Storm
   Contraction, Pal Signal, Debris Rain, Overcharged Planet) with name, colour,
   optional minimap icon and duration. A type only fires once its script
-  registers a hook. Today `reactor_pulse`, `portal_collapse` and `storm_contraction` do; #26
-  plugs in without touching the director.
+  registers a hook. Today `reactor_pulse`, `portal_collapse`, `storm_contraction`, `pal_signal`,
+  `debris_rain` and `overcharged_planet` do (the last three through
+  `map_event_world.lua`), all without touching the director.
 - Hook contract, global `map_event_types[type]` (the script sets
   `map_event_types = map_event_types or {}` first):
   `pick(sx, sy) -> params | nil` (host: an eligible target in that sector;
@@ -628,6 +632,71 @@ supplies the gameplay and visuals.
   that touches it gets the loot through the pickup flow of `loot_net.lua`
   (single delivery, `pickup_request` if the crate is remote). No magnet. The
   opening animation and the other crate kinds are left for #27.
+
+### Pal Signal
+
+Issue #26. `map_pal_signal.lua` (loaded by `map_event_world.lua`) registers
+`map_event_types.pal_signal`. A high-loot crate (the one of Storm Contraction,
+shared through `map_event_crate.lua`) with a light beam on top, to pull players
+into a fight. Lasts `PAL_SIGNAL.duration` (90 s).
+
+- `pick(sx, sy)` (host) takes the centroid of the ships in the sector (A) and the
+  centroid of the most populated OTHER occupied sector (B). The target is the
+  midpoint of A and B clamped into the sector shrunk by `edge_pad`; with no B it
+  is the sector centre. If a planet's body plus `crate_clear` covers it, it tries
+  up to `crate_tries` random points within 1500 px (clamped to the sector). With
+  none it returns nil. Returns `{ x, y }`, which the minimap icon uses on every
+  client (`solar_hud.lua`).
+- `fire(p)` (host) spawns the crate and stores its netId in `p.crate`;
+  `on_end(ev)` (host) despawns it if nobody opened it.
+- Visuals: `step` draws, every frame and from `map_events` (so a late joiner
+  sees it without `on_start`), `pal_beacon.png` animated (`fps` 8) on the
+  `front` layer, `beam.w` x `beam.h` px of world with its base on the crate
+  centre. Off-screen beams are skipped.
+
+### Debris Rain
+
+Issue #26. `map_debris_rain.lua` registers `map_event_types.debris_rain`. Phases
+from `elapsed = duration - ev.t` (same on every client), `duration` =
+`warning + rain + tail` = 30 s:
+
+- `warning` (5 s): a ship within `warn_pad` (2000 px) of the sector bounds sees
+  `arrow_count` blinking `debris-arrow` images on the screen edge the rocks come
+  from, pointing along the heading; a ship inside the sector also sees
+  "LLUVIA DE ESCOMBROS EN Ns".
+- `rain` (20 s): the arrows stay, steady and dimmer. Only the host spawns rocks,
+  `rate` per second (a per-event accumulator, dropped when the event ends).
+- `tail` (5 s): no new rocks; the last ones finish crossing.
+- `pick(sx, sy)` returns `{ x, y, angle }`: the sector centre and a random heading.
+  `fire` just returns true.
+- Rocks: each one starts `0.75 * SECTOR_SIZE` upstream of the sector centre, with
+  a lateral offset of up to half a sector, heading jittered by `spread`, speed
+  `speed` and scale `scale`. They are normal host-owned `asteroid.lua` entities
+  (`net_spawn`, replicated, split and drop loot as usual). At 320..420 px/s they
+  are above `IMPACT_FULL_SPEED`, so the usual `ImpactDamage` path hurts on impact.
+- `state.ttl` (new field of `asteroid.lua`, documented in `prefabs/asteroid.lua`):
+  the owner removes the rock without loot after `ttl` (25 s). Not
+  `despawn_far`, so these rocks do not count for the drifting-rock cap.
+
+### Overcharged Planet
+
+Issue #26. `map_overcharged.lua` registers `map_event_types.overcharged_planet`.
+For `OVERCHARGED.duration` (60 s) a mining planet yields `mult` (x2).
+
+- `pick(sx, sy)` (host): a random planet of `scene_planets` with a mineral whose
+  centre is in the sector and that no active event already targets. Returns
+  `{ x, y }` (planet centre); `fire` returns true.
+- `overcharged.multiplier(planet)` is 1, or `mult` if an active `map_events` entry
+  of this type has `params.x / params.y` equal to the planet's. It is derived from
+  `map_events`, so it holds for late joiners and after a host migration, and is
+  1 when `map_events` is nil (other scenes). `player/player_mining.lua` uses it:
+  `add_item(entity, mineral, n)`, popup "+n mineral" and "Minando X (x2)".
+  Only the mined amount changes; the mining interval does not.
+- Visuals (`step`): `aura_overcharged.png` animated (`fps` 8, drawn white because
+  `draw_image` cannot tint), centred on the planet, diameter
+  `2 * body_radius * size_factor`, `front` layer; plus a dotted ring expanding
+  from `1.1 * body_radius` to the gravity `range` and fading, in the colour of
+  the mineral (blue iron, red gunpowder, green plasma) via `zones.draw_ring`.
 
 ## Known gap
 

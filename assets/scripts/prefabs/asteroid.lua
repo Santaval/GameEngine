@@ -4,6 +4,7 @@
 -- sobreescriben transform, rigid_body y health.
 -- state: kind (indice en ASTEROID_TYPES), scale, world, y opcionalmente
 --   despawn_far (el duenio lo borra al salir del mapa),
+--   ttl (segundos de vida: el duenio la borra al cumplirse, ver asteroid.lua),
 --   wreck (indice en WRECK_TYPES: pecio en vez de roca normal, ver
 --   asteroid_config.lua), drift (lleva estela de polvo, ver asteroid.lua) y
 --   ring = {x, y, radius, speed} + slot (roca del anillo de Saturno).

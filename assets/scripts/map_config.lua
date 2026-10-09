@@ -304,6 +304,71 @@ config.REACTOR = {
   },
 }
 
+-- Senal de Pal (#26, ver map_pal_signal.lua y docs/aval-cup.md): una caja de
+-- loot alto (LOOT_CRATE_PAL) con un haz de luz vertical que se ve en el mundo y
+-- un icono en el minimapa de todos. Se coloca entre dos zonas con jugadores
+-- para provocar el combate
+--   duration: segundos que dura el evento (la caja se borra al acabar)
+--   crate_clear / crate_tries: distancia minima (px) de la caja al cuerpo de un
+--     planeta e intentos de buscar un punto libre
+--   edge_pad: margen (px) de la caja al borde del sector
+--   beam: haz de pal_beacon.png (1086x1448, 6 frames de 181x1448 en fila, la
+--     base del haz abajo): w x h son los px de mundo con que se dibuja (su base
+--     queda en el centro de la caja) y frame_w / frame_h / count la hoja
+--   fps / alpha: velocidad de la animacion y opacidad del haz
+config.PAL_SIGNAL = {
+  duration = 90,
+  crate_clear = 400, crate_tries = 40,
+  edge_pad = 500,
+  beam = { w = 64, h = 512, frame_w = 181, frame_h = 1448, count = 6 },
+  fps = 8, alpha = 220,
+}
+
+-- Lluvia de escombros (#26, ver map_debris_rain.lua): asteroides del host que
+-- cruzan un sector con un rumbo comun. Fases contadas desde el inicio:
+-- aviso (flechas en el borde de la pantalla), lluvia (caen rocas) y cola
+-- (ya no caen, las ultimas siguen su camino); la suma es la del evento
+--   warning / rain / tail: duracion (s) de cada fase
+--   rate: asteroides por segundo durante la lluvia
+--   speed / scale: rango de velocidad (px/s) y de escala de cada roca; con la
+--     velocidad alta el choque hace dano completo (IMPACT_FULL_SPEED)
+--   spread: desvio aleatorio (rad) del rumbo de cada roca
+--   ttl: segundos de vida de la roca; pasado ese tiempo su duenio la borra
+--   arrow_size / arrow_margin / arrow_count: lado (px) de las flechas de aviso,
+--     su margen al borde de la pantalla y cuantas salen
+--   warn_pad: la nave local ve las flechas dentro del sector ampliado en estos
+--     px por cada lado
+config.DEBRIS_RAIN = {
+  warning = 5, rain = 20, tail = 5,
+  rate = 3,
+  speed = { min = 320, max = 420 },
+  scale = { min = 0.25, max = 0.5 },
+  spread = 0.08,
+  ttl = 25,
+  arrow_size = 48, arrow_margin = 24, arrow_count = 3,
+  warn_pad = 2000,
+}
+
+-- Planeta sobrecargado (#26, ver map_overcharged.lua y player_mining.lua): un
+-- planeta con mineral rinde mult veces mas mientras dura el evento
+--   duration: segundos que dura el evento
+--   mult: multiplicador del mineral minado
+--   sheet: aura_overcharged.png (2172x724, 6 frames de 362 de ancho en fila);
+--     el anillo de cada frame ocupa la franja vertical src_y / src_h
+--   size_factor: diametro del aura = 2 * body_radius * size_factor
+--   fps / alpha: velocidad de la animacion y opacidad del aura
+--   ring_dot_spacing: separacion (px) de los puntos del anillo pulsante
+--   colors: color (r, g, b) del anillo segun el mineral (draw_image no tine,
+--     asi que el aura va en blanco y el color lo pone el anillo)
+config.OVERCHARGED = {
+  duration = 60, mult = 2,
+  sheet = { frame_w = 362, count = 6, src_y = 181, src_h = 362 },
+  size_factor = 2.5,
+  fps = 8, alpha = 200,
+  ring_dot_spacing = 30,
+  colors = { iron = { 80, 160, 255 }, gunpowder = { 255, 80, 60 }, plasma = { 90, 255, 120 } },
+}
+
 -- Director de eventos (#24, ver map_event_director.lua y docs/aval-cup.md): el
 -- host lanza eventos por sector ocupado cada EVENT_INTERVAL s y la contraccion
 -- de la tormenta cada STORM_CONTRACTION_INTERVAL s
@@ -318,7 +383,8 @@ config.REACTOR = {
 --   types: nombre, color (r, g, b), icono del minimapa (sin icono se dibuja un
 --     cuadrado del color) y duracion (s) de cada tipo. El Pulso y el Colapso
 --     duran lo que dura su efecto + un margen; la Contraccion, la suma de sus
---     fases; el resto, lo que fije #26
+--     fases; la Senal, la Lluvia y el Planeta sobrecargado, lo de PAL_SIGNAL,
+--     DEBRIS_RAIN y OVERCHARGED
 config.EVENTS = {
   per_players = { events = 3, players = 10 },
   retry = 5,
@@ -342,15 +408,15 @@ config.EVENTS = {
     },
     pal_signal = {
       name = "SENAL DE PAL", color = { 255, 255, 255 }, icon = "icon-event-pal-signal",
-      duration = 90,
+      duration = config.PAL_SIGNAL.duration,
     },
     debris_rain = {
       name = "LLUVIA DE ESCOMBROS", color = { 255, 90, 90 }, icon = "icon-event-debris",
-      duration = 30,
+      duration = config.DEBRIS_RAIN.warning + config.DEBRIS_RAIN.rain + config.DEBRIS_RAIN.tail,
     },
     overcharged_planet = {
       name = "PLANETA SOBRECARGADO", color = { 80, 200, 255 },
-      duration = 60,
+      duration = config.OVERCHARGED.duration,
     },
   },
 }

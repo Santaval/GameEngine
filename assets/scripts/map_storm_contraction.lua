@@ -15,10 +15,10 @@ local grid = require("map_grid")
 local storm = require("map_storm")
 local zones = require("player_gravity_zones")
 local ui = require("ui_helpers")
+local crate = require("map_event_crate")
 
 local C = cfg.STORM_CONTRACTION
 local SAFE = cfg.STORM_CONTRACTION_SAFE_RADIUS
-local CRATE = cfg.LOOT_CRATE_PAL
 local TYPE = "storm_contraction"
 
 -- Margen (px) entre el borde del circulo final y la caja
@@ -31,8 +31,6 @@ local contraction = {}
 
 -- Reloj propio para el parpadeo
 local clock = 0
--- Caja del host sin netId (sin red): get_net_id da nil y on_end la busca aqui
-local local_crate = nil
 
 -- Rectangulo del sector (x, y, w, h) y su centro
 function contraction.sector_rect(sx, sy)
@@ -114,24 +112,13 @@ map_event_types[TYPE] = {
     return { x = x, y = y, cx = cx, cy = cy }
   end,
   fire = function(p)
-    local w = CRATE.size
-    local h = w * CRATE.sheet.src_h / CRATE.sheet.frame_w
-    local e = net_spawn("loot_crate_pal.lua", { pos = { p.x - w / 2, p.y - h / 2 }, world = true })
-    if e == nil then return false end
     -- fire corre antes de que el director copie params: el id viaja a todos
-    local id = get_net_id(e)
-    if id ~= nil then p.crate = id else local_crate = e end
-    return true
+    return crate.spawn(p, TYPE)
   end,
   -- Al acabar, el host borra la caja si nadie la abrio (tambien el host nuevo
   -- tras migrar: el id va en params)
   on_end = function(ev)
-    if not net_is_host() then return end
-    local e = nil
-    if ev.params ~= nil and ev.params.crate ~= nil then e = find_by_net_id(ev.params.crate)
-    else e = local_crate end
-    local_crate = nil
-    if e ~= nil and is_alive(e) and is_local(e) then net_despawn(e) end
+    crate.despawn(ev, TYPE)
   end,
 }
 
