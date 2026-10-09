@@ -8,7 +8,10 @@
 -- =====================================================================
 
 local cfg = require("asteroid_config")
+local field = require("asteroid_field")
 local FIELD = cfg.FIELD
+local SPLIT = cfg.SPLIT
+local randRange = cfg.randRange
 
 -- Separacion entre pickups cuando el asteroide suelta varios items distintos
 local PICKUP_SPREAD = 20
@@ -132,13 +135,50 @@ local function asteroid_on_damage(amount, source)
   end
 end
 
+-- Parte la roca en fragmentos del mismo tipo (ver SPLIT en asteroid_config.lua).
+-- Solo el duenio y solo si es lo bastante grande. Los fragmentos salen en
+-- abanico desde el centro, con la velocidad del padre mas un empuje hacia
+-- afuera, y nacen separados para no solaparse. No depende del loot del padre
+-- (ya vacio si lo rompio una nave): cada fragmento trae el suyo. Devuelve
+-- true si creo fragmentos
+local function split(e)
+  if not is_local(e) then return false end
+  local scale = state.scale or 1
+  if scale < SPLIT.MIN_SCALE then return false end
+
+  local cx, cy = get_collider_center(e)
+  local pvx, pvy = get_velocity(e)
+  local count = math.random(SPLIT.PIECES.min, SPLIT.PIECES.max)
+  local base = randRange(0, 2 * math.pi)
+
+  for i = 1, count do
+    local pieceScale = scale * randRange(SPLIT.SCALE_FACTOR.min, SPLIT.SCALE_FACTOR.max)
+    pieceScale = math.max(pieceScale, cfg.ASTEROID_SCALE.min)
+
+    -- Angulos repartidos parejo con un poco de desvio
+    local a = base + (i - 1) * 2 * math.pi / count + randRange(-0.3, 0.3)
+    local ux, uy = math.cos(a), math.sin(a)
+    local speed = randRange(SPLIT.SPEED.min, SPLIT.SPEED.max)
+    local offset = cfg.ASTEROID_SHEET.bodyRadius * pieceScale
+
+    field.spawn_drifting(cx + ux * offset, cy + uy * offset,
+                         pvx + ux * speed, pvy + uy * speed, pieceScale, state.kind)
+  end
+  return true
+end
+
 -- Suelta un pickup por cada item del loot del asteroide (ver ASTEROID_TYPES
--- en asteroid_config.lua). Solo el duenio: las copias reciben el death pero
--- no repiten el loot. Los pickups son del host y los ven todos
+-- en asteroid_config.lua) salvo que se parta en fragmentos (split). vanish
+-- marca dead antes de borrar, asi que ese caso no llega aqui. Solo el duenio:
+-- las copias reciben el death pero no repiten el loot. Los pickups son del
+-- host y los ven todos
 local function asteroid_on_death()
   if dead then return end
   dead = true
   if not is_local(this) then return end
+
+  -- Una roca que se parte no suelta loot: lo sueltan sus fragmentos
+  if split(this) then return end
 
   local x, y = get_position(this)
   local count = get_loot_count(this)

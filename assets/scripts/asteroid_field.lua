@@ -69,10 +69,16 @@ end
 -- devuelve vx, vy; se llama despues de elegir el tipo para no alterar la
 -- secuencia del random (mismo campo con la misma semilla). pos es la esquina
 -- superior izquierda del sprite, asi que se descuenta medio frame para centrar
--- la roca. world = true: lo posee el host y lo simulan todos
-function field.asteroid_state(cx, cy, scale, velocity)
+-- la roca. kind (opcional) fuerza el tipo (indice en ASTEROID_TYPES) en vez de
+-- sortearlo, como hacen los fragmentos de una roca partida; sin kind el
+-- orden de los random es el de siempre. world = true: lo posee el host y lo
+-- simulan todos
+function field.asteroid_state(cx, cy, scale, velocity, kind)
   local drawSize = ASTEROID_SHEET.frameSize * scale
-  local _, kind = cfg.pickAsteroidType()
+  if kind == nil then
+    local _, picked = cfg.pickAsteroidType()
+    kind = picked
+  end
   local vx, vy = velocity(cx, cy)
 
   return {
@@ -83,6 +89,23 @@ function field.asteroid_state(cx, cy, scale, velocity)
     scale = scale,
     world = true,
   }
+end
+
+-- Crea en runtime (net_spawn) un asteroide a la deriva en (cx, cy) con
+-- velocidad (vx, vy). Sin scale lo sortea en ASTEROID_SCALE; sin kind sortea
+-- el tipo. Lo usan los generadores y la division de rocas grandes. Devuelve
+-- la entidad. El duenio (host) lo borra al salir del mapa, ver asteroid.lua
+function field.spawn_drifting(cx, cy, vx, vy, scale, kind)
+  scale = scale or randRange(cfg.ASTEROID_SCALE.min, cfg.ASTEROID_SCALE.max)
+  local state = field.asteroid_state(cx, cy, scale, function() return vx, vy end, kind)
+  state.despawn_far = true
+
+  local e = net_spawn("asteroid.lua", state)
+  -- Se anota ya y no en su primer update, para que el tope MAX_ALIVE valga
+  -- aunque varios generadores disparen en el mismo frame
+  local id = e and get_net_id(e)
+  if id and drifting_asteroids ~= nil then drifting_asteroids[id] = true end
+  return e
 end
 
 -- Planeta: se ve, atrae y traga asteroides (collider). Sin rigid_body,

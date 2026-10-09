@@ -7,7 +7,7 @@ map. Everything is in Lua; the engine has no notion of a spawner.
 | File | Role |
 | --- | --- |
 | [`assets/scripts/asteroid_config.lua`](../assets/scripts/asteroid_config.lua) | Shared module: `FIELD`, sprite sheet, health, damage, sizes, types and loot. `pickAsteroidType()` returns the type and its index. |
-| [`assets/scripts/asteroid_field.lua`](../assets/scripts/asteroid_field.lua) | `asteroid_state(cx, cy, scale, velocity)`: the spawn state of an asteroid (`pos`, `vel`, `rot`, `kind`, `scale`, `world = true`). |
+| [`assets/scripts/asteroid_field.lua`](../assets/scripts/asteroid_field.lua) | `asteroid_state(cx, cy, scale, velocity, kind?)`: the spawn state of an asteroid (`pos`, `vel`, `rot`, `kind`, `scale`, `world = true`); `spawn_drifting(cx, cy, vx, vy, scale?, kind?)`: `net_spawn`s a drifting asteroid and registers it in `drifting_asteroids` (used by the generators and by splitting). |
 | [`assets/scripts/prefabs/asteroid.lua`](../assets/scripts/prefabs/asteroid.lua) | Prefab: builds the asteroid entity from that state alone. |
 | [`assets/scripts/asteroid_spawner.lua`](../assets/scripts/asteroid_spawner.lua) | The "director": seeds the initial field and runs the generators. Host only. |
 | [`assets/scripts/asteroid.lua`](../assets/scripts/asteroid.lua) | Per-asteroid runtime script: hooks, far-outside despawn, ring steering, ship bounce. |
@@ -47,8 +47,23 @@ single player behaves as before.
   (plain kill, no `on_death`, no loot). Non-hosts wait for that despawn.
 - **Loot and fragments.** `asteroid_on_death` runs its effects only
   `if is_local(this)`. Anything an asteroid creates when it dies (loot pickups
-  today, fragments in issue #2) must be spawned by the owner with `net_spawn`
+  and split fragments) must be spawned by the owner with `net_spawn`
   and `world = true`; never with `create_entity`.
+- **Splitting.** When a rock dies with `scale >= SPLIT.MIN_SCALE` (0.6, in
+  `asteroid_config.lua`), `split()` in `asteroid.lua` replaces it with 2-3
+  fragments of the same `kind`, each `0.45..0.6` of the parent's scale (never
+  below `ASTEROID_SCALE.min`). They leave in an even fan from the parent's
+  centre with the parent's velocity plus `30..60` px/s outward, and are placed
+  one body radius out so they don't overlap. A rock that splits drops **no**
+  loot; fragments too small to split drop their own (so mostly the smallest
+  rocks give loot). Fragments large enough can split again. Ram kills split too
+  (the ram only clears the parent's loot, which `split` doesn't use). `vanish`
+  (eaten by a planet, despawned far away) sets `dead` first, so it never
+  splits. Fragments are created with `field.spawn_drifting`, the same builder
+  the generators use: they have `despawn_far = true`, so they **count toward
+  `MAX_ALIVE`** (the cap only stops the generators; a split may briefly exceed
+  it). Ring rock fragments have no `ring`/`slot`: they drift away and the ring
+  refills the slot as usual.
 - If the host quits mid-seeding, the unseeded part of the initial field is not
   created by the new host.
 

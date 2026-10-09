@@ -132,24 +132,6 @@ local function countAlive()
   return count
 end
 
--- ---------------------------------------------------------------------
---  Creacion de un asteroide en runtime: net_spawn del prefab con el mismo
---  estado que los del campo inicial (asteroid_field.asteroid_state). El
---  duenio (host) lo borra al salir del mapa, ver asteroid.lua
--- ---------------------------------------------------------------------
-
-local function spawnAsteroid(cx, cy, vx, vy)
-  local scale = randRange(cfg.ASTEROID_SCALE.min, cfg.ASTEROID_SCALE.max)
-  local state = field.asteroid_state(cx, cy, scale, function() return vx, vy end)
-  state.despawn_far = true
-
-  local e = net_spawn("asteroid.lua", state)
-  -- Se anota ya y no en su primer update, para que el tope MAX_ALIVE valga
-  -- aunque varios generadores disparen en el mismo frame
-  local id = e and get_net_id(e)
-  if id then drifting_asteroids[id] = true end
-end
-
 local function trySpawn(gen)
   if countAlive() >= MAX_ALIVE then return end
   if isPlayerNear(gen.x, gen.y) or isOnScreen(gen.x, gen.y) then return end
@@ -160,7 +142,7 @@ local function trySpawn(gen)
   if gen.heading ~= nil then
     -- Generador de la escena: lanza hacia su heading con un poco de desvio
     local a = gen.heading + randRange(-gen.spread, gen.spread)
-    spawnAsteroid(gen.x, gen.y, math.cos(a) * speed, math.sin(a) * speed)
+    field.spawn_drifting(gen.x, gen.y, math.cos(a) * speed, math.sin(a) * speed)
     return
   end
 
@@ -171,7 +153,7 @@ local function trySpawn(gen)
   local dx, dy = tx - gen.x, ty - gen.y
   local d = math.sqrt(dx * dx + dy * dy)
 
-  spawnAsteroid(gen.x, gen.y, dx / d * speed, dy / d * speed)
+  field.spawn_drifting(gen.x, gen.y, dx / d * speed, dy / d * speed)
 end
 
 -- Crea el campo inicial publicado por la escena. Online lo reparte en

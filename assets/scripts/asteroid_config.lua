@@ -18,6 +18,19 @@ config.FIELD = {
 -- Rango de tamanos (escala aplicada al frame del sprite)
 config.ASTEROID_SCALE = { min = 0.25, max = 1.5 }
 
+-- Division de rocas grandes: al morir una roca con escala >= MIN_SCALE se
+-- parte en PIECES fragmentos del mismo tipo, cada uno de escala
+-- padre * SCALE_FACTOR (nunca menos que ASTEROID_SCALE.min; MIN_SCALE *
+-- SCALE_FACTOR.min tiene que ser >= ASTEROID_SCALE.min) que salen en
+-- abanico con SPEED px/s extra sobre la velocidad del padre. Una roca que se
+-- parte no suelta loot: lo sueltan los fragmentos que ya no se pueden partir
+config.SPLIT = {
+  MIN_SCALE = 0.6,
+  PIECES = { min = 2, max = 3 },
+  SCALE_FACTOR = { min = 0.45, max = 0.6 },
+  SPEED = { min = 30, max = 60 },
+}
+
 -- Datos del spritesheet ./assets/sprites/asteroid/asteroid.png (768x96)
 -- 8 frames de 96x96: los 3 primeros son la roca (sana / agrietada / fundida),
 -- los 5 restantes son la explosion.
