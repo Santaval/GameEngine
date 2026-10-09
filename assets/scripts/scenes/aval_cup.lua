@@ -69,7 +69,8 @@ scene_bounds = { x = map.WORLD_SIZE / 2, y = map.WORLD_SIZE / 2, radius = map.WO
 local SPAWN = map.PLAYER_SPAWN
 
 -- ---------------------------------------------------------------------
---  Jugador (mismo que solar_system.lua salvo la posicion)
+--  Jugador (la nave local de cada cliente; las demas llegan por red como
+--  remote_player.lua)
 -- ---------------------------------------------------------------------
 
 local PLAYER_SCALE = 0.2

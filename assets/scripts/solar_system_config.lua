@@ -1,7 +1,8 @@
 -- =====================================================================
---  Sistema solar: datos del mapa principal (ver docs/solar-system.md)
---  Lo usan la escena (scenes/solar_system.lua), el anillo de Saturno
---  (saturn_ring.lua) y el minimapa (solar_hud.lua).
+--  Sistema solar: datos de los cuerpos (ver docs/solar-system.md)
+--  Lo usan los planetas de los sectores Planetary de la Aval Cup
+--  (map_biomes.lua), el anillo de Saturno (saturn_ring.lua) y el minimapa
+--  (solar_hud.lua).
 --
 --  Escala comprimida: distancia al Sol = AU_OFFSET + AU_SCALE * sqrt(AU),
 --  tamano = SIZE_SCALE * radio_tierra^SIZE_EXPONENT. Mantiene el orden y el

@@ -282,10 +282,12 @@ The engine connects with `NetClient` (`src/Network/`). The server URL is
 configured with `./engine --server ws://localhost:7777` or
 `GAME_SERVER=ws://localhost:7777`, but the engine does **not** connect at
 startup: the connection is made only when the player picks **Multiplayer** (M)
-in the main menu, which waits for `welcome` before loading the solar system
+in the main menu, which waits for `welcome` before loading the Aval Cup
 scene (so a newcomer already knows whether it is the host). ENTER (single
 player) never touches the network, and without a URL the Multiplayer option
-shows a hint instead. Multiplayer only exists in the solar system scene.
+shows a hint instead. The Aval Cup is the game's only scene and runs online
+and offline with the same scripts: offline `net_is_host()` is always true,
+so every host-only path (match seed, events, drops) executes locally.
 
 Returning to the main menu disconnects (`net_disconnect()`), so the other
 players receive `peer_left` and drop that ship. If the link drops during a

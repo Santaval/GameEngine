@@ -7,7 +7,8 @@ sector and the procedural content of each chunk (asteroids, drifting rocks,
 planets and wrecks). Issue #28 adds death drops, spawn rules and the spawn
 shield (see [Death drops, spawn and shield](#death-drops-spawn-and-shield)).
 
-Scene: `assets/scripts/scenes/aval_cup.lua` (menu option "A - Aval Cup").
+Scene: `assets/scripts/scenes/aval_cup.lua` (menu options "ENTER - Aval Cup
+(single player)" and "M - Aval Cup (multiplayer)", which connects first).
 Director: `assets/scripts/aval_cup_world.lua`.
 
 ## Grid

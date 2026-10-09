@@ -429,8 +429,8 @@ globals are cleared, and every module loaded with `require` is unloaded so its
 module-level locals (cooldowns, open menus...) start fresh. Textures and fonts
 already loaded are kept and reused by id.
 
-Flow used by the game: `scenes/menu.lua` (start screen) → `scenes/solar_system.lua`
-(ENTER, or Multiplayer) or `scenes/aval_cup.lua` (A). The menu stores the chosen
+Flow used by the game: `scenes/menu.lua` (start screen) → `scenes/aval_cup.lua`
+(ENTER for single player, M for Multiplayer). The menu stores the chosen
 scene in the global `current_game_scene` (globals survive scene loads).
 `player.lua`'s `on_death` sets `game_over = true` and `game_director.lua` shows
 the game-over overlay (ENTER reloads `current_game_scene`, M returns to the

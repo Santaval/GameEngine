@@ -12,7 +12,7 @@ map. Everything is in Lua; the engine has no notion of a spawner.
 | [`assets/scripts/asteroid_spawner.lua`](../assets/scripts/asteroid_spawner.lua) | The "director": seeds the initial field and runs the generators. Host only. |
 | [`assets/scripts/asteroid.lua`](../assets/scripts/asteroid.lua) | Per-asteroid runtime script: hooks, far-outside despawn, ring steering, ship bounce. |
 | [`assets/scripts/pickup.lua`](../assets/scripts/pickup.lua), [`loot_net.lua`](../assets/scripts/loot_net.lua) | Loot pickups and how they are granted once (see [lua-api.md](lua-api.md#loot-flow-loot_netlua)). |
-| [`assets/scripts/scenes/scene_01.lua`](../assets/scripts/scenes/scene_01.lua), [`solar_system.lua`](../assets/scripts/scenes/solar_system.lua) | Build the initial field **states** into the global `scene_initial_asteroids` and register the director. |
+| [`assets/scripts/scenes/scene_01.lua`](../assets/scripts/scenes/scene_01.lua) | Legacy prototype scene: builds the initial field **states** into the global `scene_initial_asteroids` and registers the director. (The Aval Cup map generates its rocks from the match seed instead, see [aval-cup.md](aval-cup.md).) |
 
 ---
 

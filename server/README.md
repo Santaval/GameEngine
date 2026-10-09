@@ -62,7 +62,7 @@ npm run bot -- --host --pvp --duration 30
 | `--name <name>` | Name in the spawn state (default `bot-<4 hex>`). |
 | `--host` | Answer host-only requests (`snapshot_request` with a `snapshot`) while it is the host. Warns if it is not. A bot that is not answering as host still re-sends its ship `spawn` directly to the requester. |
 | `--pvp` | Broadcast `room_settings{pvp:true}` while it is the host, and take damage from player bullets. |
-| `--radius`, `--cx`, `--cy` | Circle radius (default 300) and center (default 23150, 20000: the player spawn in `scenes/solar_system.lua`), in world pixels. |
+| `--radius`, `--cx`, `--cy` | Circle radius (default 300) and center (default 10000, 10000: the player spawn in `scenes/aval_cup.lua`), in world pixels. |
 | `--fire-interval <sec>` | Seconds between shots (default 1.5). |
 | `--duration <sec>` | Exit automatically after this many seconds. |
 
