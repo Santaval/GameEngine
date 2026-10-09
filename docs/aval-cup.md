@@ -237,8 +237,9 @@ collisions.
 | `PORTAL_EXIT_WARNING` | 0.75 | Seconds the exit flashes before the ship arrives |
 | `PORTAL` | table | Stable portals: `pair_sectors` 2..4, `planet_factor` 1.5, `spacing` 1500, `spawn_clear` 1500, `tries` 300, `enter_radius` 70, `pull_radius` 250, `pull_accel` 140, `exit_offset` 120, `min_exit_speed` 150, `storm_warn_pad` 1200, draw sizes, `warp_time`, `fps`, `icon_size`, `sheets` (sprite sheet sizes and frame counts) |
 | `UNSTABLE_PORTAL_LIFE` | 45..75 | Portals (not used yet) |
-| `EVENT_INTERVAL` | 60..120 | Events (not used yet) |
-| `STORM_CONTRACTION_INTERVAL` | 180..240 | Storm (not used yet) |
+| `EVENT_INTERVAL` | 60..120 | Seconds between events in an occupied sector (see [Event director](#event-director)) |
+| `EVENTS` | table | Event director: `per_players` (3 events per 10 players), `retry` 5 s, `banner_time` 4 s, `banner` (640x80 at y 40), `banner_src` (strip inside `event_banner.png`), `icon_size` 12, `types` (name, colour, optional minimap icon and duration of each of the 6 event types) |
+| `STORM_CONTRACTION_INTERVAL` | 180..240 | Seconds between storm contractions (the director waits for #25 to register the type) |
 | `STORM_CONTRACTION_SAFE_RADIUS` | 1500 | Storm (not used yet) |
 | `DEATH_DROP_FRACTION` | 0.6 | Players (not used yet) |
 | `SPAWN_SHIELD` | 5 | Players (not used yet) |
@@ -262,7 +263,7 @@ collisions.
 | `REACTOR.clear_pad` | 250 | No rocks within `site.radius + clear_pad` |
 | `REACTOR.wrecks` | 1..2 | Wrecks per reactor chunk (replaces `WRECK_CHANCE` there) |
 | `REACTOR.ship_clearance`, `min_gap` | 120, 350 | Min clearance from a gap point to any collider; min hull gap width (tests) |
-| `REACTOR.pulse` | see [Reactor Pulse](#reactor-pulse) | Radius, push, charge, wave time, interval, warning radius |
+| `REACTOR.pulse` | see [Reactor Pulse](#reactor-pulse) | Radius, push, charge, wave time, warning radius |
 
 The minimap in `solar_hud.lua` shows the biome of each sector as a tint, the
 5 x 5 sector grid, the storm band as an inset outline, the planets and the
@@ -338,13 +339,14 @@ outward velocity (at least `min_push`, for `d < radius`) to:
 `set_velocity` is not capped by `max_speed`. A ship pushed into a rock or the
 hull takes impact damage; nothing new is needed.
 
-Trigger (interim, until the event director #24 exists): only the host fires
-pulses. A per-site timer (`pulse.interval`) and the debug key **K**
-(`debug_pulse`, nearest site to the ship) call the global
-`reactor_pulse_fire(i)`, which sends `reactor_pulse {i}` and starts the charge
-locally. Clients start the charge on `reactor_pulse` only if `from ==
-net_host_id()` (and never their own). #24 should call `reactor_pulse_fire(i)`
-instead of the timer.
+Trigger: only the host fires pulses. The [event director](#event-director)
+does it through the registry: `map_reactor_world.lua` registers
+`map_event_types.reactor_pulse`, whose `pick(sx, sy)` returns the first idle site
+in that sector (`{ i, x, y }`) and whose `fire(p)` calls the global
+`reactor_pulse_fire(i)`. That function sends `reactor_pulse {i}` and starts the
+charge locally. The debug key **K** (`debug_pulse`, nearest site to the ship)
+calls it directly. Clients start the charge on `reactor_pulse` only if `from ==
+net_host_id()` (and never their own). There is no per-site timer any more.
 
 ## Biome visuals
 
@@ -527,10 +529,12 @@ Issue #23. One-way portals to a random destination, owned by the host.
   same pair id (the minimap still shows 12 numbered pairs). It plays
   `portal-open` and cannot be entered for `open_time`. Pairs are resolved in id
   order, so every client gets the same result.
-- Stand-in for the event director (#24): the host fires a collapse every
-  `PORTAL_COLLAPSE.interval` (120-180 s; every client counts, so a new host
-  carries on), key `L` (`debug_collapse`, host only) fires one, and the global
-  `portal_collapse_fire(id)` (host only, random pair if no id) is what #24 calls.
+- Trigger: the [event director](#event-director) fires it through the registry.
+  `map_portal_world.lua` registers `map_event_types.portal_collapse`: `pick(sx,
+  sy)` picks at random a pair that is open (`open == 0`), not collapsing and has
+  an end in that sector (`{ pair, x, y }`), and `fire(p)` calls the global
+  `portal_collapse_fire(id)` (host only, random pair if no id). Key `L`
+  (`debug_collapse`, host only) fires one by hand. There is no timer here any more.
 - Networking: `portal_collapse { pair }` (host to all, ignored unless from the
   host and not from ourselves). On `snapshot_request` the host sends
   `portal_state { history, pending, unstable }` straight to the joiner: the
@@ -538,6 +542,54 @@ Issue #23. One-way portals to a random destination, owned by the host.
   warnings in progress with their time left, and the unstable portals' life.
   Every client records the history, so a migrated host has the same state.
 - Visuals: `portal-collapse` (also used for unstable portals) and `portal-open`.
+
+## Event director
+
+`map_event_director.lua` (invisible director, script only) keeps the map alive.
+Only the host fires events; every client keeps the same state, so a migrated
+host carries on.
+
+- Types: `EVENTS.types` knows all 6 (Reactor Pulse, Portal Collapse, Storm
+  Contraction, Pal Signal, Debris Rain, Overcharged Planet) with name, colour,
+  optional minimap icon and duration. A type only fires once its script
+  registers a hook. Today only `reactor_pulse` and `portal_collapse` do; #25
+  and #26 plug in without touching the director.
+- Hook contract, global `map_event_types[type]` (the script sets
+  `map_event_types = map_event_types or {}` first):
+  `pick(sx, sy) -> params | nil` (host: an eligible target in that sector;
+  `params` must include `x, y` for the minimap icon), `fire(params) -> bool`
+  (host: start the gameplay, it may send its own net message) and optional
+  `on_start(ev)` / `on_end(ev)` that run on EVERY client.
+- Sector rule: each sector occupied by a ship (the local one plus every
+  `player_ships`) has a timer that starts at `EVENT_INTERVAL` and counts down
+  only while the sector is occupied. At 0 the host picks at random among the
+  registered types (except Storm Contraction) that are not the last one fired in
+  that sector, are not already active there and have a target (`pick`). If it
+  starts one the timer resets to `EVENT_INTERVAL`; if nothing is eligible or the
+  cap is reached, it retries in `EVENTS.retry` (5 s).
+- Cap: `max(1, ceil(players * 3 / 10))` active events (1 with one player).
+- Storm Contraction: its own timer (`STORM_CONTRACTION_INTERVAL`). At 0, if the
+  type is not registered it just resets. Otherwise the host fires it in a random
+  occupied sector whose last event was not a contraction, only if none is
+  active and the cap allows; on failure it retries in 5 s.
+- Events live in the global `map_events` (`id -> { id, type, sx, sy, params, t }`,
+  `t` = seconds left). Every client counts `t` down; the host ends the event at 0.
+  The id is `<playerId>#<n>` so ids are unique across hosts.
+- Net (custom types, see [multiplayer-protocol.md](multiplayer-protocol.md)):
+  `event_start`, `event_end` (host to all) and `event_state` (host to a joiner,
+  answering `snapshot_request`: active events and the last type per sector, no
+  banners; buffered if it arrives before `map_seed`). Clients accept them only
+  from the host and never their own.
+- Banner: one at a time for `banner_time` (4 s, 0.3 s fades), centred at the top:
+  the `event_banner.png` strip (`banner_src` crops its transparent padding),
+  "PAL ENTERTAINMENTS" and "<NAME>  -  SECTOR (sx,sy)" in the event colour (the
+  16 px font if the title would not fit the box). The reactor and portal
+  warnings sit lower, at 20% of the screen height.
+- Minimap: each active event blinks the outline of its sector in the event
+  colour and draws its icon at `params.x, params.y` (sector centre if absent);
+  types without an icon get a filled square.
+- Debug key **J** (`debug_event`, host only): sets the timer of the local ship's
+  sector to 0. The normal rules still apply (cap, last type, target).
 
 ## Known gap
 

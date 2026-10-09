@@ -36,6 +36,12 @@ local_portal_transit = false
 -- recien llegado (map_portal_world.lua)
 unstable_portals = {}
 unstable_portal_life_fix = {}
+-- Eventos del mapa (#24): map_events es id -> evento activo (lo lleva
+-- map_event_director.lua en todos los clientes; el minimapa lo lee) y
+-- map_event_types el registro de tipos: cada script que implementa un evento
+-- registra aqui su pick / fire (ver docs/aval-cup.md)
+map_events = {}
+map_event_types = {}
 
 -- Sin cinturones ni generadores: nadie crea asteroides en runtime salvo los
 -- fragmentos de una roca partida
@@ -134,6 +140,7 @@ local DIRECTORS = {
   "./assets/scripts/map_visuals.lua",
   "./assets/scripts/map_storm_world.lua",
   "./assets/scripts/map_portal_world.lua",
+  "./assets/scripts/map_event_director.lua",
   "./assets/scripts/game_director.lua",
 }
 for _, path in ipairs(DIRECTORS) do
@@ -185,6 +192,10 @@ scene = {
     {assetId="nexus", filePath="./assets/sprites/portals/nexus.png"},
     {assetId="icon-portal-unstable", filePath="./assets/sprites/hud/icon_portal_unstable.png"},
     {assetId="icon-nexus", filePath="./assets/sprites/hud/icon_nexus.png"},
+    {assetId="event-banner", filePath="./assets/sprites/hud/event_banner.png"},
+    {assetId="icon-event-contraction", filePath="./assets/sprites/hud/icon_event_contraction.png"},
+    {assetId="icon-event-pal-signal", filePath="./assets/sprites/hud/icon_event_pal_signal.png"},
+    {assetId="icon-event-debris", filePath="./assets/sprites/hud/icon_event_debris.png"},
   },
 
   -- El tamaño se fija al cargar: hace falta un fontId por cada tamaño
@@ -211,6 +222,7 @@ scene = {
     {name = "toggle_pvp", key = 112},
     {name = "debug_pulse", key = 107},
     {name = "debug_collapse", key = 108},
+    {name = "debug_event", key = 106},
   },
 
   mouse = {

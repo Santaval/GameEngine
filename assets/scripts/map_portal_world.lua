@@ -16,8 +16,9 @@
 --  - Colapso: tras PORTAL_COLLAPSE.warning s un par estable parpadea como
 --    inestable y se cierra; su sitio vuelve a la cola y el par (mismo id)
 --    se abre en el primer sitio libre de otros sectores. Siempre hay 12.
---    portal_collapse_fire(id) lo dispara (el director de eventos, #24); hasta
---    entonces lo hacen un temporizador del host y la tecla L (debug_collapse).
+--    Lo dispara el director de eventos (#24): este script registra el tipo
+--    portal_collapse en map_event_types (pick / fire, que llama a
+--    portal_collapse_fire(id)); la tecla L (debug_collapse) lo hace a mano.
 --  - Nexus: 4 bocas; el angulo de entrada elige la salida (E, S, O, N).
 --  - Inestables: entidades unstable_portal.lua (net_spawn world = true) de
 --    ida, a un punto al azar; destruyen las balas. El host las repone.
@@ -78,8 +79,7 @@ local collapsing = {}
 -- Efectos de cierre { x, y, angle, t } y estado visual de cada inestable
 local collapse_fx = {}
 local ustate = {}
--- Temporizador de colapso, tiradas del host para los inestables
-local collapse_timer = 0
+-- Tiradas del host para los inestables
 local spawn_cooldown = 1
 local spawn_roll = 1
 -- portal_state recibido antes de tener la semilla, y si ya se aplico uno
@@ -551,8 +551,8 @@ local function start_collapse(id, t)
   return true
 end
 
--- Dispara un colapso: solo el host. Lo llamara el director de eventos (#24);
--- mientras tanto lo llaman el temporizador y la tecla L. Sin id elige un par
+-- Dispara un colapso: solo el host. Lo llama el director de eventos (#24, via
+-- map_event_types.portal_collapse) y la tecla L. Sin id elige un par
 -- al azar que no este colapsando. Devuelve el id o false
 function portal_collapse_fire(id)
   if sites == nil or not net_is_host() then return false end
@@ -568,6 +568,30 @@ function portal_collapse_fire(id)
   if net_is_online() then net_send("portal_collapse", { pair = id }) end
   return id
 end
+
+-- Registro en el director de eventos (#24): pick elige un par abierto de este
+-- sector que no este colapsando y fire inicia su colapso
+map_event_types = map_event_types or {}
+map_event_types.portal_collapse = {
+  pick = function(sx, sy)
+    if sites == nil then return nil end
+    local found = {}
+    for id = 1, cfg.STABLE_PORTAL_PAIRS do
+      local pair = live.pairs[id]
+      if pair ~= nil and collapsing[id] == nil and pair.open == 0 then
+        local e = nil
+        if pair.a.sx == sx and pair.a.sy == sy then e = pair.a
+        elseif pair.b.sx == sx and pair.b.sy == sy then e = pair.b end
+        if e ~= nil then found[#found + 1] = { pair = id, x = e.x, y = e.y } end
+      end
+    end
+    if #found == 0 then return nil end
+    return found[math.random(1, #found)]
+  end,
+  fire = function(p)
+    return portal_collapse_fire(p.pair) ~= false
+  end,
+}
 
 -- Solo se acepta el colapso del host, y nunca el propio (el host ya lo arranco)
 net_on("portal_collapse", function(data, from)
@@ -644,12 +668,6 @@ local function step_collapses(dt)
     if pair ~= nil and pair.open > 0 then pair.open = math.max(0, pair.open - dt) end
   end
 
-  -- Todos llevan la cuenta (si el host cae, el nuevo sigue); solo el host dispara
-  collapse_timer = collapse_timer - dt
-  if collapse_timer <= 0 then
-    collapse_timer = rand_range(PC.interval)
-    portal_collapse_fire()
-  end
   if debug_pressed() and net_is_host() then
     local id = portal_collapse_fire()
     if id then print(string.format("[portal] colapso del par #%d (debug)", id)) end
@@ -820,7 +838,6 @@ local function step()
     for _, slot in ipairs(sites.reserve) do live.pool[#live.pool + 1] = slot end
     portal_sites = { ends = live.ends, nexus = sites.nexus, collapsing = collapsing }
     rebuild_ends()
-    collapse_timer = rand_range(PC.interval)
     spawn_roll = math.random(UP.count.min, UP.count.max)
     if incoming_state ~= nil then
       apply_state(incoming_state)

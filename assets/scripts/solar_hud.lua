@@ -180,6 +180,32 @@ local function draw_minimap(planets)
       end
     end
   end
+  -- Eventos activos (map_events, los lleva map_event_director): marco del
+  -- sector que parpadea y el icono del objetivo (cuadrado de color sin icono)
+  if scene_map ~= nil and map_events ~= nil then
+    local size = scene_map.SECTOR_SIZE * k
+    local isize = scene_map.EVENTS.icon_size
+    for _, ev in pairs(map_events) do
+      local def = scene_map.EVENTS.types[ev.type]
+      if def ~= nil then
+        local c = def.color
+        if math.floor(ev.t * 2) % 2 == 0 then
+          draw_rect(ox + ev.sx * size, oy + ev.sy * size, size, size, c[1], c[2], c[3], 255, false)
+        end
+        local mx, my
+        if type(ev.params.x) == "number" and type(ev.params.y) == "number" then
+          mx, my = to_map(ev.params.x, ev.params.y, ox, oy)
+        else
+          mx, my = ox + (ev.sx + 0.5) * size, oy + (ev.sy + 0.5) * size
+        end
+        if def.icon ~= nil then
+          draw_image(def.icon, mx - isize / 2, my - isize / 2, isize, isize, 255, "hud")
+        else
+          draw_rect(mx - isize / 2, my - isize / 2, isize, isize, c[1], c[2], c[3], 255)
+        end
+      end
+    end
+  end
   for _, p in ipairs(planets) do
     local mx, my = to_map(p.x, p.y, ox, oy)
     local dot = math.max(MIN_DOT, math.min(MAX_DOT, p.body_radius * 2 * k * 4))

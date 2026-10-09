@@ -156,12 +156,9 @@ config.NEXUS = {
 
 -- Colapso de portal (#23): tras `warning` segundos de aviso un par estable se
 -- cierra y se abre uno nuevo en otro sector (siempre hay STABLE_PORTAL_PAIRS)
---   interval: segundos entre colapsos automaticos del host (hasta que el
---     director de eventos, #24, llame a portal_collapse_fire)
 --   reserve_pairs: sitios de repuesto que genera map_portals.lua
 config.PORTAL_COLLAPSE = {
   warning = 15,
-  interval = { min = 120, max = 180 },
   reserve_pairs = 6,
 }
 
@@ -248,9 +245,8 @@ config.WRECK_BIOMES = { "debris", "reactor" }
 --   pulse: Pulso del Reactor. radius/max_push/min_push: alcance (px) y
 --     velocidad (px/s) que se suma hacia afuera, max_push pegado al nucleo
 --     y min_push como suelo; charge: segundos de carga antes del empuje;
---     wave_time: segundos que tarda la onda en llegar al radio; interval:
---     segundos entre pulsos automaticos del host (hasta que el director de
---     eventos los dispare); warn_radius: a esta distancia sale el aviso
+--     wave_time: segundos que tarda la onda en llegar al radio; warn_radius:
+--     a esta distancia sale el aviso (el director de eventos, #24, lo dispara)
 config.REACTOR = {
   variants = { ring = 1, hull = 1 },
   ring_size = 2800,
@@ -265,8 +261,56 @@ config.REACTOR = {
   pulse = {
     radius = 1800, max_push = 450, min_push = 120,
     charge = 2.0, wave_time = 0.6,
-    interval = { min = 45, max = 75 },
     warn_radius = 2400,
+  },
+}
+
+-- Director de eventos (#24, ver map_event_director.lua y docs/aval-cup.md): el
+-- host lanza eventos por sector ocupado cada EVENT_INTERVAL s y la contraccion
+-- de la tormenta cada STORM_CONTRACTION_INTERVAL s
+--   per_players: tope de eventos activos = max(1, ceil(jugadores x events /
+--     players))
+--   retry: segundos hasta reintentar un sector (o la contraccion) que no
+--     encontro nada elegible o topo con el limite
+--   banner_time / banner: segundos que se ve cada aviso y su caja en pantalla
+--     (ancho, alto y distancia al borde de arriba, px); banner_src: la tira
+--     dentro de event_banner.png (1983x793, con margen transparente)
+--   icon_size: lado (px) del icono del minimapa
+--   types: nombre, color (r, g, b), icono del minimapa (sin icono se dibuja un
+--     cuadrado del color) y duracion (s) de cada tipo. El Pulso y el Colapso
+--     duran lo que dura su efecto + un margen; el resto, lo que fije #25 y #26
+config.EVENTS = {
+  per_players = { events = 3, players = 10 },
+  retry = 5,
+  banner_time = 4,
+  banner = { w = 640, h = 80, y = 40 },
+  banner_src = { x = 10, y = 270, w = 1964, h = 245 },
+  icon_size = 12,
+  types = {
+    reactor_pulse = {
+      name = "PULSO DEL REACTOR", color = { 255, 70, 50 },
+      duration = config.REACTOR.pulse.charge + config.REACTOR.pulse.wave_time + 4,
+    },
+    portal_collapse = {
+      name = "COLAPSO DE PORTAL", color = { 199, 125, 255 }, icon = "icon-portal-unstable",
+      duration = config.PORTAL_COLLAPSE.warning + config.UNSTABLE_PORTAL.collapse_time,
+    },
+    storm_contraction = {
+      name = "CONTRACCION DE TORMENTA", color = { 150, 30, 60 }, icon = "icon-event-contraction",
+      duration = 90,
+    },
+    pal_signal = {
+      name = "SENAL DE PAL", color = { 255, 255, 255 }, icon = "icon-event-pal-signal",
+      duration = 90,
+    },
+    debris_rain = {
+      name = "LLUVIA DE ESCOMBROS", color = { 255, 90, 90 }, icon = "icon-event-debris",
+      duration = 30,
+    },
+    overcharged_planet = {
+      name = "PLANETA SOBRECARGADO", color = { 80, 200, 255 },
+      duration = 60,
+    },
   },
 }
 

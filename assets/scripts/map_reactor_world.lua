@@ -8,9 +8,11 @@
 --    empuja hacia afuera todo lo que esta dentro del radio: la nave local, las
 --    rocas del chunk y los asteroides de red propios. Los choques que provoca
 --    el empuje hacen dano por el camino normal (ImpactDamage).
---  - Disparo: el host lanza el pulso con reactor_pulse_fire(i) (el director de
---    eventos lo usara) y avisa a todos con "reactor_pulse". Mientras tanto un
---    temporizador por sitio y la tecla K (debug_pulse) lo disparan.
+--  - Disparo: lo decide el director de eventos (#24): registra el tipo
+--    reactor_pulse en map_event_types, el host elige un sitio del sector con
+--    pick(sx, sy) y lo lanza con fire(p), que llama a reactor_pulse_fire(i) y
+--    avisa a todos con "reactor_pulse". La tecla K (debug_pulse) lo dispara a
+--    mano en el sitio mas cercano.
 --  Ver docs/aval-cup.md.
 -- =====================================================================
 
@@ -19,6 +21,7 @@ local reactor = require("map_reactor")
 local data = require("map_reactor_data")
 local zones = require("player_gravity_zones")
 local ui = require("ui_helpers")
+local grid = require("map_grid")
 
 local R = cfg.REACTOR
 local P = R.pulse
@@ -38,17 +41,11 @@ local WAVE_LAST_FRAME = 7
 
 local built = false
 local sites = nil
--- Estado por sitio: { phase = "idle"|"charge"|"wave", t, timer, core }
+-- Estado por sitio: { phase = "idle"|"charge"|"wave", t, core }
 local states = {}
 local clock = 0
 local debug_pressed = ui.edge("debug_pulse")
 local last_error = nil
-
--- Segundos hasta el siguiente pulso automatico (solo lo usa el host). Esto es
--- de ejecucion, no de generacion del mapa: math.random esta bien
-local function next_interval()
-  return P.interval.min + math.random() * (P.interval.max - P.interval.min)
-end
 
 -- Frame i de la hoja del nucleo (core_cols por fila)
 local function set_frame(core, i)
@@ -69,7 +66,7 @@ local function build()
       colliders = colliders + 1
     end
     states[i] = {
-      phase = "idle", t = 0, timer = next_interval(),
+      phase = "idle", t = 0,
       core = spawn_local("reactor_core.lua", site.core),
     }
   end
@@ -131,8 +128,8 @@ local function start_charge(i)
   return true
 end
 
--- Dispara el pulso del sitio i: solo el host. Lo llamara el director de eventos;
--- mientras tanto lo llaman el temporizador y la tecla K. Devuelve true si salio
+-- Dispara el pulso del sitio i: solo el host. Lo llama el director de eventos
+-- (via map_event_types.reactor_pulse) y la tecla K. Devuelve true si salio
 function reactor_pulse_fire(i)
   if not built or not net_is_host() then return false end
   if not start_charge(i) then return false end
@@ -148,6 +145,25 @@ net_on("reactor_pulse", function(data, from)
   if not built then return end
   start_charge(math.tointeger(data.i) or -1)
 end)
+
+-- Registro en el director de eventos (#24): pick elige un sitio en reposo del
+-- sector (sx, sy) y fire lo lanza. Ver map_event_director.lua
+map_event_types = map_event_types or {}
+map_event_types.reactor_pulse = {
+  pick = function(sx, sy)
+    if not built then return nil end
+    for i, site in ipairs(sites) do
+      local ssx, ssy = grid.world_to_sector(site.x, site.y)
+      if ssx == sx and ssy == sy and states[i].phase == "idle" then
+        return { i = i, x = site.x, y = site.y }
+      end
+    end
+    return nil
+  end,
+  fire = function(p)
+    return reactor_pulse_fire(p.i)
+  end,
+}
 
 -- Aviso centrado mientras el sitio carga y la nave esta a warn_radius
 local function draw_warning(site)
@@ -175,13 +191,6 @@ end
 local function step_site(i, site, st, dt)
   if st.phase == "idle" then
     set_frame(st.core, math.floor(clock / IDLE_PERIOD + i) % 2)
-    if net_is_host() then
-      st.timer = st.timer - dt
-      if st.timer <= 0 then
-        st.timer = next_interval()
-        reactor_pulse_fire(i)
-      end
-    end
 
   elseif st.phase == "charge" then
     st.t = st.t + dt
@@ -205,7 +214,6 @@ local function step_site(i, site, st, dt)
     zones.draw_ring(site, radius, WAVE_COLOR, math.floor(WAVE_ALPHA * (1 - f)), WAVE_DOT_SPACING)
     if st.t >= P.wave_time then
       st.phase = "idle"
-      st.timer = next_interval()
     end
   end
 end
