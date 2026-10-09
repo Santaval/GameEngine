@@ -12,6 +12,7 @@
 #include "../Components/TransformComponent.hpp"
 #include "../EventManager/EventManager.hpp"
 #include "../Events/CollisionEvent.hpp"
+#include "../Util/Culling.hpp"
 
 class CollisionSystem : public System {
   private:
@@ -60,6 +61,8 @@ class CollisionSystem : public System {
       }
 
       for (auto entity : entities) {
+        // Un cuerpo dormido no entra al broadphase: ningun par con el se prueba
+        if (isDormant(entity)) continue;
         const auto& collider = entity.getComponent<CircleColliderComponent>();
         const auto& transform = entity.getComponent<TransformComponent>();
 

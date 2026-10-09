@@ -18,6 +18,7 @@
 #include "../Components/EquipmentComponent.hpp"
 #include "../Components/InventoryComponent.hpp"
 #include "../Components/LootComponent.hpp"
+#include "../Components/CullComponent.hpp"
 
 
 namespace {
@@ -258,6 +259,13 @@ void SceneLoader::addGravityComponent(Entity entity, const sol::table& component
   entity.addComponent<GravityComponent>(mass, attracts, affected, range);
 }
 
+void SceneLoader::addCullComponent(Entity entity, const sol::table& components) {
+  // cull = true: la entidad se duerme fuera del area activa (ver Util/Culling.hpp)
+  if (!components["cull"].get_or(false)) return;
+
+  entity.addComponent<CullComponent>();
+}
+
 void SceneLoader::addEquipmentComponent(Entity entity, const sol::table& components) {
   sol::optional<sol::table> hasEquipment = components["equipment"];
   if (hasEquipment == sol::nullopt) return;
@@ -368,6 +376,7 @@ Entity SceneLoader::buildEntity(sol::state& lua, const sol::table& entityDef, Re
     addHealthComponent(newEntity, components);
     addDamageComponent(newEntity, components);
     addGravityComponent(newEntity, components);
+    addCullComponent(newEntity, components);
     addEquipmentComponent(newEntity, components);
     addInventoryComponent(newEntity, components);
     addLootComponent(newEntity, components);

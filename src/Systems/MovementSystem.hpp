@@ -4,6 +4,7 @@
 #include "../ECS/System.hpp"
 #include "../Components/RigidBodyComponent.hpp"
 #include "../Components/TransformComponent.hpp"
+#include "../Util/Culling.hpp"
 
 class MovementSystem : public System {
     public:
@@ -14,6 +15,7 @@ class MovementSystem : public System {
 
     void update(double dt) {
         for (auto entity : this->getEntities()) {
+            if (isDormant(entity)) continue;
             auto& transform = entity.getComponent<TransformComponent>();
             auto& rigidBody = entity.getComponent<RigidBodyComponent>(); // ya no puede ser const&
 

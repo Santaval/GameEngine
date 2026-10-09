@@ -133,8 +133,8 @@ the server. "Broadcast" excludes the sender.
 | Type | Direction | Sender | Fields | Notes |
 | --- | --- | --- | --- | --- |
 | `snapshot_request` | client -> all | joining player | (none) | A plain broadcast; the server does not treat it specially. The host answers with `snapshot`; other players answer with a direct `spawn` of their own ship. Sent by the engine after every scene load and reconnect. |
-| `snapshot` | client -> client | host | `entities[]`, `settings` | Direct (`to` = requester). Each entity is `{ netId, owner, script, state }`; `settings` is `{ pvp }`. |
-| `room_settings` | client -> all | host | `pvp` | Changes room-wide settings. The server does not enforce host-only; clients drop it unless `from` is the current host. |
+| `snapshot` | client -> client | host | `entities[]`, `settings` | Direct (`to` = requester). Each entity is `{ netId, owner, script, state }`; `settings` is `{ pvp, seed? }` (`seed` is the Aval Cup map seed, omitted while unset). |
+| `room_settings` | client -> all | host | `pvp`, `seed?` | Changes room-wide settings. A client keeps the value of any field the message omits. The server does not enforce host-only; clients drop it unless `from` is the current host. |
 
 ### Custom
 
@@ -146,6 +146,13 @@ the server. "Broadcast" excludes the sender.
 { "t": "custom", "from": "k3f9", "seq": 7, "ts": 1718000000456,
   "type": "chat", "data": { "text": "hola" } }
 ```
+
+Custom types used by the Aval Cup map (`aval_cup_world.lua`, see [aval-cup.md](aval-cup.md)):
+
+| `type` | Direction | Sender | `data` | Notes |
+| --- | --- | --- | --- | --- |
+| `map_rock_destroyed` | all | host | `{ id }` | A chunk rock (`"cx:cy:i"`) died on the host. Clients drop it unless `from` is the host. |
+| `map_destroyed` | direct | host | `{ ids[] }` | Answer to a late joiner's `snapshot_request`: every destroyed rock id so far, in batches of 400. |
 
 ---
 
@@ -295,7 +302,7 @@ state (`myPlayerId`, `hostId`, `peers`), logs and calls handlers registered with
 ### World snapshot
 
 The engine host answers `snapshot_request` with `snapshot` messages
-(`to` = requester, `settings.pvp`). Each entity it owns with a prefab script
+(`to` = requester, `settings.pvp` and `settings.seed`). Each entity it owns with a prefab script
 (and HP > 0) becomes `{netId, owner, script, state}`, where `state` is the
 state it was announced with overlaid with the current `pos`, `rot`, `vel`,
 `acc` and `hp`. The list is split in chunks so every message stays under about

@@ -6,6 +6,7 @@
 #include "../ECS/System.hpp"
 #include "../Components/AnimationComponent.hpp"
 #include "../Components/SpriteComponent.hpp"
+#include "../Util/Culling.hpp"
 
 class AnimationSystem : public System {
 
@@ -18,6 +19,7 @@ class AnimationSystem : public System {
 
     void update() {
       for (auto entity : this->getEntities()) {
+        if (isDormant(entity)) continue;
         auto& animation = entity.getComponent<AnimationComponent>();
         auto& sprite = entity.getComponent<SpriteComponent>();
 

@@ -53,6 +53,7 @@ for _, p in ipairs(PLANETS) do
   p.body_radius = PLANET_BODY_RADIUS * p.scale
 end
 scene_planets = PLANETS
+scene_map = nil
 -- Esta escena usa los generadores y limites por defecto del spawner (FIELD):
 -- se borran por si quedaron de la escena del sistema solar
 scene_asteroid_generators = nil

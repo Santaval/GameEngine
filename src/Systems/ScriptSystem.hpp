@@ -10,6 +10,7 @@
 #include "../Events/CollisionEvent.hpp"
 #include "../EventManager/EventManager.hpp"
 #include "../Util/Damage.hpp"
+#include "../Util/Culling.hpp"
 #include "../Binding/LuaBinding.hpp"
 
 class ScriptSystem : public System {
@@ -20,6 +21,8 @@ class ScriptSystem : public System {
 
   void update(sol::state& lua) {
    for(auto entity : this->getEntities()) {
+    // Roca de un chunk lejano: dormida
+    if(isDormant(entity)) continue;
     const auto& script = entity.getComponent<ScriptComponent>();
 
     if(script.update != sol::lua_nil) {
@@ -62,5 +65,6 @@ class ScriptSystem : public System {
     registerLootBindings(lua);
     registerGameBindings(lua);
     registerNetworkBindings(lua);
+    registerCullingBindings(lua);
   }
 };

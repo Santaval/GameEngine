@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+#include <random>
 #include <string>
 #include <tuple>
 #include <sol/sol.hpp>
@@ -22,8 +24,16 @@ inline std::tuple<int, int> getWindowSize() {
   return { game.getWindowWidth(), game.getWindowHeight() };
 }
 
+// Entero aleatorio de 31 bits, para semillas (el host elige la del mapa). Lua no
+// tiene os ni io, y math.random no sirve: es rand() de C y comparte el flujo.
+inline int randomSeed() {
+  static std::random_device device;
+  return static_cast<int>(device() & 0x7FFFFFFFu);
+}
+
 inline void registerGameBindings(sol::state& lua) {
   lua.set_function("load_scene", loadScene);
   lua.set_function("quit_game", quitGame);
   lua.set_function("get_window_size", getWindowSize);
+  lua.set_function("random_seed", randomSeed);
 }

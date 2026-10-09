@@ -54,6 +54,11 @@ return function(state)
     -- la variante elegida (ademas los frames 4-8 son la explosion).
   }
 
+  -- Roca de un chunk del mapa: se duerme fuera del area activa (set_active_area)
+  if state.cull then
+    components.cull = true
+  end
+
   -- Las rocas del anillo no sienten la gravedad: giran de forma cinematica
   if not state.ring then
     components.gravity = {

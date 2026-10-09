@@ -13,6 +13,7 @@ entirely in Lua.
 | [gravity.md](gravity.md) | Mass-based attraction between planets, ship, asteroids and bullets. |
 | [asteroid-spawner.md](asteroid-spawner.md) | Generators outside the map that keep spawning asteroids at random intervals. |
 | [multiplayer-protocol.md](multiplayer-protocol.md) | Wire protocol and ownership rules for the relay server and multiplayer clients. |
+| [aval-cup.md](aval-cup.md) | Aval Cup map: world grid, sectors, chunks, deterministic seed and culling. |
 
 ---
 
@@ -25,11 +26,16 @@ make deps   # fetches IXWebSocket + nlohmann/json (make build does it automatica
 make test   # unit test for NetworkRegistry (ECS only, no SDL)
 make clean
 make clean-deps   # forces IXWebSocket to be rebuilt
+make lua-info     # prints which Lua pkg-config/headers were detected
 ```
 
 Needs `libsdl2-dev`, `libsdl2-image-dev`, `libsdl2-ttf-dev`, `zlib1g-dev`, `libssl-dev` and a
 Lua dev package (`liblua5.3-dev` or 5.4). GLM, sol2 and the Lua headers are
-vendored in `libs/`. IXWebSocket and nlohmann/json are not committed:
+vendored in `libs/`. The Makefile reads `LUA_VERSION_NUM` from whichever
+`lua.h` the compiler actually resolves and passes it to sol2 as
+`-DSOL_LUA_VERSION`; if sol2 errors on `lua_newuserdatauv` or `LUA_GCGEN`, it
+was built for 5.4 against 5.3 headers -- run `make lua-info` to see what was
+picked up. IXWebSocket and nlohmann/json are not committed:
 `scripts/fetch-deps.sh` downloads pinned versions into `libs/` (needs `curl`),
 and IXWebSocket is compiled once, with TLS via OpenSSL, into
 `libs/IXWebSocket/libixwebsocket-tls.a`.

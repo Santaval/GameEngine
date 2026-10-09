@@ -7,6 +7,7 @@
 #include "../Network/WorldSync.hpp"
 #include "../Network/NetworkRegistry.hpp"
 #include "../Network/NetworkScripting.hpp"
+#include "../Util/Culling.hpp"
 #include "../Components/TransformComponent.hpp"
 #include "../Components/SpriteComponent.hpp"
 #include "../Components/RigidBodyComponent.hpp"
@@ -173,7 +174,8 @@ void Game::setup() {
         this->worldSync->onCustom(msg);
     });
     this->netClient->subscribe("snapshot_request", [this](const nlohmann::json& msg) {
-        this->worldSync->onSnapshotRequest(msg, this->damageSync->pvpEnabled());
+        this->worldSync->onSnapshotRequest(msg, this->damageSync->pvpEnabled(),
+            this->damageSync->getMatchSeed());
     });
 
     sol::table loaded = this->lua["package"]["loaded"];
@@ -223,6 +225,8 @@ void Game::loadScene(const std::string& scenePath) {
     this->rectBuffer.clear();
     this->camera.x = 0;
     this->camera.y = 0;
+    // El area activa es de la escena que se descarga (set_active_area la vuelve a fijar)
+    activeArea().enabled = false;
 
     // Los modulos cacheados por require guardan estado en sus locals
     // (cooldowns, menus abiertos...): se descargan para empezar limpio

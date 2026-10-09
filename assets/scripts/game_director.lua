@@ -59,7 +59,7 @@ function update()
   local to_menu = menu_pressed()
 
   if restart then
-    load_scene(GAME_SCENE)
+    load_scene(current_game_scene or GAME_SCENE)
   elseif to_menu then
     load_scene(MENU_SCENE)
   end

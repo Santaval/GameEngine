@@ -179,6 +179,7 @@ static void testSnapshot() {
   CHECK(f.sent[0]["t"] == "snapshot");
   CHECK(f.sent[0]["to"] == "late");
   CHECK(f.sent[0]["settings"]["pvp"] == true);
+  CHECK(!f.sent[0]["settings"].contains("seed"));
   CHECK(f.sent[0]["entities"].size() == 1);
   auto& e = f.sent[0]["entities"][0];
   CHECK(e["netId"] == "me:1");
@@ -195,6 +196,16 @@ static void testSnapshot() {
   f.online = false;
   f.sync.onSnapshotRequest(req, false);
   CHECK(f.sent.empty());
+}
+
+static void testSnapshotSeed() {
+  Fixture f("me");
+  f.sync.onWelcome("me", "me");
+  // Sin entidades igual se responde, y lleva la semilla del mapa
+  f.sync.onSnapshotRequest({{"from", "late"}}, true, 12345);
+  CHECK(f.sent.size() == 1);
+  CHECK(f.sent[0]["settings"]["pvp"] == true);
+  CHECK(f.sent[0]["settings"]["seed"] == 12345);
 }
 
 static void testSnapshotNonHost() {
@@ -233,6 +244,7 @@ int main() {
   testCustomOnlyFromHost();
   testAnnounceWorldReset();
   testSnapshot();
+  testSnapshotSeed();
   testSnapshotNonHost();
   testSnapshotChunks();
   if (failures == 0) std::cout << "WorldSyncTest: all tests passed" << std::endl;

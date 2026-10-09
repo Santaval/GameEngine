@@ -31,6 +31,9 @@ solar.validate(PLANETS)
 -- Globals para los modulos del jugador (zonas, mineria), el anillo
 -- de Saturno y el minimapa: Lua no puede listar entidades
 scene_planets = PLANETS
+-- Sin mapa de la Aval Cup: el minimapa usa el sistema solar (scene_map es global y
+-- sobrevive a la carga de escenas)
+scene_map = nil
 
 -- Estado compartido del mundo en red (lo rellenan asteroid.lua y
 -- remote_player.lua, lo leen el spawner y los enemigos). Se reinicia al

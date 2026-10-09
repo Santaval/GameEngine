@@ -10,6 +10,7 @@
 #include "../Components/TransformComponent.hpp"
 #include "../Components/CircleColliderComponent.hpp"
 #include "../Components/SpriteComponent.hpp"
+#include "../Util/Culling.hpp"
 
 class GravitySystem : public System {
   private:
@@ -60,6 +61,7 @@ class GravitySystem : public System {
 
       std::vector<Attractor> attractors;
       for (auto entity : entities) {
+        if (isDormant(entity)) continue;
         auto& gravity = entity.getComponent<GravityComponent>();
         if (gravity.attracts && gravity.mass > 0.0f) {
           attractors.push_back({ entity.getId(), centerOf(entity), gravity.mass, gravity.range });
@@ -69,6 +71,7 @@ class GravitySystem : public System {
       if (attractors.empty()) return;
 
       for (auto entity : entities) {
+        if (isDormant(entity)) continue;
         auto& gravity = entity.getComponent<GravityComponent>();
         if (!gravity.affected || !entity.hasComponent<RigidBodyComponent>()) continue;
 

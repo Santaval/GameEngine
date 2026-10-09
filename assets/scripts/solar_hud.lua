@@ -2,11 +2,14 @@
 --  HUD de navegacion del sistema solar (entidad director, solo script):
 --  minimapa abajo a la derecha con el Sol, los planetas (color segun su
 --  mineral), los cinturones y la nave, y el nombre de cada planeta en el
---  mundo debajo de su cuerpo.
+--  mundo debajo de su cuerpo. En la Aval Cup (scene_map ~= nil) el minimapa
+--  cubre el mundo cuadrado y dibuja la rejilla de sectores y la franja de
+--  tormenta en vez de los cinturones.
 -- =====================================================================
 
 local solar = require("solar_system_config")
 local ui = require("ui_helpers")
+local grid = require("map_grid")
 
 local MAP_SIZE = 220
 local MARGIN = 20
@@ -21,6 +24,8 @@ local MINERAL_COLORS = {
 local SUN_COLOR = { 255, 210, 80 }
 local BELT_COLOR = { 130, 120, 100 }
 local PLAYER_COLOR = { 255, 255, 0 }
+local SECTOR_LINE_COLOR = { 255, 255, 255, 45 }
+local STORM_COLOR = { 150, 30, 60, 200 }
 
 local BELT_DOTS = 72
 -- Tamano de un punto de planeta en el minimapa: px de mundo por px de punto,
@@ -41,11 +46,22 @@ local function color_for(planet)
   return MINERAL_COLORS[planet.mineral] or { 255, 255, 255 }
 end
 
+-- Escala del minimapa (px de pantalla por px de mundo) y el punto del mundo
+-- que cae en su esquina sup-izq: el cuadrado del mundo en la Aval Cup, el
+-- cuadrado que circunscribe al sistema solar en el resto
+local function map_frame()
+  if scene_map ~= nil then
+    return MAP_SIZE / scene_map.WORLD_SIZE, 0, 0
+  end
+  return MAP_SIZE / (2 * solar.MAP_RADIUS),
+         solar.SUN_CENTER.x - solar.MAP_RADIUS,
+         solar.SUN_CENTER.y - solar.MAP_RADIUS
+end
+
 -- Mundo -> pantalla del minimapa (ox, oy es la esquina del minimapa)
 local function to_map(x, y, ox, oy)
-  local k = MAP_SIZE / (2 * solar.MAP_RADIUS)
-  return ox + (x - solar.SUN_CENTER.x + solar.MAP_RADIUS) * k,
-         oy + (y - solar.SUN_CENTER.y + solar.MAP_RADIUS) * k
+  local k, x0, y0 = map_frame()
+  return ox + (x - x0) * k, oy + (y - y0) * k
 end
 
 local function build_belt_points()
@@ -60,6 +76,22 @@ local function build_belt_points()
   return list
 end
 
+-- Rejilla de sectores (4 lineas verticales y 4 horizontales interiores, con 1 px
+-- de margen en los bordes) y la franja de tormenta del borde del mundo
+local function draw_sector_grid(ox, oy, k)
+  local sectors = scene_map.SECTORS
+  local c = SECTOR_LINE_COLOR
+  for i = 1, sectors - 1 do
+    local pos = i * scene_map.SECTOR_SIZE * k
+    draw_rect(ox + pos, oy + 1, 1, MAP_SIZE - 2, c[1], c[2], c[3], c[4])
+    draw_rect(ox + 1, oy + pos, MAP_SIZE - 2, 1, c[1], c[2], c[3], c[4])
+  end
+
+  local inset = scene_map.STORM_BAND * k
+  local s = STORM_COLOR
+  draw_rect(ox + inset, oy + inset, MAP_SIZE - 2 * inset, MAP_SIZE - 2 * inset, s[1], s[2], s[3], s[4], false)
+end
+
 local function draw_minimap(planets)
   local w, h = get_screen_size()
   local ox, oy = w - MAP_SIZE - MARGIN, h - MAP_SIZE - BOTTOM_MARGIN
@@ -67,12 +99,16 @@ local function draw_minimap(planets)
   draw_rect(ox, oy, MAP_SIZE, MAP_SIZE, 0, 0, 0, 170)
   draw_rect(ox, oy, MAP_SIZE, MAP_SIZE, 255, 255, 255, 120, false)
 
-  for _, p in ipairs(belt_points) do
-    local mx, my = to_map(p.x, p.y, ox, oy)
-    draw_rect(mx - 1, my - 1, 2, 2, BELT_COLOR[1], BELT_COLOR[2], BELT_COLOR[3], 160)
-  end
+  local k = map_frame()
 
-  local k = MAP_SIZE / (2 * solar.MAP_RADIUS)
+  if scene_map ~= nil then
+    draw_sector_grid(ox, oy, k)
+  else
+    for _, p in ipairs(belt_points) do
+      local mx, my = to_map(p.x, p.y, ox, oy)
+      draw_rect(mx - 1, my - 1, 2, 2, BELT_COLOR[1], BELT_COLOR[2], BELT_COLOR[3], 160)
+    end
+  end
   for _, p in ipairs(planets) do
     local mx, my = to_map(p.x, p.y, ox, oy)
     local dot = math.max(MIN_DOT, math.min(MAX_DOT, p.body_radius * 2 * k * 4))
@@ -95,6 +131,15 @@ end
 local function draw_nearest(planets)
   if player_entity == nil or not is_alive(player_entity) then return end
   local px, py = get_collider_center(player_entity)
+
+  -- Sin planetas (Aval Cup) se muestra el sector actual
+  if scene_map ~= nil and #planets == 0 then
+    local sx, sy = grid.world_to_sector(px, py)
+    local w, h = get_screen_size()
+    draw_text(w - MAP_SIZE - MARGIN, h - MAP_SIZE - BOTTOM_MARGIN - 24,
+      string.format("Sector (%d,%d)", sx, sy), "default", 255, 255, 255)
+    return
+  end
 
   local best, best_d = nil, math.huge
   for _, p in ipairs(planets) do
@@ -153,7 +198,7 @@ function update()
   draw_pvp()
   local planets = scene_planets
   if planets == nil then return end
-  if belt_points == nil then belt_points = build_belt_points() end
+  if belt_points == nil and scene_map == nil then belt_points = build_belt_points() end
 
   draw_labels(planets)
   draw_minimap(planets)

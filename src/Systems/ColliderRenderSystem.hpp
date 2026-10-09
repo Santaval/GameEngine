@@ -9,6 +9,7 @@
 #include "../ECS/System.hpp"
 #include "../Components/CircleColliderComponent.hpp"
 #include "../Components/TransformComponent.hpp"
+#include "../Util/Culling.hpp"
 
 // Overlay de debug: dibuja el contorno de cada CircleColliderComponent tal
 // como lo usa CollisionSystem, para poder ver a ojo si el hitbox real
@@ -54,6 +55,7 @@ class ColliderRenderSystem : public System {
             SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 
             for (auto entity : this->getEntities()) {
+                if (isDormant(entity)) continue;
                 const auto& collider = entity.getComponent<CircleColliderComponent>();
                 const auto& transform = entity.getComponent<TransformComponent>();
 

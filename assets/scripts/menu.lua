@@ -1,6 +1,7 @@
 local ui = require("ui_helpers")
 
 local GAME_SCENE = "./assets/scripts/scenes/solar_system.lua"
+local AVAL_CUP_SCENE = "./assets/scripts/scenes/aval_cup.lua"
 
 -- Segundos antes de avisar que el servidor no responde
 local SLOW_CONNECT_TIME = 5
@@ -11,6 +12,7 @@ local confirm_pressed = ui.edge("confirm")
 local quit_pressed = ui.edge("quit")
 local multiplayer_pressed = ui.edge("multiplayer")
 local back_pressed = ui.edge("back")
+local aval_cup_pressed = ui.edge("aval_cup")
 
 -- Volver al menu siempre termina la sesion: los demas reciben peer_left
 net_disconnect()
@@ -23,7 +25,7 @@ function update()
   local w, h = get_window_size()
   local cy = h / 2
 
-  draw_rect(0, cy - 160, w, 300, 0, 0, 0, 160)
+  draw_rect(0, cy - 160, w, 400, 0, 0, 0, 160)
 
   ui.draw_centered(cy - 120, "ASTEROID MINER", "title", 56, 255, 220, 120)
 
@@ -33,6 +35,7 @@ function update()
   local quit = quit_pressed()
   local multiplayer = multiplayer_pressed()
   local back = back_pressed()
+  local aval_cup = aval_cup_pressed()
 
   if connecting then
     ui.draw_centered(cy, "Connecting to " .. net_server_url() .. "...", "debug-big", 28, 255, 255, 255)
@@ -43,6 +46,8 @@ function update()
     ui.draw_centered(cy + 90, "BACKSPACE  -  Cancel", "debug-big", 28, 180, 180, 180)
 
     if net_status() == "online" then
+      -- game_director.lua reinicia esta escena al morir
+      current_game_scene = GAME_SCENE
       load_scene(GAME_SCENE)
     elseif back then
       net_disconnect()
@@ -52,16 +57,21 @@ function update()
   end
 
   ui.draw_centered(cy, "ENTER  -  Single player", "debug-big", 28, 255, 255, 255)
-  ui.draw_centered(cy + 50, "M  -  Multiplayer", "debug-big", 28, 255, 255, 255)
-  ui.draw_centered(cy + 100, "Q  -  Quit", "debug-big", 28, 180, 180, 180)
+  ui.draw_centered(cy + 50, "A  -  Aval Cup", "debug-big", 28, 255, 255, 255)
+  ui.draw_centered(cy + 100, "M  -  Multiplayer", "debug-big", 28, 255, 255, 255)
+  ui.draw_centered(cy + 150, "Q  -  Quit", "debug-big", 28, 180, 180, 180)
 
   if no_server_timer > 0 then
     no_server_timer = no_server_timer - get_delta_time()
-    ui.draw_centered(cy + 150, "Multiplayer needs --server <url> or GAME_SERVER", "default", 16, 255, 120, 120)
+    ui.draw_centered(cy + 200, "Multiplayer needs --server <url> or GAME_SERVER", "default", 16, 255, 120, 120)
   end
 
   if confirm then
+    current_game_scene = GAME_SCENE
     load_scene(GAME_SCENE)
+  elseif aval_cup then
+    current_game_scene = AVAL_CUP_SCENE
+    load_scene(AVAL_CUP_SCENE)
   elseif multiplayer then
     if net_connect() then
       connecting = true

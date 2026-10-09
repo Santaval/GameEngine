@@ -15,6 +15,7 @@ scene = {
     {name = "quit", key = 113},
     {name = "multiplayer", key = 109},
     {name = "back", key = 8},
+    {name = "aval_cup", key = 97},
   },
 
   entities = {

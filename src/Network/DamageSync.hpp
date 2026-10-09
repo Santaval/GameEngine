@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <cstdint>
 #include <functional>
 #include <optional>
 #include <string>
@@ -36,6 +37,8 @@ class DamageSync {
     KillFn kill;
     DespawnByIdFn despawnById;
     bool pvp = false;
+    // Semilla del mapa (0 = sin fijar); viaja con pvp en los ajustes de la sala
+    uint32_t matchSeed = 0;
 
     // Dueño de una entidad; sin NetworkComponent es del jugador local
     std::string ownerOf(Entity entity) const {
@@ -43,10 +46,23 @@ class DamageSync {
       return entity.getComponent<NetworkComponent>().ownerId;
     }
 
-    void readPvp(const nlohmann::json& settings) {
+    // Lee solo los campos presentes: un mensaje sin "seed" no borra la semilla
+    // ni uno sin "pvp" cambia el pvp
+    void readSettings(const nlohmann::json& settings) {
       if (!settings.is_object()) return;
       auto it = settings.find("pvp");
       if (it != settings.end() && it->is_boolean()) this->pvp = it->get<bool>();
+      auto seedIt = settings.find("seed");
+      if (seedIt != settings.end() && seedIt->is_number_integer()) {
+        const long long value = seedIt->get<long long>();
+        if (value > 0 && value <= 0xFFFFFFFFLL) this->matchSeed = static_cast<uint32_t>(value);
+      }
+    }
+
+    nlohmann::json settingsMessage() const {
+      nlohmann::json msg = {{"t", "room_settings"}, {"pvp", this->pvp}};
+      if (this->matchSeed != 0) msg["seed"] = this->matchSeed;
+      return msg;
     }
 
   public:
@@ -117,12 +133,12 @@ class DamageSync {
 
     // El host se valida en Game (el relay no filtra roles ni DamageSync conoce al host)
     void onRoomSettings(const nlohmann::json& msg) {
-      this->readPvp(msg);
+      this->readSettings(msg);
     }
 
     void onSnapshot(const nlohmann::json& msg) {
       auto it = msg.find("settings");
-      if (it != msg.end()) this->readPvp(*it);
+      if (it != msg.end()) this->readSettings(*it);
     }
 
     bool pvpEnabled() const { return this->pvp; }
@@ -132,11 +148,25 @@ class DamageSync {
     void setPvp(bool value) {
       this->pvp = value;
       if (!this->send || !this->online || !this->online()) return;
-      this->send({{"t", "room_settings"}, {"pvp", value}});
+      this->send(this->settingsMessage());
     }
 
-    // Sesion nueva: vuelve al valor cooperativo
-    void resetSettings() { this->pvp = false; }
+    uint32_t getMatchSeed() const { return this->matchSeed; }
+
+    // Fija la semilla del mapa (host u offline; se valida fuera). Igual que
+    // setPvp, el valor local se fija aqui y online se avisa a los demas.
+    void setMatchSeed(uint32_t seed) {
+      this->matchSeed = seed;
+      if (!this->send || !this->online || !this->online()) return;
+      this->send(this->settingsMessage());
+    }
+
+    // Sesion nueva: vuelve al valor cooperativo y sin semilla. Solo corre al
+    // desconectar, asi que reiniciar la escena (host) conserva la semilla
+    void resetSettings() {
+      this->pvp = false;
+      this->matchSeed = 0;
+    }
 
     // Con pvp apagado, un arma de jugador no lastima a la nave de otro jugador.
     // Se necesitan las marcas explicitas porque el host es jugador y a la vez

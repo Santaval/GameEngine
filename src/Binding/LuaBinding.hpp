@@ -7,6 +7,7 @@
 
 #include "CameraBindings.hpp"
 #include "ColliderBindings.hpp"
+#include "CullingBindings.hpp"
 #include "EntityBindings.hpp"
 #include "EquipmentBindings.hpp"
 #include "GameBindings.hpp"

@@ -46,7 +46,26 @@ inline sol::table netRoomSettings(sol::this_state s) {
   sol::state_view lua(s);
   sol::table settings = lua.create_table();
   settings["pvp"] = Game::getInstance().getDamageSync()->pvpEnabled();
+  // nil mientras no hay semilla (0 = sin fijar)
+  const uint32_t seed = Game::getInstance().getDamageSync()->getMatchSeed();
+  if (seed != 0) settings["seed"] = static_cast<int64_t>(seed);
   return settings;
+}
+
+// Semilla del mapa. A diferencia de net_set_pvp tambien vale offline (sin red
+// solo cambia el valor local); online solo el host. 0 se rechaza (= sin fijar)
+inline bool netSetMatchSeed(int64_t seed) {
+  auto& net = *Game::getInstance().getNetClient();
+  if (net.isOnline() && !net.isHost()) return false;
+  if (seed <= 0 || seed > 0xFFFFFFFFLL) return false;
+  Game::getInstance().getDamageSync()->setMatchSeed(static_cast<uint32_t>(seed));
+  return true;
+}
+
+// Id del host actual ("" offline o sin welcome)
+inline std::string netHostId() {
+  auto& net = *Game::getInstance().getNetClient();
+  return net.isOnline() ? net.getHostId() : std::string();
 }
 
 // Solo el host puede cambiar los ajustes de la sala
@@ -63,6 +82,17 @@ inline bool netSend(const std::string& type, sol::object data, sol::optional<std
 
 inline void netOn(const std::string& type, sol::protected_function fn) {
   Game::getInstance().getNetworkScripting()->on(type, fn);
+}
+
+// Entidad local construida desde un prefab: igual que net_spawn pero sin
+// identidad ni anuncio de red (cada cliente la construye por su cuenta, p. ej.
+// las rocas de los chunks a partir de la semilla). nil si el prefab falla.
+inline sol::object spawnLocal(const std::string& scriptPath, sol::object state, sol::this_state s) {
+  auto entity = Game::getInstance().getNetworkScripting()->buildFromPrefab(scriptPath, luaToJson(state));
+  if (!entity) {
+    return sol::make_object(s, sol::lua_nil);
+  }
+  return sol::make_object(s, *entity);
 }
 
 inline sol::object netSpawn(const std::string& scriptPath, sol::object state, sol::this_state s) {
@@ -146,9 +176,12 @@ inline void registerNetworkBindings(sol::state& lua) {
   lua.set_function("net_peers", netPeers);
   lua.set_function("net_room_settings", netRoomSettings);
   lua.set_function("net_set_pvp", netSetPvp);
+  lua.set_function("net_set_match_seed", netSetMatchSeed);
+  lua.set_function("net_host_id", netHostId);
   lua.set_function("net_send", netSend);
   lua.set_function("net_on", netOn);
   lua.set_function("net_spawn", netSpawn);
+  lua.set_function("spawn_local", spawnLocal);
   lua.set_function("net_register", netRegister);
   lua.set_function("net_despawn", netDespawn);
   lua.set_function("is_local", isLocal);

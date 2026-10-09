@@ -6,6 +6,7 @@
 #include "../ECS/System.hpp"
 #include "../Components/SpriteComponent.hpp"
 #include "../Components/TransformComponent.hpp"
+#include "../Util/Culling.hpp"
 
 class RenderSystem : public System{
     public:
@@ -16,6 +17,7 @@ class RenderSystem : public System{
 
     void update(SDL_Renderer* renderer, std::unique_ptr<AssetManager>& assetManager, const SDL_Rect& camera) {
         for(auto entity : this->getEntities()) {
+            if (isDormant(entity)) continue;
             const auto sprite = entity.getComponent<SpriteComponent>();
             const auto transform = entity.getComponent<TransformComponent>();
 

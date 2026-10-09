@@ -94,13 +94,15 @@ end
 -- Elige un tipo de ASTEROID_TYPES respetando los weight. Devuelve el tipo y su
 -- indice en ASTEROID_TYPES (el indice es lo que viaja por la red, ver
 -- prefabs/asteroid.lua)
-function config.pickAsteroidType()
+-- roll01 (opcional, en [0,1)) reemplaza al sorteo: el generador de chunks pasa
+-- el suyo para ser determinista desde la semilla. Sin el usa math.random()
+function config.pickAsteroidType(roll01)
   local total = 0
   for _, asteroidType in ipairs(config.ASTEROID_TYPES) do
     total = total + asteroidType.weight
   end
 
-  local roll = math.random() * total
+  local roll = (roll01 or math.random()) * total
   for index, asteroidType in ipairs(config.ASTEROID_TYPES) do
     roll = roll - asteroidType.weight
     if roll < 0 then return asteroidType, index end

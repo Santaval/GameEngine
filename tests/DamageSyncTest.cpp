@@ -184,6 +184,58 @@ static void testSetPvp() {
   CHECK(!f.sync.pvpEnabled());
 }
 
+static void testMatchSeed() {
+  Fixture f;
+  CHECK(f.sync.getMatchSeed() == 0);
+  // Semilla en room_settings y en el snapshot
+  f.sync.onRoomSettings({{"t", "room_settings"}, {"pvp", true}, {"seed", 12345}});
+  CHECK(f.sync.getMatchSeed() == 12345);
+  f.sync.onSnapshot({{"t", "snapshot"}, {"settings", {{"pvp", false}, {"seed", 777}}}});
+  CHECK(f.sync.getMatchSeed() == 777);
+  CHECK(!f.sync.pvpEnabled());
+  // Un mensaje solo con pvp no borra la semilla (ni al reves)
+  f.sync.onRoomSettings({{"t", "room_settings"}, {"pvp", true}});
+  CHECK(f.sync.getMatchSeed() == 777);
+  f.sync.onRoomSettings({{"t", "room_settings"}, {"seed", 5}});
+  CHECK(f.sync.pvpEnabled());
+  CHECK(f.sync.getMatchSeed() == 5);
+  // Valores invalidos se ignoran
+  f.sync.onRoomSettings({{"t", "room_settings"}, {"seed", "abc"}});
+  f.sync.onRoomSettings({{"t", "room_settings"}, {"seed", -3}});
+  f.sync.onRoomSettings({{"t", "room_settings"}, {"seed", 1.5}});
+  CHECK(f.sync.getMatchSeed() == 5);
+  // Semilla grande de 32 bits
+  f.sync.onRoomSettings({{"t", "room_settings"}, {"seed", 4000000000LL}});
+  CHECK(f.sync.getMatchSeed() == 4000000000u);
+}
+
+static void testSetMatchSeed() {
+  Fixture f;
+  f.sync.setPvp(true);
+  f.sent.clear();
+  f.sync.setMatchSeed(42);
+  CHECK(f.sync.getMatchSeed() == 42);
+  CHECK(f.sent.size() == 1);
+  CHECK(f.sent[0].value("t", "") == "room_settings");
+  CHECK(f.sent[0].value("seed", 0) == 42);
+  CHECK(f.sent[0].value("pvp", false) == true);
+
+  // setPvp tambien manda la semilla
+  f.sent.clear();
+  f.sync.setPvp(false);
+  CHECK(f.sent[0].value("seed", 0) == 42);
+
+  // Sin red solo cambia el valor local
+  f.sent.clear();
+  f.online = false;
+  f.sync.setMatchSeed(9);
+  CHECK(f.sync.getMatchSeed() == 9);
+  CHECK(f.sent.empty());
+
+  f.sync.resetSettings();
+  CHECK(f.sync.getMatchSeed() == 0);
+}
+
 static void testBroadcast() {
   Fixture f;
   Entity mine = f.ship("me:1", "me");
@@ -233,6 +285,8 @@ int main() {
   testBlocksPvp();
   testPvpSettings();
   testSetPvp();
+  testMatchSeed();
+  testSetMatchSeed();
   testBroadcast();
   if (failures == 0) std::cout << "DamageSyncTest: all passed" << std::endl;
   return failures == 0 ? 0 : 1;

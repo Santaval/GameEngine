@@ -162,7 +162,7 @@ class WorldSync {
     }
 
     // "snapshot_request": el host describe todo lo suyo con script, en trozos
-    void onSnapshotRequest(const nlohmann::json& msg, bool pvp) {
+    void onSnapshotRequest(const nlohmann::json& msg, bool pvp, uint32_t matchSeed = 0) {
       if (!this->send || !this->online || !this->online() || !this->isHost()) return;
       auto fromIt = msg.find("from");
       if (fromIt == msg.end() || !fromIt->is_string()) return;
@@ -172,12 +172,15 @@ class WorldSync {
       nlohmann::json chunk = nlohmann::json::array();
       size_t chunkBytes = 0;
       bool sentAny = false;
+      // Sin semilla (0) el campo se omite: el cliente no pisa la suya
+      nlohmann::json settings = {{"pvp", pvp}};
+      if (matchSeed != 0) settings["seed"] = matchSeed;
       auto flush = [&]() {
         this->send({
           {"t", "snapshot"},
           {"to", from},
           {"entities", chunk},
-          {"settings", {{"pvp", pvp}}},
+          {"settings", settings},
         });
         chunk = nlohmann::json::array();
         chunkBytes = 0;
@@ -196,7 +199,7 @@ class WorldSync {
         chunk.push_back(std::move(entry));
         chunkBytes += bytes;
       }
-      // Sin entidades igual se responde: lleva los settings (pvp)
+      // Sin entidades igual se responde: lleva los settings (pvp, seed)
       if (!chunk.empty() || !sentAny) flush();
     }
 };

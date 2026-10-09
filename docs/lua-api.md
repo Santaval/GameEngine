@@ -414,6 +414,9 @@ that exist — defining none is fine.
 | `load_scene(path)` | Switches to another scene file. **Deferred**: the current frame finishes normally and the new scene loads at the start of the next one. |
 | `quit_game()` | Closes the game at the end of the current frame. |
 | `get_window_size()` | Returns `w, h` of the window in pixels (for centering HUD/menus). |
+| `random_seed()` | A random integer in `0..2^31-1` from `std::random_device`. Use it to pick a seed (`math.random` is C `rand()` and there is no `os`). |
+| `set_active_area(minX, minY, maxX, maxY)` | Enables the active area (world px). Entities with the `cull` component outside it sleep: no scripts, animation, gravity, movement, collision or rendering. |
+| `clear_active_area()` | Disables the active area (also done on every scene load). |
 
 Loading a scene is a full reset: every entity is destroyed, entity ids start at
 0 again, the camera goes back to `(0, 0)`, the `player_entity` / `game_over`
@@ -421,10 +424,14 @@ globals are cleared, and every module loaded with `require` is unloaded so its
 module-level locals (cooldowns, open menus...) start fresh. Textures and fonts
 already loaded are kept and reused by id.
 
-Flow used by the game: `scenes/menu.lua` (start screen) → `scenes/scene_01.lua`.
-In scene_01, `player.lua`'s `on_death` sets `game_over = true` and
-`game_director.lua` shows the game-over overlay (ENTER restarts, M returns to
-the menu). Shared helpers for these screens live in `ui_helpers.lua`.
+Flow used by the game: `scenes/menu.lua` (start screen) → `scenes/solar_system.lua`
+(ENTER, or Multiplayer) or `scenes/aval_cup.lua` (A). The menu stores the chosen
+scene in the global `current_game_scene` (globals survive scene loads).
+`player.lua`'s `on_death` sets `game_over = true` and `game_director.lua` shows
+the game-over overlay (ENTER reloads `current_game_scene`, M returns to the
+menu). `scenes/scene_01.lua` is the older single-scene prototype. Shared helpers
+for these screens live in `ui_helpers.lua`. The Aval Cup map is described in
+[aval-cup.md](aval-cup.md).
 
 ---
 
@@ -453,8 +460,10 @@ The engine never connects by itself: the menu's Multiplayer option does it.
 | `net_my_id()` | Your player id | `""` |
 | `net_is_host()` | `true` if you are the host | `true` |
 | `net_peers()` | Array of the other players' ids | `{}` |
-| `net_room_settings()` | Table `{ pvp = bool }` with the room settings (default `pvp = false`) | `{ pvp = false }` |
+| `net_room_settings()` | Table `{ pvp = bool, seed = int? }` with the room settings (default `pvp = false`; `seed` is the map seed, `nil` until it is set) | `{ pvp = false }` |
 | `net_set_pvp(enabled)` | Host only: sets PvP and broadcasts it. Returns `true` if applied, `false` if you are not the online host | `false` |
+| `net_set_match_seed(seed)` | Sets the map seed (`1..4294967295`) and broadcasts it with the room settings. Allowed offline and for the host; returns `false` for a non-host or an invalid seed | applies locally, returns `true` |
+| `net_host_id()` | The current host's player id | `""` |
 
 ### Messaging
 
@@ -495,6 +504,7 @@ net_send("chat", { text = "psst" }, peer_id) -- one player
 | `net_spawn(script_path, state_tbl)` | Builds the entity from a prefab, tags it with a new netId owned by you, and broadcasts `spawn`. Returns the entity (or `nil` if the prefab failed). Offline it only creates the entity locally. |
 | `net_register(e [, script, state_tbl])` | Gives an **existing** entity a netId owned by you (and adds it to the network sync). With a non-empty `script` and an online session it also broadcasts `spawn` for that prefab; `state_tbl` is merged over the entity's own `pos` / `vel` / `rot` / `acc` / `hp`. Returns the netId. Offline it only registers locally. Used by `player.lua` for the ship (no `script` for bullets, which are announced with `fire`). Entities registered without a `script` never send `state`: every client simulates them from the announcing event. |
 | `net_despawn(e)` | Removes a networked entity and tells the others. Only the owner can despawn: calling it on a remote entity while online logs a warning and does nothing. An entity without network identity is just killed. |
+| `spawn_local(script_path, state_tbl)` | Builds the entity from a prefab like `net_spawn` but with no netId and no `spawn` message: every client builds its own copy (used for the map's chunk rocks). Returns the entity or `nil`. |
 | `is_local(e)` | `true` if you own the entity or it is not networked. Always `true` offline. |
 | `get_net_id(e)` | The entity's netId string, or `nil`. |
 | `find_by_net_id(id)` | The entity with that netId, or `nil`. |

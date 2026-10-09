@@ -38,6 +38,15 @@ local despawn_far = state.despawn_far == true
 local ring = state.ring
 local slot = state.slot
 local half = cfg.ASTEROID_SHEET.frameSize * (state.scale or 1) / 2
+-- Roca de un chunk del mapa (map_chunks.lua): cada cliente la construye local
+-- desde la semilla, sin identidad de red, asi que no hay "duenio": decide el host
+local chunk_id = state.chunk_id
+
+-- Quien manda sobre esta roca: el host en las rocas de chunk, el duenio en el resto
+local function owns(e)
+  if chunk_id ~= nil then return net_is_host() end
+  return is_local(e)
+end
 
 -- on_death puede llegar dos veces (kill() es diferido: una bala y el
 -- despawn en el mismo frame, o el update del frame siguiente): la bandera
@@ -68,10 +77,16 @@ end
 -- Desaparece sin soltar loot. Solo el duenio lo borra; las copias esperan el
 -- despawn del duenio (el mismo planeta lo traga en todos los clientes)
 local function vanish(e)
-  if not is_local(e) then return end
+  if not owns(e) then return end
   dead = true
   clear_loot(e)
-  net_despawn(e)
+  if chunk_id ~= nil then
+    -- No esta en la red: se borra aqui y el host avisa el id a los demas
+    if map_world_destroyed ~= nil then map_world_destroyed(chunk_id) end
+    destroy_entity(e)
+  else
+    net_despawn(e)
+  end
 end
 
 -- Una nave: la local (tiene inventario) o la de otro jugador (player_ships)
@@ -117,7 +132,7 @@ function update()
   if ring ~= nil then steer_in_lane() end
 
   -- Solo el duenio decide que se fue del mapa
-  if despawn_far and is_local(this) then
+  if despawn_far and owns(this) then
     local x, y = get_position(this)
     if isFarOutside(x + half, y + half) then
       -- Sin loot: no dejar pickups perdidos en el vacio
@@ -130,7 +145,7 @@ local function asteroid_on_damage(amount, source)
   print(string.format("[asteroid] -%d HP (quedan %d)", amount, get_health(this)))
   -- Un choque de la nave que lo rompe no suelta loot: on_death corre
   -- despues de este hook y ya no encuentra nada
-  if is_local(this) and is_ship(source) and get_health(this) <= 0 then
+  if owns(this) and is_ship(source) and get_health(this) <= 0 then
     clear_loot(this)
   end
 end
@@ -142,7 +157,7 @@ end
 -- (ya vacio si lo rompio una nave): cada fragmento trae el suyo. Devuelve
 -- true si creo fragmentos
 local function split(e)
-  if not is_local(e) then return false end
+  if not owns(e) then return false end
   local scale = state.scale or 1
   if scale < SPLIT.MIN_SCALE then return false end
 
@@ -173,9 +188,17 @@ end
 -- las copias reciben el death pero no repiten el loot. Los pickups son del
 -- host y los ven todos
 local function asteroid_on_death()
+  -- El director suelta su referencia: el id de la entidad se recicla y no debe
+  -- usarse luego para borrar otra cosa
+  if chunk_id ~= nil and map_rock_gone ~= nil then map_rock_gone(chunk_id) end
   if dead then return end
   dead = true
-  if not is_local(this) then return end
+  if not owns(this) then return end
+
+  -- El host anota la roca de chunk como destruida y avisa a los demas (late
+  -- joiners incluidos); los clientes solo la marcan muerta: sin loot ni
+  -- fragmentos, esos llegan del host por net_spawn
+  if chunk_id ~= nil and map_world_destroyed ~= nil then map_world_destroyed(chunk_id) end
 
   -- Una roca que se parte no suelta loot: lo sueltan sus fragmentos
   if split(this) then return end

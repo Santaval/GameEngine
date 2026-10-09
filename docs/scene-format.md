@@ -243,6 +243,17 @@ gravity = {
 
 See [gravity.md](gravity.md).
 
+### `cull`
+
+```lua
+cull = true   -- default false: no component
+```
+
+Adds a `CullComponent` (a tag with no data). While an active area is set
+(`set_active_area`), the entity is skipped by the script, animation, gravity,
+movement, collision, render and collider-overlay systems whenever its
+`transform.position` is outside that area. See [aval-cup.md](aval-cup.md).
+
 ### `equipment`
 
 ```lua
