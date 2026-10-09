@@ -15,6 +15,7 @@ struct HealthComponent
   int maxHealth;
   double invulnerability;  // segundos de gracia tras recibir daño (0 = sin gracia)
   Uint32 lastDamageTicks;  // SDL_GetTicks() del ultimo golpe recibido
+  Uint32 shieldUntilTicks = 0;  // escudo de aparicion: sin daño hasta este SDL_GetTicks() (0 = sin escudo)
   bool isPlayer;           // nave de jugador: protegida por la regla de pvp (ver DamageSync)
 
   HealthComponent(int maxHealth = 1, int health = -1, double invulnerability = 0.0, bool isPlayer = false) {

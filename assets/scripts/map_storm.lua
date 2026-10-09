@@ -25,8 +25,8 @@ end
 
 -- Acumula mientras `inside`; cada tick s quita damage de vida (por defecto
 -- S.tick y S.damage). Fuera reinicia, asi el primer golpe llega un tick
--- despues de entrar. set_health solo funciona en el dueno de la entidad (la
--- nave local lo es)
+-- despues de entrar; mientras dura el escudo de aparicion (#28) no resta.
+-- set_health solo funciona en el dueno de la entidad (la nave local lo es)
 function storm.tick_damage(state, entity, inside, dt, damage, tick)
   damage = damage or S.damage
   tick = tick or S.tick
@@ -37,7 +37,10 @@ function storm.tick_damage(state, entity, inside, dt, damage, tick)
   state.acc = state.acc + dt
   while state.acc >= tick do
     state.acc = state.acc - tick
-    set_health(entity, get_health(entity) - damage)
+    -- Con el escudo de aparicion (#28) no hay dano: set_health lo ignoraria
+    if get_shield(entity) <= 0 then
+      set_health(entity, get_health(entity) - damage)
+    end
   end
 end
 

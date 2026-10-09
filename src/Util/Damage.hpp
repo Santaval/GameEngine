@@ -81,6 +81,10 @@ inline bool applyDamage(Entity target, int amount, sol::optional<Entity> source)
   if (sync && source && sync->blocksPvp(target, *source)) return false;
 
   Uint32 now = SDL_GetTicks();
+
+  // Escudo de aparicion (set_shield): no entra ningun daño mientras dure
+  if (now < health.shieldUntilTicks) return false;
+
   if (health.invulnerability > 0.0 &&
     (now - health.lastDamageTicks) < static_cast<Uint32>(health.invulnerability * 1000)) {
       return false;

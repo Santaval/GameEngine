@@ -31,6 +31,8 @@ wandering_storm_radius = {}
 -- minimapa los lee); local_portal_transit lo lee player.lua
 portal_sites = nil
 local_portal_transit = false
+-- Escudo de aparicion (#28): lo lleva map_spawn.lua
+local_spawn_shield = false
 -- Portales inestables (#23): netId -> {x, y, life, age}, los llena
 -- unstable_portal.lua; unstable_portal_life_fix: netId -> vida que corrige un
 -- recien llegado (map_portal_world.lua)
@@ -56,7 +58,8 @@ scene_asteroid_generators = nil
 -- Circulo que cubre el cuadrado del mundo: los fragmentos que salen de el se borran
 scene_bounds = { x = map.WORLD_SIZE / 2, y = map.WORLD_SIZE / 2, radius = map.WORLD_SIZE * 0.75 }
 
--- La nave sale en el centro del mundo (las reglas de aparicion llegan despues)
+-- La nave nace aqui (centro del mundo) y map_spawn.lua (#28) la mueve a su
+-- punto de aparicion en cuanto llegan la semilla y los portales
 local SPAWN = map.PLAYER_SPAWN
 
 -- ---------------------------------------------------------------------
@@ -145,9 +148,11 @@ local DIRECTORS = {
   "./assets/scripts/map_visuals.lua",
   "./assets/scripts/map_storm_world.lua",
   "./assets/scripts/map_portal_world.lua",
+  "./assets/scripts/map_spawn.lua",
   "./assets/scripts/map_event_world.lua",
   "./assets/scripts/map_event_director.lua",
   "./assets/scripts/map_supply_world.lua",
+  "./assets/scripts/map_death_drop.lua",
   "./assets/scripts/game_director.lua",
 }
 for _, path in ipairs(DIRECTORS) do
@@ -208,6 +213,10 @@ scene = {
     {assetId="pal-beacon", filePath="./assets/sprites/vfx/pal_beacon.png"},
     {assetId="debris-arrow", filePath="./assets/sprites/hud/debris_arrow.png"},
     {assetId="aura-overcharged", filePath="./assets/sprites/vfx/aura_overcharged.png"},
+    {assetId="orb-protection", filePath="./assets/sprites/items/orb_protection.png"},
+    {assetId="orb-weapon", filePath="./assets/sprites/items/orb_weapon.png"},
+    {assetId="orb-propulsion", filePath="./assets/sprites/items/orb_propulsion.png"},
+    {assetId="spawn-shield", filePath="./assets/sprites/vfx/spawn_shield.png"},
   },
 
   -- El tamaño se fija al cargar: hace falta un fontId por cada tamaño

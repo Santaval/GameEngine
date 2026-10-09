@@ -91,6 +91,8 @@ timer by itself, so an expiring bullet is never sent as a `despawn`.
 | `get_max_health(e)` | `int` | `0` if the entity has no `HealthComponent`. |
 | `is_alive(e)` | `bool` | `true` for an entity with no `HealthComponent` — indestructible counts as alive. |
 | `set_health(e, value)` | — | Clamped to `[0, max]`. **Ignores invulnerability.** Reaching `0` kills the entity and fires `on_death`. No-op if the entity has no `HealthComponent`. |
+| `set_shield(e, seconds)` | — | Spawn shield: `applyDamage` returns `false` (no damage, no invulnerability window) until it expires. `0` cancels it. `set_health` ignores it, like it ignores invulnerability. |
+| `get_shield(e)` | seconds | Seconds of shield left (`0` if none, expired or no `HealthComponent`). |
 | `heal(e, amount)` | — | Shorthand for `set_health(e, get_health(e) + amount)`. Cannot revive an entity that is already at `0`. |
 
 ### Damage

@@ -210,6 +210,8 @@ Summarised here; the full guide is in
 | `set_health(e, value)` | — | Clamped, ignores invulnerability, fires `on_death` at `0`. |
 | `heal(e, amount)` | — | Cannot revive something already at `0`. |
 | `set_max_health(e, value)` | — | Clamped to `>= 1`. Never kills — if `health` is above the new max, it is clamped down too, without firing `on_death`. |
+| `set_shield(e, seconds)` | — | Spawn shield: while it lasts, `applyDamage` (bullets, rams, `DamageSystem`) does nothing to the entity. `0` cancels it. `set_health` still bypasses it, so scripted damage (storms) must check `get_shield` itself. No-op without a `HealthComponent`. |
+| `get_shield(e)` | seconds | Seconds of shield left; `0` if there is none, it expired, or the entity has no `HealthComponent`. |
 | `add_damage(e, amount, destroy_on_hit?, player?)` | — | `destroy_on_hit` defaults to `false`. `player` (default `false`) marks a player weapon that does not hurt other players when PvP is off. |
 | `set_impact_damage(e, min_speed, full_speed)` | — | Scales contact damage by closing speed (px/s): none at or below `min_speed`, full `amount` at or above `full_speed`. `0, 0` = flat damage. |
 | `get_damage(e)` / `set_damage(e, amount)` | `int` / — | `set_damage` adds the component if missing. |
@@ -621,7 +623,7 @@ of that slot left behind — entity ids are recycled.
 
 | Guarded, safe to call on anything | Unguarded, requires the component |
 | --- | --- |
-| `get_health`, `get_max_health`, `is_alive`, `set_health`, `heal`, `set_max_health`, `get_damage`, `set_damage`, `is_path_active`, `set_path_active`, `set_equipment_level`, `get_equipment_level`, `has_equipment`, `upgrade_equipment`, `remove_equipment`, `get_equipment_count`, `get_equipment_at`, `has_inventory`, `add_item`, `remove_item`, `update_item_count`, `get_item_count`, `has_item`, `get_inventory_total`, `get_inventory_capacity`, `set_inventory_capacity`, `get_inventory_count`, `get_inventory_at`, `clear_inventory`, `has_loot`, `get_loot_count`, `get_loot_at`, `set_loot`, `destroy_entity`, `draw_rect`, `draw_rect_world` | `get_position`, `set_position`, `get_rotation`, `set_rotation*`, every `*_velocity` / `*_acceleration` / `*_max_speed`, `get_speed`, `set_sprite`, `set_sprite_frame`, `set_text`, `set_text_color` |
+| `get_health`, `get_max_health`, `is_alive`, `set_health`, `heal`, `set_max_health`, `get_shield`, `get_damage`, `set_damage`, `is_path_active`, `set_path_active`, `set_equipment_level`, `get_equipment_level`, `has_equipment`, `upgrade_equipment`, `remove_equipment`, `get_equipment_count`, `get_equipment_at`, `has_inventory`, `add_item`, `remove_item`, `update_item_count`, `get_item_count`, `has_item`, `get_inventory_total`, `get_inventory_capacity`, `set_inventory_capacity`, `get_inventory_count`, `get_inventory_at`, `clear_inventory`, `has_loot`, `get_loot_count`, `get_loot_at`, `set_loot`, `destroy_entity`, `draw_rect`, `draw_rect_world` | `get_position`, `set_position`, `get_rotation`, `set_rotation*`, every `*_velocity` / `*_acceleration` / `*_max_speed`, `get_speed`, `set_sprite`, `set_sprite_frame`, `set_text`, `set_text_color` |
 
 In practice: before calling anything in the right-hand column on an entity you
 did not build yourself, make sure it has the component.

@@ -31,6 +31,12 @@ local function spawn_bullet(owner)
   -- La bala expira sola a los 2 s (online, en cada cliente por separado)
   add_script(bullet, bullet_lifetime.make_update())
 
+  -- Disparar cancela el escudo de aparicion (#28, lo define map_spawn.lua)
+  if get_shield(owner) > 0 then
+    set_shield(owner, 0)
+    if spawn_shield_cancelled ~= nil then spawn_shield_cancelled() end
+  end
+
   -- Online: la bala es mia y los demas crean una replica con "fire"
   local shooter_id = get_net_id(owner)
   if net_is_online() and shooter_id then

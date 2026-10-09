@@ -75,6 +75,27 @@ inline void setMaxHealth(Entity e, int value) {
   if (health.health > health.maxHealth) health.health = health.maxHealth;
 }
 
+// Escudo de aparicion: la entidad no recibe daño de applyDamage durante
+// `seconds` (0 lo cancela). set_health lo ignora a proposito (scripts)
+inline void setShield(Entity e, double seconds) {
+  if (!e.hasComponent<HealthComponent>()) return;
+
+  auto& health = e.getComponent<HealthComponent>();
+  health.shieldUntilTicks = seconds > 0.0
+    ? SDL_GetTicks() + static_cast<Uint32>(seconds * 1000.0)
+    : 0;
+}
+
+// Segundos de escudo que quedan (0 sin componente o ya vencido)
+inline double getShield(Entity e) {
+  if (!e.hasComponent<HealthComponent>()) return 0.0;
+
+  const Uint32 until = e.getComponent<HealthComponent>().shieldUntilTicks;
+  const Uint32 now = SDL_GetTicks();
+  if (now >= until) return 0.0;
+  return (until - now) / 1000.0;
+}
+
 inline void addDamage(Entity e, int amount, sol::optional<bool> destroyOnHit,
                       sol::optional<bool> player) {
   e.addComponent<DamageComponent>(amount, destroyOnHit.value_or(false), player.value_or(false));
@@ -112,6 +133,8 @@ inline void registerHealthBindings(sol::state& lua) {
   lua.set_function("set_health", setHealth);
   lua.set_function("heal", heal);
   lua.set_function("set_max_health", setMaxHealth);
+  lua.set_function("set_shield", setShield);
+  lua.set_function("get_shield", getShield);
   lua.set_function("add_damage", addDamage);
   lua.set_function("get_damage", getDamage);
   lua.set_function("set_damage", setDamage);

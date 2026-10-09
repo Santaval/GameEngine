@@ -49,7 +49,10 @@ function update()
   local cy = h / 2
 
   draw_rect(0, 0, w, h, 0, 0, 0, 140)
-  ui.draw_centered(cy - 100, "GAME OVER", "title", 56, 255, 80, 80)
+  -- En la Aval Cup (#28) el titulo es otro; reiniciar vuelve a pasar por las
+  -- reglas de aparicion (scene_map solo lo define esa escena)
+  local title = scene_map ~= nil and "SENAL PERDIDA" or "GAME OVER"
+  ui.draw_centered(cy - 100, title, "title", 56, 255, 80, 80)
   ui.draw_centered(cy, "ENTER  -  Restart", "debug-big", 28, 255, 255, 255)
   ui.draw_centered(cy + 50, "M  -  Main menu", "debug-big", 28, 180, 180, 180)
 

@@ -4,7 +4,8 @@ Foundation of the Aval Cup map (issue #16): a fixed world split into sectors
 and chunks, a deterministic seed shared by every client, and culling so only
 the chunks near the local player are simulated. Issue #17 adds biomes per
 sector and the procedural content of each chunk (asteroids, drifting rocks,
-planets and wrecks). Spawn rules (issue #28) come later.
+planets and wrecks). Issue #28 adds death drops, spawn rules and the spawn
+shield (see [Death drops, spawn and shield](#death-drops-spawn-and-shield)).
 
 Scene: `assets/scripts/scenes/aval_cup.lua` (menu option "A - Aval Cup").
 Director: `assets/scripts/aval_cup_world.lua`.
@@ -246,8 +247,9 @@ collisions.
 | `PAL_SIGNAL` | table | Pal Signal: `duration` 90 s, `crate_clear` 400, `crate_tries` 40, `edge_pad` 500, `beam` (draw `w` x `h` 64x512 px and the `pal_beacon.png` sheet: `frame_w` 181, `frame_h` 1448, `count` 6), `fps` 8, `alpha` 220 |
 | `DEBRIS_RAIN` | table | Debris Rain: `warning` 5 s, `rain` 20 s, `tail` 5 s, `rate` 3 rocks/s, `speed` 320..420, `scale` 0.25..0.5, `spread` 0.08 rad, `ttl` 25 s, `arrow_size` 48, `arrow_margin` 24, `arrow_count` 3, `warn_pad` 2000 |
 | `OVERCHARGED` | table | Overcharged Planet: `duration` 60 s, `mult` 2, `sheet` (aura frame width, count and the `src_y` / `src_h` band), `size_factor` 1.6, `fps` 8, `alpha` 200, `ring_dot_spacing` 30, `colors` per mineral |
-| `DEATH_DROP_FRACTION` | 0.6 | Players (not used yet) |
-| `SPAWN_SHIELD` | 5 | Players (not used yet) |
+| `DEATH_DROP` | table | Death orbs: `fraction` 0.6, `radius` 300, `ttl` 30 s, `push` 40..90 px/s, `push_time` 1 s, `per_orb` 5, `max_orbs` 8, `size` 48 and the `orb_*.png` frame (`frame_w` 543, `frame_h` 724, `frames` 4, `fps` 8), collider `radius_px` 150, `magnet_radius` 200, `orbs` (asset of each mineral) |
+| `SPAWN` | table | Spawn rules: `biomes` (`deep_void`, `debris`), `portal_min` 350 / `portal_max` 900, `player_clear` 4000, `top_clear` 8000, `top_n` 3, `tries` 60, `wait` 1 s |
+| `SPAWN_SHIELD` | table | Spawn shield: `time` 5 s, `size` 150, `sheet` (`spawn_shield.png` frame width, count and `src_y` / `src_h` band), `fps` 10, `alpha` 200 |
 | `BIOMES` | see [Biomes](#biomes) | Id, name and weight of each biome |
 | `BIOME_REPEAT_OK`, `CENTER_BIOMES` | `debris`, `planetary` | Adjacency exception and centre sector pool |
 | `BIOME_COLORS` | per biome | Minimap tint |
@@ -741,6 +743,54 @@ gets the loot and two players opening at once cannot both receive it.
   opened = slot -> seconds since opened }`; the joiner fills `supply_opened`
   with it. Every client keeps the open times, so a new host after a migration
   keeps the respawn timers (crates that exist are adopted as live).
+
+## Death drops, spawn and shield
+
+Issue #28. The slither.io loop: dying costs most of your minerals, and you come
+back at a fresh spot with a few seconds of protection.
+
+- Death drop (`map_death_drop.lua`): `player.lua`'s `on_death` reads the ship
+  centre and its inventory and calls the global `death_drop_request(x, y,
+  items)`, which only exists in this scene (so `solar_system` is unaffected).
+  Each mineral drops `floor(quantity * fraction)` (0.6), split into orbs of
+  `per_orb` (5) units, at most `max_orbs` (8) per mineral; the remainder is
+  spread one by one over the first orbs.
+- The host spawns the orbs, not the player who died. A non-host sends
+  `death_drop { x, y, items }` to the host, which validates it and calls
+  `net_spawn("death_orb.lua")`; the host (or an offline game) spawns them
+  directly. This way the orbs survive if the dead player reloads the scene
+  within the 30 s the orbs live, which a player-owned entity would not.
+- Orb (`prefabs/death_orb.lua`, `death_orb.lua`): colour follows the mineral
+  (iron blue `orb-protection`, gunpowder red `orb-weapon`, plasma green
+  `orb-propulsion`), a pulsing 4-frame animation. State: `item`, `quantity`,
+  `pos`, `vel`, `world`. It appears at a random point within `radius` (300) of
+  the death, pushed outwards at `push` speed that damps to 0 over `push_time`.
+  It uses the same magnet and `loot_net.grant` / `pickup_request` flow as
+  `pickup.lua`, so only one player gets each orb. Its owner despawns it after
+  `ttl` (30 s); a late joiner or a new host after a migration counts a fresh 30 s.
+- Spawn (`map_spawn.lua`, wrapped in `pcall`): once per scene load, after
+  `SPAWN.wait` s (so the snapshot ships are known), the local ship is moved to
+  a random point `portal_min..portal_max` px from a stable portal end (not
+  collapsing, not under a wandering storm). The point must be in a biome of
+  `SPAWN.biomes`, pass `portals.valid_point`, be outside the storm band and the
+  wandering storms, at least `player_clear` from every live ship in
+  `player_ships` and at least `top_clear` from the top players. After `tries`
+  attempts it drops the top rule, then the ship rule, and finally uses
+  `PLAYER_SPAWN` (each fallback is printed).
+- Ranking hook for #29: the optional global `map_ranking_top()` returns a list
+  of `{ x, y }` (the first `SPAWN.top_n` players). While it is `nil` the rule is
+  skipped.
+- Shield: at spawn `set_shield(player, SPAWN_SHIELD.time)` (5 s) makes
+  `applyDamage` ignore the ship; the border, wandering and contraction storms
+  also skip their `set_health` while `get_shield` is above 0. Firing cancels it
+  at once (`player_shooting.lua` calls `set_shield(owner, 0)` and the global
+  `spawn_shield_cancelled()`). The owner sends `spawn_shield { netId, t }` (it
+  retries each frame until the ship has a netId) and every client draws the
+  `spawn-shield` sheet over the ship on the `front` layer; `t = 0` removes it.
+  Receivers only accept it from the ship's owner.
+- Re-entry: when the ship dies, `game_director.lua` shows `SENAL PERDIDA`
+  instead of GAME OVER in this scene; ENTER reloads the scene (fresh ship, no
+  upgrades) and goes through the spawn rules again.
 
 ## Known gap
 

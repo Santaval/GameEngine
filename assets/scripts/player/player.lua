@@ -129,6 +129,23 @@ end
 function on_death()
   print("[player] nave destruida")
 
+  -- Aval Cup (#28): suelta parte de los minerales en orbes. El global solo lo
+  -- define map_death_drop.lua; en las demas escenas no hace nada. Se lee antes
+  -- de limpiar player_entity y dentro de pcall: un error aqui no debe impedir
+  -- el game over
+  if death_drop_request ~= nil then
+    local ok, err = pcall(function()
+      local cx, cy = get_collider_center(this)
+      local items = {}
+      for i = 1, get_inventory_count(this) do
+        local name, quantity = get_inventory_at(this, i)
+        if quantity > 0 then items[#items + 1] = { name = name, quantity = quantity } end
+      end
+      death_drop_request(cx, cy, items)
+    end)
+    if not ok then print("[player] error al soltar orbes: " .. tostring(err)) end
+  end
+
   -- Sin jugador: los scripts que lo siguen (spawner, iman, enemigos) ya
   -- chequean nil, y asi no leen un id que el registry va a reciclar
   player_entity = nil

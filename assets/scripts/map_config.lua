@@ -235,9 +235,64 @@ config.SUPPLY_CRATE = {
   open_fps = 10,
 }
 
--- Jugadores
-config.DEATH_DROP_FRACTION = 0.6
-config.SPAWN_SHIELD = 5
+-- Orbes de muerte (#28, ver map_death_drop.lua, death_orb.lua y docs/aval-cup.md):
+-- al morir una nave suelta fraction de cada mineral de su bodega en orbes que
+-- crea el host. Cada color sigue el de su mineral (hierro azul, polvora roja,
+-- plasma verde)
+--   fraction: parte de cada mineral que cae (se redondea hacia abajo)
+--   radius: los orbes aparecen al azar a esta distancia (px) del punto de muerte
+--   ttl: segundos de vida del orbe; pasado ese tiempo su duenio lo borra
+--   push / push_time: velocidad (px/s) min..max con que salen hacia afuera y
+--     segundos que tarda en frenarse hasta quedar quieto
+--   per_orb / max_orbs: unidades de mineral por orbe y tope de orbes por mineral
+--     (el resto se reparte entre ellos)
+--   size / frame_w / frame_h / frames / fps: ancho (px de mundo) con que se
+--     dibuja el frame de la hoja (orb_*.png, 2172x724, 4 frames de 543x724 en
+--     fila), tamano del frame en la hoja, cantidad y velocidad del pulso
+--   radius_px: radio del collider en px del frame (el motor lo escala)
+--   magnet_radius: distancia (px) a la que el orbe vuela hacia la nave
+--   orbs: assetId del orbe de cada mineral
+config.DEATH_DROP = {
+  fraction = 0.6,
+  radius = 300, ttl = 30,
+  push = { min = 40, max = 90 }, push_time = 1.0,
+  per_orb = 5, max_orbs = 8,
+  size = 48, frame_w = 543, frame_h = 724, frames = 4, fps = 8,
+  radius_px = 150,
+  magnet_radius = 200,
+  orbs = { iron = "orb-protection", gunpowder = "orb-weapon", plasma = "orb-propulsion" },
+}
+
+-- Aparicion de la nave (#28, ver map_spawn.lua y docs/aval-cup.md): al cargar la
+-- escena (y al reiniciar tras morir) la nave sale en un punto valido con un
+-- portal estable a la vista
+--   biomes: sectores donde puede salir
+--   portal_min / portal_max: distancia (px) al extremo de portal estable elegido
+--   player_clear: distancia minima (px) a cualquier otra nave viva
+--   top_clear / top_n: distancia minima (px) a los top_n primeros del ranking
+--     (gancho map_ranking_top(), lo define #29; sin el, la regla no se aplica)
+--   tries: intentos antes de relajar las reglas (primero el top, luego las
+--     naves y al final PLAYER_SPAWN)
+--   wait: segundos de espera para que lleguen las naves del snapshot
+config.SPAWN = {
+  biomes = { "deep_void", "debris" },
+  portal_min = 350, portal_max = 900,
+  player_clear = 2 * config.CHUNK_SIZE,
+  top_clear = 8000, top_n = 3,
+  tries = 60,
+  wait = 1.0,
+}
+
+-- Escudo de aparicion (#28): la nave no recibe dano durante `time` s o hasta que
+-- dispara. Se dibuja spawn_shield.png (2172x724, 6 frames de 362 de ancho en
+-- fila; el anillo ocupa la franja src_y / src_h) sobre la nave
+--   size: lado (px de mundo) del dibujo; fps / alpha: animacion y opacidad
+config.SPAWN_SHIELD = {
+  time = 5,
+  size = 150,
+  sheet = { frame_w = 362, count = 6, src_y = 162, src_h = 362 },
+  fps = 10, alpha = 200,
+}
 
 -- Biomas: cada sector tiene uno (ver map_biomes.lua). weight es la
 -- probabilidad relativa de salir. Dos sectores contiguos (vecinos ortogonales,
