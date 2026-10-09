@@ -42,6 +42,21 @@ inline sol::table netPeers(sol::this_state s) {
   return peers;
 }
 
+inline sol::table netRoomSettings(sol::this_state s) {
+  sol::state_view lua(s);
+  sol::table settings = lua.create_table();
+  settings["pvp"] = Game::getInstance().getDamageSync()->pvpEnabled();
+  return settings;
+}
+
+// Solo el host puede cambiar los ajustes de la sala
+inline bool netSetPvp(bool enabled) {
+  auto& net = *Game::getInstance().getNetClient();
+  if (!net.isOnline() || !net.isHost()) return false;
+  Game::getInstance().getDamageSync()->setPvp(enabled);
+  return true;
+}
+
 inline bool netSend(const std::string& type, sol::object data, sol::optional<std::string> to) {
   return Game::getInstance().getNetworkScripting()->send(type, luaToJson(data), to.value_or(""));
 }
@@ -129,6 +144,8 @@ inline void registerNetworkBindings(sol::state& lua) {
   lua.set_function("net_my_id", netMyId);
   lua.set_function("net_is_host", netIsHost);
   lua.set_function("net_peers", netPeers);
+  lua.set_function("net_room_settings", netRoomSettings);
+  lua.set_function("net_set_pvp", netSetPvp);
   lua.set_function("net_send", netSend);
   lua.set_function("net_on", netOn);
   lua.set_function("net_spawn", netSpawn);

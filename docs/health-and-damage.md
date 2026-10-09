@@ -391,6 +391,12 @@ damage = { amount = 20, destroy_on_hit = true, player = true } -- a ship's bulle
 From Lua: `add_health(e, max, invulnerability?, player?)` and
 `add_damage(e, amount, destroy_on_hit?, player?)`.
 
+The host toggles PvP with P in the solar system scene (`net_set_pvp`), and the
+HUD shows `PvP ON` / `PvP OFF` at the top right while online. Clients only
+accept `room_settings` (and `snapshot.settings`) when `from` is the current
+host, and the value resets to off on disconnect. Read it with
+`net_room_settings().pvp`.
+
 ---
 
 ## Where the code lives

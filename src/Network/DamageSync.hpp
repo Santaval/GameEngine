@@ -115,7 +115,7 @@ class DamageSync {
       this->net.unregister(*entity);
     }
 
-    // Se acepta de cualquiera: el relay ya filtra quien puede mandarlo
+    // El host se valida en Game (el relay no filtra roles ni DamageSync conoce al host)
     void onRoomSettings(const nlohmann::json& msg) {
       this->readPvp(msg);
     }
@@ -126,6 +126,17 @@ class DamageSync {
     }
 
     bool pvpEnabled() const { return this->pvp; }
+
+    // Solo el host llama a esto (se valida fuera). El relay no nos devuelve el
+    // mensaje, asi que el valor local se fija aqui.
+    void setPvp(bool value) {
+      this->pvp = value;
+      if (!this->send || !this->online || !this->online()) return;
+      this->send({{"t", "room_settings"}, {"pvp", value}});
+    }
+
+    // Sesion nueva: vuelve al valor cooperativo
+    void resetSettings() { this->pvp = false; }
 
     // Con pvp apagado, un arma de jugador no lastima a la nave de otro jugador.
     // Se necesitan las marcas explicitas porque el host es jugador y a la vez

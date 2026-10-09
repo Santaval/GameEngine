@@ -144,9 +144,12 @@ void Game::setup() {
         this->damageSync->onDeath(msg);
     });
     this->netClient->subscribe("room_settings", [this](const nlohmann::json& msg) {
+        // Solo el host manda los ajustes de la sala
+        if (msg.value("from", std::string()) != this->netClient->getHostId()) return;
         this->damageSync->onRoomSettings(msg);
     });
     this->netClient->subscribe("snapshot", [this](const nlohmann::json& msg) {
+        if (msg.value("from", std::string()) != this->netClient->getHostId()) return;
         this->damageSync->onSnapshot(msg);
     });
     // Reconexion: el servidor nos olvido y el resto tambien a nosotros
@@ -193,6 +196,7 @@ bool Game::connectToServer() {
 
 void Game::disconnectFromServer() {
     this->netClient->disconnect();
+    this->damageSync->resetSettings();
     this->snapshotRequested = false;
 }
 

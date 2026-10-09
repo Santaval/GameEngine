@@ -6,6 +6,7 @@
 -- =====================================================================
 
 local solar = require("solar_system_config")
+local ui = require("ui_helpers")
 
 local MAP_SIZE = 220
 local MARGIN = 20
@@ -33,6 +34,7 @@ local CHAR_WIDTH = 10
 local LABEL_GAP = 16
 
 local belt_points = nil
+local toggle_pvp_pressed = ui.edge("toggle_pvp")
 
 local function color_for(planet)
   if planet.mineral == nil then return SUN_COLOR end
@@ -123,7 +125,32 @@ local function draw_labels(planets)
   end
 end
 
+-- Indicador de PvP arriba a la derecha (solo en linea); el host lo alterna con P
+local function draw_pvp()
+  -- Se llama siempre para mantener al dia el detector de flanco
+  local pressed = toggle_pvp_pressed()
+  if not net_is_online() then return end
+  local pvp = net_room_settings().pvp
+  if pressed and net_is_host() then
+    net_set_pvp(not pvp)
+    pvp = not pvp
+  end
+  local w = get_screen_size()
+  local text = pvp and "PvP ON" or "PvP OFF"
+  local x = w - MARGIN - #text * CHAR_WIDTH
+  if pvp then
+    draw_text(x, MARGIN, text, "default", 255, 70, 70)
+  else
+    draw_text(x, MARGIN, text, "default", 80, 220, 100)
+  end
+  if net_is_host() then
+    local hint = "P - toggle"
+    draw_text(w - MARGIN - #hint * CHAR_WIDTH, MARGIN + 20, hint, "default", 200, 200, 200)
+  end
+end
+
 function update()
+  draw_pvp()
   local planets = scene_planets
   if planets == nil then return end
   if belt_points == nil then belt_points = build_belt_points() end

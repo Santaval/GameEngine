@@ -164,6 +164,26 @@ static void testPvpSettings() {
   CHECK(!f.sync.pvpEnabled());
 }
 
+static void testSetPvp() {
+  Fixture f;
+  f.sync.setPvp(true);
+  CHECK(f.sync.pvpEnabled());
+  CHECK(f.sent.size() == 1);
+  CHECK(f.sent[0].value("t", "") == "room_settings");
+  CHECK(f.sent[0].value("pvp", false) == true);
+
+  // Sin red solo cambia el valor local
+  f.sent.clear();
+  f.online = false;
+  f.sync.setPvp(false);
+  CHECK(!f.sync.pvpEnabled());
+  CHECK(f.sent.empty());
+
+  f.sync.setPvp(true);
+  f.sync.resetSettings();
+  CHECK(!f.sync.pvpEnabled());
+}
+
 static void testBroadcast() {
   Fixture f;
   Entity mine = f.ship("me:1", "me");
@@ -212,6 +232,7 @@ int main() {
   testDeath();
   testBlocksPvp();
   testPvpSettings();
+  testSetPvp();
   testBroadcast();
   if (failures == 0) std::cout << "DamageSyncTest: all passed" << std::endl;
   return failures == 0 ? 0 : 1;

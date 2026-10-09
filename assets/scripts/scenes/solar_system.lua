@@ -252,6 +252,7 @@ scene = {
     {name = "upgrade_3", key = 51},
     {name = "confirm", key = 13},
     {name = "menu", key = 109},
+    {name = "toggle_pvp", key = 112},
   },
 
   mouse = {

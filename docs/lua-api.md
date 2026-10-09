@@ -453,6 +453,8 @@ The engine never connects by itself: the menu's Multiplayer option does it.
 | `net_my_id()` | Your player id | `""` |
 | `net_is_host()` | `true` if you are the host | `true` |
 | `net_peers()` | Array of the other players' ids | `{}` |
+| `net_room_settings()` | Table `{ pvp = bool }` with the room settings (default `pvp = false`) | `{ pvp = false }` |
+| `net_set_pvp(enabled)` | Host only: sets PvP and broadcasts it. Returns `true` if applied, `false` if you are not the online host | `false` |
 
 ### Messaging
 

@@ -134,7 +134,7 @@ the server. "Broadcast" excludes the sender.
 | --- | --- | --- | --- | --- |
 | `snapshot_request` | client -> all | joining player | (none) | A plain broadcast; the server does not treat it specially. The host answers with `snapshot`; other players answer with a direct `spawn` of their own ship. Sent by the engine after every scene load and reconnect. |
 | `snapshot` | client -> client | host | `entities[]`, `settings` | Direct (`to` = requester). Each entity is `{ netId, owner, script, state }`; `settings` is `{ pvp }`. |
-| `room_settings` | client -> all | host | `pvp` | Changes room-wide settings. |
+| `room_settings` | client -> all | host | `pvp` | Changes room-wide settings. The server does not enforce host-only; clients drop it unless `from` is the current host. |
 
 ### Custom
 
