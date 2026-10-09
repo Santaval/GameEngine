@@ -358,7 +358,8 @@ registers it with the message's `netId` and `owner`; `despawn` kills the
 matching entity; `fire` builds a replica bullet (see the `fire` row above).
 Lua tables are converted to JSON by `src/Network/LuaJson.hpp`.
 The fake bot answers `custom` `ping` with a direct `pong`, which allows a
-single-instance round-trip check.
+single-instance round-trip check. Server bots (`BOTS` in `server/README.md`) are
+ordinary peers as far as clients can tell, but they are never elected host.
 
 ### Network identity
 

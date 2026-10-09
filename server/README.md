@@ -42,12 +42,58 @@ The engine's WebSocket client is built without TLS, so it can only use
 - Or give the app an `http://` domain (not `https://`) so Coolify's proxy
   serves it on port 80 and connect with `--server ws://<domain>`.
 
+## Server bots
+
+The relay can host bots that play the Aval Cup for real (hunt, flee, collect
+death orbs, score in the ranking). They are in-process virtual clients: they
+join the room like any player (`peer_joined`, `spawn`, `state`, ...) but use
+no socket, heartbeat or rate limit, and their messages go through the same
+validation and routing as real ones. They are never host (the host must
+simulate the map), so with no humans there are no bots.
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `BOTS` | `0` | Fill the room up to this many ships: humans + bots = `BOTS`. `0` = no bots. |
+| `BOT_BRAIN` | `auto` | `auto` (Jev if `AI_GATEWAY_API_KEY` is set, else heuristic), `jev` or `heuristic`. |
+| `BOT_MODEL` | `typesafe-ai/jev` | Vercel AI Gateway decision model id. |
+| `BOT_DECISION_MS` | `1500` | Brain interval per bot (with +-20 % jitter). |
+| `BOT_DEBUG` | off | Log every bot decision and key event. |
+| `AI_GATEWAY_API_KEY` | - | Read by the AI SDK itself. Never commit it. |
+
+Fill-up: `BOTS=8` with 3 humans connected runs 5 bots; a human joining removes
+the newest bot, a human leaving adds one, and when the last human leaves all
+bots go. Bots are added or removed one at a time (250 ms apart).
+
+Two layers. The brain (slow, async) turns an observation (own hp, score, rank,
+nearest enemies and loot, incoming bullets) into a decision
+`{mode, targetId, aggression}` with `mode` one of `attack`, `hunt_leader`,
+`flee`, `collect`, `roam`. The controller (10 Hz, pure) carries it out:
+steering, lead aim, firing (only while pvp is on), orb pickup, plus reflexes
+that always run (dodge bullets, stay out of the storm band). Bots earn score
+by picking up orbs, send `rank_score`, drop their minerals on death
+(`death_drop`) and get a spawn shield, like the game client.
+
+- **Heuristic brain:** simple rules (flee when hurt, collect nearby loot,
+  attack a weaker enemy, hunt the leader, else roam). No network.
+- **Jev brain:** one `experimental_decide` request per decision with the
+  observation as `state`. It is skipped (bot roams) when nothing is near. On
+  an error or after 1.2 s it falls back to the heuristic; after 3 failures in
+  a row it stays on the heuristic for 60 s. Cost scales with
+  `BOTS / BOT_DECISION_MS`, so raise `BOT_DECISION_MS` to save money.
+
+Railway: set `BOTS` (and `AI_GATEWAY_API_KEY` for Jev) in the service
+variables. Without a key the bots keep playing with the heuristic.
+
+The code lives in `src/bots/` (`botLogic.ts` controller, `brain.ts`,
+`manager.ts`), so the Docker image includes it.
+
 ## Fake-client bot
 
 `npm run bot` connects a scripted player to the relay so a single game
 instance can be tested alone. It sends `spawn` (script
-`player/remote_player.lua`), `state` at 10 Hz while flying in a circle, and a
-`fire` every 1.5 s. It only ever reports its own HP (`damage` / `death`).
+`player/remote_player.lua`), `state` at 10 Hz and plays the same way as a
+server bot (same controller as above). It only ever reports its own HP
+(`damage` / `death`).
 It also echoes `custom` messages: a `custom{type:"ping", data}` from another
 player is answered with a direct `custom{type:"pong", data}` carrying the same
 data, which gives a single-instance round-trip check for `net_send` / `net_on`.
@@ -62,8 +108,7 @@ npm run bot -- --host --pvp --duration 30
 | `--name <name>` | Name in the spawn state (default `bot-<4 hex>`). |
 | `--host` | Answer host-only requests (`snapshot_request` with a `snapshot`) while it is the host. Warns if it is not. A bot that is not answering as host still re-sends its ship `spawn` directly to the requester. |
 | `--pvp` | Broadcast `room_settings{pvp:true}` while it is the host, and take damage from player bullets. |
-| `--radius`, `--cx`, `--cy` | Circle radius (default 300) and center (default 10000, 10000: the player spawn in `scenes/aval_cup.lua`), in world pixels. |
-| `--fire-interval <sec>` | Seconds between shots (default 1.5). |
+| `--brain jev\|heuristic` | Strategy brain (default `heuristic`). `jev` needs `AI_GATEWAY_API_KEY`; `--model` overrides the model id. |
 | `--duration <sec>` | Exit automatically after this many seconds. |
 
-The bot logic lives in `tools/botLogic.ts` (pure, tested in `test/bot.test.ts`).
+The bot logic lives in `src/bots/botLogic.ts` (pure, tested in `test/bot.test.ts`).

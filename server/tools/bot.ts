@@ -1,27 +1,29 @@
 /**
  * Fake player for testing a game instance alone:
- *   npm run bot -- --host --pvp --duration 30
+ *   npm run bot -- --host --pvp --duration 30 [--brain jev|heuristic]
  */
 import { randomBytes } from "node:crypto";
 import { pathToFileURL } from "node:url";
 import { parseArgs } from "node:util";
 import WebSocket from "ws";
 import { PROTOCOL_VERSION } from "../src/protocol.js";
-import { Bot } from "./botLogic.js";
+import { Bot } from "../src/bots/botLogic.js";
+import { HeuristicBrain, JevBrain, type Brain } from "../src/bots/brain.js";
+import { BotDriver } from "../src/bots/manager.js";
 
 export interface RunBotOptions {
   name: string;
   host: boolean;
   pvp: boolean;
-  cx?: number;
-  cy?: number;
-  radius?: number;
-  fireIntervalSec?: number;
+  /** Strategy brain (default heuristic). */
+  brain?: Brain;
+  decisionMs?: number;
   log?: (line: string) => void;
 }
 
 export interface RunningBot {
   bot: Bot;
+  driver: BotDriver;
   ws: WebSocket;
   /** Resolves when the socket is closed. */
   closed: Promise<void>;
@@ -32,13 +34,18 @@ export interface RunningBot {
 export function runBot(url: string, opts: RunBotOptions): RunningBot {
   const ws = new WebSocket(url);
   const bot = new Bot({
-    ...opts,
+    name: opts.name,
+    host: opts.host,
+    pvp: opts.pvp,
+    log: opts.log,
     send: (m) => {
       if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(m));
     },
     now: () => Date.now(),
   });
+  const driver = new BotDriver(bot, opts.brain ?? new HeuristicBrain(), opts.decisionMs ?? 1500);
   let timer: NodeJS.Timeout | undefined;
+  let last = Date.now();
   const closed = new Promise<void>((resolve) => ws.once("close", () => resolve()));
 
   ws.on("open", () => {
@@ -51,7 +58,11 @@ export function runBot(url: string, opts: RunBotOptions): RunningBot {
         version: PROTOCOL_VERSION,
       }),
     );
-    timer = setInterval(() => bot.tick(0.1), 100);
+    timer = setInterval(() => {
+      const now = Date.now();
+      driver.tick(Math.min(0.25, (now - last) / 1000), now);
+      last = now;
+    }, 100);
   });
   ws.on("message", (data, isBinary) => {
     if (isBinary) return;
@@ -61,10 +72,14 @@ export function runBot(url: string, opts: RunBotOptions): RunningBot {
       /* ignore malformed frames */
     }
   });
-  ws.on("close", () => clearInterval(timer));
+  ws.on("close", () => {
+    clearInterval(timer);
+    driver.stop();
+  });
 
   return {
     bot,
+    driver,
     ws,
     closed,
     stop() {
@@ -81,10 +96,8 @@ function main(): void {
       name: { type: "string" },
       host: { type: "boolean", default: false },
       pvp: { type: "boolean", default: false },
-      radius: { type: "string" },
-      cx: { type: "string" },
-      cy: { type: "string" },
-      "fire-interval": { type: "string" },
+      brain: { type: "string", default: "heuristic" },
+      model: { type: "string" },
       duration: { type: "string" },
     },
   });
@@ -105,10 +118,10 @@ function main(): void {
     name,
     host: values.host,
     pvp: values.pvp,
-    radius: num(values.radius),
-    cx: num(values.cx),
-    cy: num(values.cy),
-    fireIntervalSec: num(values["fire-interval"]),
+    brain:
+      values.brain === "jev"
+        ? new JevBrain({ model: values.model ?? "typesafe-ai/jev", log: (e, f) => log(`${e} ${JSON.stringify(f)}`) })
+        : new HeuristicBrain(),
     log,
   });
   let opened = false;

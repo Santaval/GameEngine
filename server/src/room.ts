@@ -5,13 +5,25 @@ export interface RoomChange {
   hostChanged: PlayerId | null;
 }
 
-/** Membership and host election. Host = earliest-joined member still present. */
+/**
+ * Membership and host election. Host = earliest-joined eligible member still
+ * present (server bots are not eligible: the host must simulate the map).
+ */
 export class Room<C = unknown> {
   readonly clients = new Map<PlayerId, C>();
 
+  constructor(private readonly isEligibleHost: (c: C) => boolean = () => true) {}
+
   get hostId(): PlayerId | null {
-    for (const id of this.clients.keys()) return id;
+    for (const [id, c] of this.clients) if (this.isEligibleHost(c)) return id;
     return null;
+  }
+
+  /** Members eligible to be host (humans). */
+  get humanCount(): number {
+    let n = 0;
+    for (const c of this.clients.values()) if (this.isEligibleHost(c)) n++;
+    return n;
   }
 
   has(id: PlayerId): boolean {

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import WebSocket from "ws";
 import { validateClientMessage, validateMessage } from "../src/protocol.js";
-import { Bot, MAX_HP, SHIP_SCRIPT, type Outgoing } from "../tools/botLogic.js";
+import { Bot, MAX_HP, SHIP_SCRIPT, STORM_BAND, WORLD_SIZE, type Incoming, type Outgoing } from "../src/bots/botLogic.js";
 import { TestClient, msg, useServer, type Msg } from "./helpers.js";
 
 const env = useServer();
@@ -68,7 +68,7 @@ function fireAt(bot: Bot, from: string, id: number, dmg: number): Msg {
 }
 
 describe("fake-client bot", () => {
-  it("spawns, flies in a circle and fires, with only valid messages", async () => {
+  it("spawns with a shield, moves and sends only valid messages", async () => {
     const h = await startBot();
     const obs = await connectObserver();
     const all: Msg[] = [];
@@ -80,15 +80,13 @@ describe("fake-client bot", () => {
     expect(spawn.owner).toBe(h.bot.playerId);
     expect(spawn.state.name).toBe("test-bot");
     expect(spawn.state.hp).toBe(MAX_HP);
+    const shield = h.sent.find((m) => m.t === "custom" && m.type === "spawn_shield");
+    expect(shield?.data).toEqual({ netId: spawn.netId, t: 5 });
 
-    h.tick(20); // 2 s of sim time: at least one fire (1.5 s interval)
+    h.tick(20); // 2 s of sim time
     const states = await collect(obs.client, "state", 20);
-    const xs = states.map((s) => s.pos.x);
-    expect(new Set(xs).size).toBeGreaterThan(10);
+    expect(new Set(states.map((s) => s.pos.x)).size).toBeGreaterThan(10);
     for (const s of states) expect(s.netId).toBe(spawn.netId);
-    const fire = await obs.client.next("fire");
-    expect(fire.shooterNetId).toBe(spawn.netId);
-    expect(fire.dmg).toBeGreaterThan(0);
 
     // Seq is strictly increasing and everything validates.
     for (let i = 1; i < h.sent.length; i++) expect(h.sent[i].seq).toBeGreaterThan(h.sent[i - 1].seq);
@@ -97,18 +95,9 @@ describe("fake-client bot", () => {
     h.ws.terminate();
   });
 
-  it("despawns its bullets after their lifetime", async () => {
-    const h = await startBot();
-    const obs = await connectObserver();
-    h.tick(16); // 1.6 s: first bullet fired
-    const fire = await obs.client.next("fire");
-    h.tick(20); // +2 s: bullet expires
-    expect((await obs.client.next("despawn")).netId).toBe(fire.bulletNetId);
-    h.ws.terminate();
-  });
-
   it("announces pvp, takes damage with pvp on and dies at 0 hp", async () => {
     const h = await startBot({ host: true, pvp: true });
+    h.bot.shield = 0;
     const obs = await connectObserver();
     await obs.client.next("spawn");
     expect(h.sent.some((m) => m.t === "room_settings" && m.pvp === true)).toBe(true);
@@ -135,6 +124,7 @@ describe("fake-client bot", () => {
 
   it("respawns with full hp and a new ship id after dying", async () => {
     const h = await startBot({ host: true, pvp: true });
+    h.bot.shield = 0;
     const obs = await connectObserver();
     const first = await obs.client.next("spawn");
     obs.client.send(fireAt(h.bot, obs.playerId, 10, 500));
@@ -152,6 +142,7 @@ describe("fake-client bot", () => {
 
   it("ignores player bullets when pvp is off", async () => {
     const h = await startBot({ host: true, pvp: false });
+    h.bot.shield = 0;
     const obs = await connectObserver();
     await obs.client.next("spawn");
     obs.client.send(fireAt(h.bot, obs.playerId, 10, 40));
@@ -219,5 +210,196 @@ describe("fake-client bot", () => {
     expect(pong.data).toEqual({ n: 1 });
     expect(pong.from).toBe(h.bot.playerId);
     h.ws.terminate();
+  });
+});
+
+// ---- controller unit tests (no sockets) ------------------------------------
+
+interface Unit {
+  bot: Bot;
+  sent: Outgoing[];
+  of(t: string, type?: string): Outgoing[];
+  tick(n?: number, dt?: number): void;
+}
+
+/** A bot welcomed into a room whose host is "host1", with a fixed rng. */
+function unitBot(opts: { pvp?: boolean } = {}): Unit {
+  const sent: Outgoing[] = [];
+  const bot = new Bot({
+    name: "u",
+    host: false,
+    pvp: false,
+    now: () => 1,
+    rng: () => 0.5,
+    send: (m) => sent.push(m),
+  });
+  bot.onMessage({ t: "welcome", playerId: "me", hostId: "host1", peers: ["host1"] });
+  if (opts.pvp) bot.onMessage({ t: "room_settings", pvp: true });
+  bot.shield = 0;
+  return {
+    bot,
+    sent,
+    of: (t, type) => sent.filter((m) => m.t === t && (type === undefined || m.type === type)),
+    tick(n = 1, dt = 0.1) {
+      for (let i = 0; i < n; i++) bot.tick(dt);
+    },
+  };
+}
+
+function enemySpawn(owner: string, x: number, y: number, vx = 0, vy = 0): Incoming {
+  return {
+    t: "spawn",
+    from: owner,
+    netId: `${owner}:1`,
+    owner,
+    script: SHIP_SCRIPT,
+    state: { pos: { x, y }, vel: { x: vx, y: vy }, rot: 0, acc: { x: 0, y: 0 }, hp: 100, name: owner },
+  };
+}
+
+function lootSpawn(id: number, x: number, y: number, quantity = 5): Incoming {
+  return {
+    t: "spawn",
+    from: "host1",
+    netId: `host1:${id}`,
+    owner: "host1",
+    script: "death_orb.lua",
+    state: { pos: { x, y }, vel: { x: 0, y: 0 }, rot: 0, acc: { x: 0, y: 0 }, item: "iron", quantity },
+  };
+}
+
+describe("bot controller", () => {
+  it("steers back inside the storm band and takes storm damage while in it", () => {
+    const u = unitBot();
+    u.bot.pos = { x: 200, y: 10000 };
+    u.bot.vel = { x: -50, y: 0 };
+    u.tick(11); // just over 1 s inside the band
+    expect(u.of("damage").length).toBeGreaterThanOrEqual(1);
+    expect(u.of("damage")[0].amount).toBe(4);
+    u.tick(200);
+    expect(u.bot.pos.x).toBeGreaterThan(STORM_BAND);
+    expect(u.bot.pos.x).toBeLessThan(WORLD_SIZE - STORM_BAND);
+  });
+
+  it("dodges a bullet on a collision course (pvp on)", () => {
+    const u = unitBot({ pvp: true });
+    u.bot.pos = { x: 10000, y: 10000 };
+    u.bot.vel = { x: 0, y: 0 };
+    u.bot.onMessage({
+      t: "fire",
+      from: "e1",
+      bulletNetId: "e1:5",
+      shooterNetId: "e1:1",
+      pos: { x: 9700, y: 10000 },
+      vel: { x: 1000, y: 0 },
+      dmg: 20,
+    });
+    u.tick(1);
+    expect(Math.abs(u.bot.vel.y)).toBeGreaterThan(5);
+  });
+
+  it("collect: sends pickup_request to the loot owner when in range", () => {
+    const u = unitBot();
+    u.bot.pos = { x: 10000, y: 10000 };
+    u.bot.onMessage(lootSpawn(7, 10040, 10000));
+    u.bot.setDecision({ mode: "collect", targetId: null, aggression: 0.5 });
+    u.tick(3);
+    const req = u.of("pickup_request");
+    expect(req).toHaveLength(1);
+    expect(req[0].lootNetId).toBe("host1:7");
+    expect(req[0].to).toBe("host1");
+    expect(validateClientMessage(req[0])).toBe(true);
+  });
+
+  it("loot_taken for this bot adds to the score and sends rank_score", () => {
+    const u = unitBot();
+    u.bot.onMessage(lootSpawn(7, 100, 100));
+    u.bot.onMessage({
+      t: "loot_taken",
+      from: "host1",
+      lootNetId: "host1:7",
+      by: "me",
+      items: [{ name: "iron", quantity: 5 }],
+    });
+    expect(u.bot.score).toBe(5);
+    expect(u.bot.loot.size).toBe(0);
+    u.tick(6);
+    const scores = u.of("custom", "rank_score");
+    expect(scores.some((m) => (m.data as { total: number }).total === 5)).toBe(true);
+    for (const m of scores) expect(validateClientMessage(m)).toBe(true);
+  });
+
+  it("ignores loot_taken for somebody else", () => {
+    const u = unitBot();
+    u.bot.onMessage({ t: "loot_taken", from: "host1", lootNetId: "x:1", by: "other", items: [{ name: "iron", quantity: 5 }] });
+    expect(u.bot.score).toBe(0);
+  });
+
+  it("on death sends death_drop to the host, then reports score 0", () => {
+    const u = unitBot({ pvp: true });
+    u.bot.onMessage({ t: "loot_taken", from: "host1", lootNetId: "x:1", by: "me", items: [{ name: "iron", quantity: 10 }] });
+    u.bot.onMessage({
+      t: "fire",
+      from: "e1",
+      bulletNetId: "e1:5",
+      shooterNetId: "e1:1",
+      pos: { ...u.bot.pos },
+      vel: { x: 0, y: 0 },
+      dmg: 500,
+    });
+    u.tick(1);
+    expect(u.bot.dead).toBe(true);
+    const drop = u.of("custom", "death_drop");
+    expect(drop).toHaveLength(1);
+    expect(drop[0].to).toBe("host1");
+    expect((drop[0].data as { items: unknown[] }).items).toEqual([{ name: "iron", quantity: 10 }]);
+    expect(validateClientMessage(drop[0])).toBe(true);
+    expect(u.bot.score).toBe(0);
+    const last = u.of("custom", "rank_score").pop();
+    expect((last?.data as { total: number }).total).toBe(0);
+  });
+
+  it("does not fire at humans when pvp is off, fires when it is on", () => {
+    const off = unitBot({ pvp: false });
+    off.bot.pos = { x: 10000, y: 10000 };
+    off.bot.onMessage(enemySpawn("e1", 10500, 10000));
+    off.bot.setDecision({ mode: "attack", targetId: "e1", aggression: 0.5 });
+    off.tick(30);
+    expect(off.of("fire")).toHaveLength(0);
+
+    const on = unitBot({ pvp: true });
+    on.bot.pos = { x: 10000, y: 10000 };
+    on.bot.onMessage(enemySpawn("e1", 10500, 10000));
+    on.bot.setDecision({ mode: "attack", targetId: "e1", aggression: 0.5 });
+    on.tick(30);
+    const fires = on.of("fire");
+    expect(fires.length).toBeGreaterThan(2);
+    expect(validateClientMessage(fires[0])).toBe(true);
+    expect((fires[0].vel as { x: number }).x).toBeGreaterThan(900);
+  });
+
+  it("firing cancels the spawn shield and announces it", () => {
+    const u = unitBot({ pvp: true });
+    u.bot.shield = 5;
+    u.bot.pos = { x: 10000, y: 10000 };
+    u.bot.onMessage(enemySpawn("e1", 10500, 10000));
+    u.bot.setDecision({ mode: "attack", targetId: "e1", aggression: 0.5 });
+    u.tick(2);
+    expect(u.bot.shield).toBe(0);
+    expect(u.of("custom", "spawn_shield").some((m) => (m.data as { t: number }).t === 0)).toBe(true);
+  });
+
+  it("observe() ranks players and lists nearest enemies and loot", () => {
+    const u = unitBot({ pvp: true });
+    u.bot.pos = { x: 10000, y: 10000 };
+    u.bot.onMessage(enemySpawn("e1", 10500, 10000));
+    u.bot.onMessage(enemySpawn("e2", 12000, 10000));
+    u.bot.onMessage({ t: "custom", from: "e2", type: "rank_score", data: { total: 40 } });
+    u.bot.onMessage(lootSpawn(7, 10100, 10000, 3));
+    const o = u.bot.observe();
+    expect(o.enemies.map((e) => e.id)).toEqual(["e1", "e2"]);
+    expect(o.enemies[1].isLeader).toBe(true);
+    expect(o.self.rank).toBe(2);
+    expect(o.loot).toEqual([{ distance: 100, quantity: 3 }]);
   });
 });
