@@ -120,6 +120,7 @@ local DIRECTORS = {
   "./assets/scripts/map_reactor_world.lua",
   "./assets/scripts/solar_hud.lua",
   "./assets/scripts/map_visuals.lua",
+  "./assets/scripts/map_storm_world.lua",
   "./assets/scripts/game_director.lua",
 }
 for _, path in ipairs(DIRECTORS) do
@@ -157,6 +158,8 @@ scene = {
     {assetId="reactor-hull-03", filePath="./assets/sprites/reactor/reactor_hull_03.png"},
     {assetId="reactor-hull-04", filePath="./assets/sprites/reactor/reactor_hull_04.png"},
     {assetId="reactor-ring", filePath="./assets/sprites/reactor/reactor_ring.png"},
+    {assetId="storm-tile", filePath="./assets/sprites/storm/storm_tile.png"},
+    {assetId="storm-edge", filePath="./assets/sprites/storm/storm_edge.png"},
     {assetId="reactor-pulse", filePath="./assets/sprites/vfx/reactor_pulse.png"},
   },
 

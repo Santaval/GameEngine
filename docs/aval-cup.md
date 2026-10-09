@@ -227,6 +227,7 @@ collisions.
 | `SECTORS`, `SECTOR_SIZE` | 5, 4000 | Sector grid |
 | `CHUNKS_PER_SECTOR`, `CHUNK_SIZE` | 2, 2000 | Chunk grid |
 | `STORM_BAND` | 500 | Edge strip consumed by the storm (no content) |
+| `STORM` | table | Border storm: `damage` 4, `tick` 1 s, `tile_size` 250, sprite frames, `edge_height` 90, `edge_overlap` 0.5, `fps` 6, `alpha`, `tint_alpha` |
 | `UPDATE_RADIUS_CHUNKS` | 2 | Chunks around the player that are simulated |
 | `STABLE_PORTAL_PAIRS`, `NEXUS_COUNT` | 12, 1 | Portals (not used yet) |
 | `PORTAL_CLEAR_RADIUS` | 600 | Portals (not used yet) |
@@ -360,6 +361,26 @@ instead of the timer.
   in/out over `vignette_fade` seconds. `local_in_nebula` is a global flag.
 - **Minimap**: `solar_hud.lua` draws other players as red dots, except those
   inside a nebula cloud; the local ship is always shown.
+
+## Storm
+
+The map edge is a permanent Storm band of `STORM_BAND` (500 px) on every side.
+There is no global Death Zone: the only circle in the code, `scene_bounds`, just
+culls fragments that leave the world.
+
+- Inside the band (or outside the world) the local ship takes `STORM.damage`
+  (4) HP every `STORM.tick` (1 s). The first hit lands one tick after entering;
+  leaving resets the timer. Damage uses `set_health`, so it is owner-only.
+- Visuals: animated `storm-tile` fill on the back layer plus `storm-edge` strips
+  along the inner rectangle `[STORM_BAND, WORLD_SIZE - STORM_BAND]^2`, ragged
+  side facing the safe area. While inside, a red tint and a "TORMENTA" warning
+  are shown, and the global `local_in_storm` is set.
+- Code: `map_storm_world.lua` (director) uses the shared, stateless
+  `map_storm.lua` so Wandering Storms (#21) and Storm Contraction (#25) can reuse it:
+  `in_border(x, y)`, `new_damage()`, `tick_damage(state, entity, inside, dt)`,
+  `frame(clock)`, `src(frame_cfg, i)`, `draw_fill(camX, camY, sw, sh, frame, inside_fn)`,
+  `draw_edge_segment(x1, y1, x2, y2, inward_angle, camX, camY, sw, sh, frame)`,
+  `draw_tint(w, h, alpha)`.
 
 ## Known gap
 

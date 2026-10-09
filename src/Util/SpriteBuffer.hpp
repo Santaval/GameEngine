@@ -15,6 +15,10 @@ struct SpriteCommand {
   int h;
   Uint8 alpha;
   bool front;
+  // Rect fuente opcional (px de la textura) y giro en grados (horario, como SDL)
+  bool hasSrc = false;
+  SDL_Rect src = { 0, 0, 0, 0 };
+  double angle = 0.0;
 };
 
 // Buffer de modo inmediato: los scripts de Lua lo llenan durante update()
@@ -25,7 +29,12 @@ class SpriteBuffer {
 
   public:
     void push(const std::string& assetId, int x, int y, int w, int h, Uint8 alpha, bool front) {
-        this->commands.push_back({ assetId, x, y, w, h, alpha, front });
+        this->commands.push_back({ assetId, x, y, w, h, alpha, front, false, { 0, 0, 0, 0 }, 0.0 });
+    }
+
+    void push(const std::string& assetId, int x, int y, int w, int h, Uint8 alpha, bool front,
+      bool hasSrc, const SDL_Rect& src, double angle) {
+        this->commands.push_back({ assetId, x, y, w, h, alpha, front, hasSrc, src, angle });
     }
 
     void clear() { this->commands.clear(); }

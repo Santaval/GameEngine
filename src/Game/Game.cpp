@@ -297,7 +297,8 @@ void Game::drawSprites(bool front) {
         SDL_Rect dst = { cmd.x, cmd.y, cmd.w, cmd.h };
         SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND);
         SDL_SetTextureAlphaMod(texture, cmd.alpha);
-        SDL_RenderCopy(this->renderer, texture, nullptr, &dst);
+        SDL_RenderCopyEx(this->renderer, texture, cmd.hasSrc ? &cmd.src : nullptr, &dst, cmd.angle, nullptr,
+          SDL_FLIP_NONE);
         SDL_SetTextureAlphaMod(texture, 255);
     }
 }

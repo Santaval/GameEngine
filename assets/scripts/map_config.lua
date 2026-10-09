@@ -18,6 +18,24 @@ config.CHUNK_SIZE = 2000
 -- Franja del borde del mundo (px) que consume la tormenta: no hay contenido
 config.STORM_BAND = 500
 
+-- Tormenta del borde (ver map_storm.lua y docs/aval-cup.md)
+--   damage / tick: HP por golpe mientras se esta dentro y segundos entre golpes
+--   tile_size: px de mundo por tesela (STORM_BAND es multiplo)
+--   tile_frame / edge_frame: frames en la hoja (w, h, y de la fila, paso en x,
+--     cantidad); el borde tiene lo solido abajo y lo irregular arriba
+--   edge_height / edge_overlap: alto (px de mundo) de la tira de borde y la
+--     fraccion que asoma hacia la zona segura
+--   fps / alpha: animacion y opacidad; tint_alpha: tinte rojo de pantalla
+config.STORM = {
+  damage = 4, tick = 1.0,
+  tile_size = 250,
+  tile_frame = { w = 313, h = 313, y = 0, step = 313.5, count = 4 },
+  edge_frame = { w = 313, h = 178, y = 134, step = 313.5, count = 4 },
+  edge_height = 90, edge_overlap = 0.5,
+  fps = 6, alpha = 235,
+  tint_alpha = 60,
+}
+
 -- Solo se simulan y se dibujan los chunks a esta distancia (en chunks) del
 -- jugador local; el resto duerme (CullComponent, set_active_area)
 config.UPDATE_RADIUS_CHUNKS = 2
@@ -189,6 +207,8 @@ function config.validate()
     "map_config: SECTOR_SIZE * SECTORS debe ser WORLD_SIZE")
   assert(config.CHUNK_SIZE * config.CHUNKS_PER_SECTOR == config.SECTOR_SIZE,
     "map_config: CHUNK_SIZE * CHUNKS_PER_SECTOR debe ser SECTOR_SIZE")
+  assert(config.STORM_BAND % config.STORM.tile_size == 0,
+    "map_config: STORM_BAND debe ser multiplo de STORM.tile_size")
 end
 
 config.validate()
