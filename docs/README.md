@@ -27,14 +27,16 @@ make clean
 make clean-deps   # forces IXWebSocket to be rebuilt
 ```
 
-Needs `libsdl2-dev`, `libsdl2-image-dev`, `libsdl2-ttf-dev`, `zlib1g-dev` and a
+Needs `libsdl2-dev`, `libsdl2-image-dev`, `libsdl2-ttf-dev`, `zlib1g-dev`, `libssl-dev` and a
 Lua dev package (`liblua5.3-dev` or 5.4). GLM, sol2 and the Lua headers are
 vendored in `libs/`. IXWebSocket and nlohmann/json are not committed:
 `scripts/fetch-deps.sh` downloads pinned versions into `libs/` (needs `curl`),
-and IXWebSocket is compiled once into `libs/IXWebSocket/libixwebsocket.a`.
+and IXWebSocket is compiled once, with TLS via OpenSSL, into
+`libs/IXWebSocket/libixwebsocket-tls.a`.
 
 Multiplayer is opt-in: `./engine --server ws://host:7777` (or the `GAME_SERVER`
-environment variable). Without it the engine runs offline and prints nothing
+environment variable). Use `wss://` for servers behind HTTPS, e.g.
+`./engine --server wss://<app>.up.railway.app`. Without it the engine runs offline and prints nothing
 from the network layer. See [multiplayer-protocol.md](multiplayer-protocol.md).
 
 Paths in scene files are relative to the working directory, so run the binary

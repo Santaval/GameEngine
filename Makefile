@@ -52,13 +52,24 @@ CFLAGS += -DSOL_LUA_VERSION=$(SOL_LUA_VERSION)
 # Dependencias de red (IXWebSocket + nlohmann/json), descargadas por scripts/fetch-deps.sh
 DEPS_STAMP = libs/.deps-stamp
 IXWS_DIR   = libs/IXWebSocket
-IXWS_LIB   = $(IXWS_DIR)/libixwebsocket.a
-IXWS_OBJ   = $(IXWS_DIR)/build
+IXWS_LIB   = $(IXWS_DIR)/libixwebsocket-tls.a
+IXWS_OBJ   = $(IXWS_DIR)/build-tls
+
+# TLS (wss://) con OpenSSL. Los mismos defines van al motor y a la libreria para
+# que las clases de IXWebSocket tengan el mismo layout en ambos lados.
+OPENSSL_CFLAGS := $(shell pkg-config --cflags openssl 2>/dev/null)
+OPENSSL_LIBS   := $(shell pkg-config --libs openssl 2>/dev/null)
+ifeq ($(OPENSSL_LIBS),)
+    OPENSSL_CFLAGS := -I/usr/local/opt/openssl/include -I/opt/homebrew/opt/openssl/include
+    OPENSSL_LIBS   := -L/usr/local/opt/openssl/lib -L/opt/homebrew/opt/openssl/lib -lssl -lcrypto
+endif
+IXWS_DEFS = -DIXWEBSOCKET_USE_ZLIB -DIXWEBSOCKET_USE_TLS -DIXWEBSOCKET_USE_OPEN_SSL
+CFLAGS += $(IXWS_DEFS)
 
 # IMPORTANT: Put LUA_CFLAGS before ./libs/lua/ so Clang picks up Lua 5.4 headers
 # -isystem evita que los headers de terceros llenen la salida de -Wall -Wextra
 INC_PATH = $(LUA_CFLAGS) $(SDL_CFLAGS) -I"./libs/" -I"./libs/lua/" -isystem $(IXWS_DIR) -isystem ./libs/
-LFLAGS   = $(SDL_LIBS) $(LUA_LIBS) $(IXWS_LIB) -lz -lpthread
+LFLAGS   = $(SDL_LIBS) $(LUA_LIBS) $(IXWS_LIB) $(OPENSSL_LIBS) -lz -lpthread
 
 SRC = src/*.cpp \
       src/Game/*.cpp \
@@ -79,13 +90,13 @@ deps:
 $(DEPS_STAMP):
 	./scripts/fetch-deps.sh
 
-# IXWebSocket se compila una sola vez (sin TLS). El wildcard se evalua antes del
-# fetch, por eso se recorre el directorio con un bucle de shell.
+# IXWebSocket se compila una sola vez (con TLS via OpenSSL). El wildcard se evalua
+# antes del fetch, por eso se recorre el directorio con un bucle de shell.
 $(IXWS_LIB): $(DEPS_STAMP)
 	mkdir -p $(IXWS_OBJ)
 	for f in $(IXWS_DIR)/ixwebsocket/*.cpp; do \
-		case "$$(basename $$f)" in IXSocketOpenSSL.cpp|IXSocketMbedTLS.cpp|IXSocketAppleSSL.cpp) continue;; esac; \
-		$(CC) $(STD) -w -O2 -DIXWEBSOCKET_USE_ZLIB -I$(IXWS_DIR) -c $$f -o $(IXWS_OBJ)/$$(basename $$f .cpp).o || exit 1; \
+		case "$$(basename $$f)" in IXSocketMbedTLS.cpp|IXSocketAppleSSL.cpp) continue;; esac; \
+		$(CC) $(STD) -w -O2 $(IXWS_DEFS) $(OPENSSL_CFLAGS) -I$(IXWS_DIR) -c $$f -o $(IXWS_OBJ)/$$(basename $$f .cpp).o || exit 1; \
 	done
 	ar rcs $@ $(IXWS_OBJ)/*.o
 
@@ -111,4 +122,4 @@ clean:
 	rm -f engine tests/network_registry_test tests/net_sync_test tests/damage_sync_test tests/world_sync_test tests/lua_json_test tests/impact_damage_test
 
 clean-deps:
-	rm -rf $(IXWS_OBJ) $(IXWS_LIB)
+	rm -rf $(IXWS_OBJ) $(IXWS_LIB) $(IXWS_DIR)/build $(IXWS_DIR)/libixwebsocket.a
