@@ -13,7 +13,8 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  IMAGE: ghcr.io/${{ github.repository_owner }}/gameengine-relay
+  # Docker image names must be lowercase; repository_owner is "Santaval".
+  IMAGE: ghcr.io/santaval/gameengine-relay
 
 jobs:
   test:
