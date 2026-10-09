@@ -13,6 +13,8 @@ scene = {
     [0] =
     {name = "confirm", key = 13},
     {name = "quit", key = 113},
+    {name = "multiplayer", key = 109},
+    {name = "back", key = 8},
   },
 
   entities = {

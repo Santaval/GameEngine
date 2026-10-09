@@ -69,6 +69,8 @@ class Game {
         // Escena pedida desde Lua (load_scene); se carga al inicio del
         // proximo frame, nunca en medio de ScriptSystem::update
         std::string pendingScene;
+        // Escena cargada: distingue un reinicio (misma escena) de salir de ella
+        std::string currentScene;
 
         // Modulos de package.loaded que existen antes de cargar cualquier
         // escena (librerias de Lua). Todo lo demas se descarga al cambiar de
@@ -97,6 +99,9 @@ class Game {
      void destroy();
      void requestScene(const std::string& scenePath) { pendingScene = scenePath; }
      void setServerUrl(const std::string& url) { serverUrl = url; }
+     const std::string& getServerUrl() const { return serverUrl; }
+     bool connectToServer();
+     void disconnectFromServer();
      NetClient* getNetClient() const { return netClient.get(); }
      NetworkRegistry* getNetworkRegistry() const { return networkRegistry.get(); }
      NetworkScripting* getNetworkScripting() const { return networkScripting.get(); }

@@ -100,7 +100,31 @@ inline void setOwner(Entity e, const std::string& playerId) {
   e.getComponent<NetworkComponent>().ownerId = playerId;
 }
 
+// Devuelve false si no hay URL configurada (--server / GAME_SERVER)
+inline bool netConnect() {
+  return Game::getInstance().connectToServer();
+}
+
+inline void netDisconnect() {
+  Game::getInstance().disconnectFromServer();
+}
+
+// "offline" (sin conexion iniciada), "connecting" (iniciada pero sin welcome) u "online"
+inline std::string netStatus() {
+  auto& net = *Game::getInstance().getNetClient();
+  if (net.isOnline()) return "online";
+  return net.isStarted() ? "connecting" : "offline";
+}
+
+inline std::string netServerUrl() {
+  return Game::getInstance().getServerUrl();
+}
+
 inline void registerNetworkBindings(sol::state& lua) {
+  lua.set_function("net_connect", netConnect);
+  lua.set_function("net_disconnect", netDisconnect);
+  lua.set_function("net_status", netStatus);
+  lua.set_function("net_server_url", netServerUrl);
   lua.set_function("net_is_online", netIsOnline);
   lua.set_function("net_my_id", netMyId);
   lua.set_function("net_is_host", netIsHost);

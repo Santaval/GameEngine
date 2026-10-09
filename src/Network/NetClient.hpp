@@ -53,6 +53,7 @@ class NetClient {
         void disconnect();
         bool send(nlohmann::json msg);
         void poll();
+        bool isStarted() const { return started; }
         bool isOnline() const { return connected.load() && welcomed; }
         void subscribe(const std::string& type, Handler handler);
 

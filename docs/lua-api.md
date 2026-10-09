@@ -434,6 +434,17 @@ Multiplayer bindings (protocol: [multiplayer-protocol.md](multiplayer-protocol.m
 They are always safe to call: without `--server` (or while disconnected) each
 one returns the offline default below, so single-player scripts run unchanged.
 
+### Connection
+
+The engine never connects by itself: the menu's Multiplayer option does it.
+
+| Function | Description |
+| --- | --- |
+| `net_connect()` | Starts connecting to the configured server (`--server` / `GAME_SERVER`). Returns `false` if no URL is configured. The session is ready when `net_status()` is `"online"`. |
+| `net_disconnect()` | Closes the connection and clears the session (peers, ids, pending messages). Others get `peer_left`. A later `net_connect()` works again. |
+| `net_status()` | `"offline"` (no connection started), `"connecting"` (started, no `welcome` yet, or the link dropped and it is retrying) or `"online"`. |
+| `net_server_url()` | The configured server URL, or `""` if none. |
+
 ### Session
 
 | Function | Online | Offline |

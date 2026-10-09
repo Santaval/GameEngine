@@ -178,12 +178,22 @@ void Game::setup() {
         this->builtinModules.insert(entry.first.as<std::string>());
     }
 
-    if (!this->serverUrl.empty()) {
-        std::cout << "[Net] connecting to " << this->serverUrl << std::endl;
-        this->netClient->connect(this->serverUrl, "player");
-    }
-
     this->loadScene("./assets/scripts/scenes/menu.lua");
+}
+
+// La conexion solo la inicia el menu (opcion Multiplayer), nunca el arranque
+bool Game::connectToServer() {
+    if (this->serverUrl.empty()) {
+        return false;
+    }
+    std::cout << "[Net] connecting to " << this->serverUrl << std::endl;
+    this->netClient->connect(this->serverUrl, "player");
+    return true;
+}
+
+void Game::disconnectFromServer() {
+    this->netClient->disconnect();
+    this->snapshotRequested = false;
 }
 
 void Game::loadScene(const std::string& scenePath) {
@@ -191,8 +201,11 @@ void Game::loadScene(const std::string& scenePath) {
 
     // Primero se sueltan las entidades: sus ScriptComponent guardan
     // funciones de los scripts que se van a volver a ejecutar
-    // El host avisa que su mundo se descarta; sin esto los demas conservarian copias huerfanas
-    if (this->worldSync) this->worldSync->announceWorldReset();
+    // Reinicio (misma escena): el host avisa que su mundo se descarta; sin esto
+    // los demas conservarian copias huerfanas. Si sale a otra escena (menu) se
+    // desconecta y el mundo migra al siguiente host, asi que no se borra
+    if (this->worldSync && scenePath == this->currentScene) this->worldSync->announceWorldReset();
+    this->currentScene = scenePath;
     this->registry->clear();
     this->networkRegistry->clear();
     this->registry->getSystem<NetSyncSystem>().clear();

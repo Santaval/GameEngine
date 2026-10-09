@@ -220,7 +220,9 @@ logic lives in `WorldSync` (`src/Network/WorldSync.hpp`):
 - **`host_adopt`.** Idempotent safety net: accepted only when `from` is the
   current host; reassigns the world entities of `data.oldHostId` to `from`.
 - **`world_reset`.** `{t:"custom", type:"world_reset", data:{}}`, sent by the
-  host before it loads a scene (restart after game over). Accepted only from
+  host before it reloads the same scene (restart after game over). Going back
+  to the menu disconnects instead, so the world migrates to the next host and
+  no `world_reset` is sent. Accepted only from
   the host; every client removes the world entities that host owned, so no
   orphaned copies of the old world remain.
 - **Reconcile on `welcome`.** World entities created while connecting or
@@ -258,14 +260,25 @@ To test a single game instance, run a fake player next to it with
 
 ## Engine client
 
-The engine connects with `NetClient` (`src/Network/`), enabled by
-`./engine --server ws://localhost:7777` or `GAME_SERVER=ws://localhost:7777`.
-Without either, nothing is created on the network and the game runs offline.
+The engine connects with `NetClient` (`src/Network/`). The server URL is
+configured with `./engine --server ws://localhost:7777` or
+`GAME_SERVER=ws://localhost:7777`, but the engine does **not** connect at
+startup: the connection is made only when the player picks **Multiplayer** (M)
+in the main menu, which waits for `welcome` before loading the solar system
+scene (so a newcomer already knows whether it is the host). ENTER (single
+player) never touches the network, and without a URL the Multiplayer option
+shows a hint instead. Multiplayer only exists in the solar system scene.
+
+Returning to the main menu disconnects (`net_disconnect()`), so the other
+players receive `peer_left` and drop that ship. If the link drops during a
+game, `NetClient` keeps retrying and the director shows a "Connection to server
+lost" banner with `M - Main menu`; on reconnect the `welcome` and
+`snapshot_request` resync the world and the banner disappears.
 
 ```
 cd server && npm install && npm run dev      # relay
 cd server && npm run bot -- --host           # optional fake player
-./engine --server ws://localhost:7777
+./engine --server ws://localhost:7777        # then pick Multiplayer (M) in the menu
 ```
 
 On connect it sends `hello` (`name`, `version`) and logs `[Net] connected`,

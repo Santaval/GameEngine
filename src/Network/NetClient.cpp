@@ -100,6 +100,17 @@ void NetClient::disconnect() {
         this->ws.reset();
     }
     this->connected = false;
+
+    // Deja el cliente listo para un connect() nuevo
+    this->started = false;
+    this->welcomed = false;
+    this->downLogged = false;
+    this->myPlayerId.clear();
+    this->hostId.clear();
+    this->peers.clear();
+    // Mensajes del socket ya detenido (_disconnected, etc.) no deben entregarse
+    std::lock_guard<std::mutex> lock(this->queueMutex);
+    this->inbound.clear();
 }
 
 bool NetClient::send(json msg) {
