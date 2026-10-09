@@ -3,10 +3,16 @@ STD = -std=c++17
 
 # Suppress Clang warning for GCC pragmas in sol2
 COMPILER_NAME := $(shell $(CC) --version 2>&1)
+
+# -Wno-template-body solo existe en GCC >= 15. GCC acepta cualquier -Wno-* que no
+# conozca y solo se queja si salta otro diagnostico, asi que se prueba la forma
+# positiva del flag, que si se rechaza al instante.
+TEMPLATE_BODY_FLAG := $(shell echo 'int main(){}' | $(CC) -Wtemplate-body -Werror -x c++ - -o /dev/null 2>/dev/null && echo -Wno-template-body)
+
 ifeq ($(findstring clang,$(COMPILER_NAME)),clang)
     WARN_FLAGS = -Wall -Wextra -Wno-unknown-warning-option
 else
-    WARN_FLAGS = -Wall -Wextra -Wno-template-body
+    WARN_FLAGS = -Wall -Wextra $(TEMPLATE_BODY_FLAG)
 endif
 
 CFLAGS = $(WARN_FLAGS)
@@ -28,7 +34,7 @@ ifeq ($(SDL_LIBS),)
 endif
 
 # Detect Lua via pkg-config (cada paquete por separado: si uno no existe, pkg-config falla con todos)
-LUA_PKG := $(firstword $(foreach p,lua5.4 lua lua5.3,$(shell pkg-config --exists $(p) 2>/dev/null && echo $(p))))
+LUA_PKG := $(firstword $(foreach p,lua5.4 lua-5.4 lua54 lua lua5.3 lua-5.3 lua53,$(shell pkg-config --exists $(p) 2>/dev/null && echo $(p))))
 
 ifneq ($(LUA_PKG),)
     LUA_CFLAGS := $(shell pkg-config --cflags $(LUA_PKG) 2>/dev/null)
@@ -41,13 +47,33 @@ ifeq ($(LUA_LIBS),)
     LUA_LIBS   := -L/usr/local/lib -L/usr/local/opt/lua/lib -L/opt/homebrew/lib -llua
 endif
 
-# Sol2 necesita saber la version de Lua: 503 si se detecto 5.3, 504 en el resto de casos
-ifeq ($(LUA_PKG),lua5.3)
-    SOL_LUA_VERSION = 503
-else
+# Sol2 necesita saber la version de Lua, y tiene que ser la del lua.h que de
+# verdad abre el compilador: se lee LUA_VERSION_NUM preprocesando un include con
+# los mismos flags, y en el mismo orden, que INC_PATH. Deducirla del nombre del
+# paquete de pkg-config no vale (un lua.pc puede ser 5.3, y si no hay ninguno se
+# acaba usando el 5.3 vendorizado en ./libs/lua/), y al equivocarse sol2 compila
+# su codigo de 5.4 -- lua_newuserdatauv, LUA_GCGEN, LUA_GCINC -- contra 5.3.
+LUA_INC := $(LUA_CFLAGS) -I./libs/lua/
+LUA_VERSION_NUM := $(shell echo '#include <lua.h>' | $(CC) $(LUA_INC) -E -dM -x c++ - 2>/dev/null | sed -n 's/^#define LUA_VERSION_NUM[ \t]*//p')
+
+ifeq ($(LUA_VERSION_NUM),)
+    $(warning No se encontro lua.h con $(LUA_INC) -- instala un paquete de desarrollo de Lua (Debian/Ubuntu: liblua5.4-dev o liblua5.3-dev). Se asume 5.4.)
     SOL_LUA_VERSION = 504
+else
+    SOL_LUA_VERSION = $(LUA_VERSION_NUM)
 endif
 CFLAGS += -DSOL_LUA_VERSION=$(SOL_LUA_VERSION)
+
+# Cruce de seguridad: si el paquete de pkg-config dice una version y el lua.h
+# encontrado dice otra, se enlazaria contra una libreria distinta de los headers
+# (fallos raros en tiempo de ejecucion). Normalmente significa que los headers
+# vendorizados en ./libs/lua/ estan tapando los del sistema.
+LUA_PKG_VERSION := $(strip $(if $(findstring 5.4,$(LUA_PKG)),504,$(if $(findstring 5.3,$(LUA_PKG)),503,)))
+ifneq ($(LUA_PKG_VERSION),)
+ifneq ($(LUA_PKG_VERSION),$(LUA_VERSION_NUM))
+    $(warning pkg-config dio $(LUA_PKG) pero el lua.h encontrado es $(LUA_VERSION_NUM): revisa LUA_CFLAGS y los headers de ./libs/lua/ -- make lua-info)
+endif
+endif
 
 # Dependencias de red (IXWebSocket + nlohmann/json), descargadas por scripts/fetch-deps.sh
 DEPS_STAMP = libs/.deps-stamp
@@ -79,7 +105,7 @@ SRC = src/*.cpp \
       src/SceneManager/*.cpp \
       src/Network/*.cpp
 
-.PHONY: build run test clean clean-deps deps
+.PHONY: build run test clean clean-deps deps lua-info
 
 build: $(DEPS_STAMP) $(IXWS_LIB)
 	$(CC) $(CFLAGS) $(STD) $(INC_PATH) $(SRC) $(LFLAGS) -o engine
@@ -123,3 +149,11 @@ clean:
 
 clean-deps:
 	rm -rf $(IXWS_OBJ) $(IXWS_LIB) $(IXWS_DIR)/build $(IXWS_DIR)/libixwebsocket.a
+
+# Imprime que Lua se ha detectado, para diagnosticar fallos de version con sol2
+lua-info:
+	@echo "LUA_PKG         = $(LUA_PKG)"
+	@echo "LUA_CFLAGS      = $(LUA_CFLAGS)"
+	@echo "LUA_LIBS        = $(LUA_LIBS)"
+	@echo "LUA_VERSION_NUM = $(LUA_VERSION_NUM)"
+	@echo "SOL_LUA_VERSION = $(SOL_LUA_VERSION)"
