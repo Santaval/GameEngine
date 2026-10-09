@@ -30,6 +30,8 @@ local OTHER_COLOR = { 255, 90, 90 }
 local SECTOR_LINE_COLOR = { 255, 255, 255, 45 }
 local STORM_COLOR = { 150, 30, 60, 200 }
 local REACTOR_COLOR = { 255, 225, 170 }
+local PORTAL_COLOR = { 123, 44, 191 }
+local PORTAL_GLOW = { 199, 125, 255 }
 
 local BELT_DOTS = 72
 -- Tamano de un punto de planeta en el minimapa: px de mundo por px de punto,
@@ -144,6 +146,17 @@ local function draw_minimap(planets)
       local rr = w.r * k
       draw_rect(mx - rr, my - rr, rr * 2, rr * 2, s[1], s[2], s[3], 140, false)
       draw_image("icon-storm", mx - icon / 2, my - icon / 2, icon, icon, 255, "hud")
+    end
+  end
+  -- Portales estables (portal_sites, lo fija map_portal_world): icono violeta
+  -- y el numero del par, igual en los dos extremos
+  if scene_map ~= nil and portal_sites ~= nil then
+    local icon = scene_map.PORTAL.icon_size
+    for _, e in ipairs(portal_sites.ends) do
+      local mx, my = to_map(e.x, e.y, ox, oy)
+      draw_rect(mx - icon / 2, my - icon / 2, icon, icon, PORTAL_COLOR[1], PORTAL_COLOR[2], PORTAL_COLOR[3], 255)
+      draw_rect(mx - icon / 2, my - icon / 2, icon, icon, PORTAL_GLOW[1], PORTAL_GLOW[2], PORTAL_GLOW[3], 255, false)
+      draw_text(mx + icon / 2 + 1, my - 6, tostring(e.pair), "small", PORTAL_GLOW[1], PORTAL_GLOW[2], PORTAL_GLOW[3], 255)
     end
   end
   for _, p in ipairs(planets) do

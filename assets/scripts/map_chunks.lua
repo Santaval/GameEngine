@@ -15,6 +15,7 @@ local cfg = require("map_config")
 local grid = require("map_grid")
 local biomes = require("map_biomes")
 local reactor = require("map_reactor")
+local portals = require("map_portals")
 local field = require("asteroid_field")
 local asteroid_cfg = require("asteroid_config")
 
@@ -101,6 +102,7 @@ function chunks.generate_chunk(seed, cx, cy)
   local biome = layout.biomes[sx][sy]
   local planets = layout.planets
   local sites = reactor.sites(seed)
+  local pends = portals.sites(seed).ends
 
   -- Para la deriva cada sitio cuenta como un planeta con su zona vedada como
   -- pozo (radio exterior + clear_pad): una roca no cruza una megaestructura
@@ -110,8 +112,14 @@ function chunks.generate_chunk(seed, cx, cy)
     obstacles[#obstacles + 1] = { x = site.x, y = site.y, range = site.radius + cfg.REACTOR.clear_pad }
   end
 
+  -- Igual con los extremos de los portales (#22): su radio libre es el pozo
+  for _, e in ipairs(pends) do
+    obstacles[#obstacles + 1] = { x = e.x, y = e.y, range = cfg.PORTAL_CLEAR_RADIUS }
+  end
+
   local function reject(x, y, radius)
     return touches_planet(planets, x, y, radius) or reactor.blocks(sites, x, y, radius)
+      or portals.blocks(pends, x, y, radius)
   end
 
   local r = grid.rng(grid.hash(seed, cx, cy, grid.SALT_ROCKS))

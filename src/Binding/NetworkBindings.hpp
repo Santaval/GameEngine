@@ -6,6 +6,7 @@
 #include "../Game/Game.hpp"
 #include "../ECS/Entity.hpp"
 #include "../Components/NetworkComponent.hpp"
+#include "../Systems/NetSyncSystem.hpp"
 #include "../Network/LuaJson.hpp"
 #include "../Network/NetClient.hpp"
 #include "../Network/NetworkRegistry.hpp"
@@ -145,6 +146,14 @@ inline void setOwner(Entity e, const std::string& playerId) {
   e.getComponent<NetworkComponent>().ownerId = playerId;
 }
 
+// Descarta la correccion de deriva pendiente de una copia remota: tras un
+// teletransporte evita que un "state" anterior la arrastre de vuelta
+inline void netResetCorrection(Entity e) {
+  if (!e.hasComponent<NetworkComponent>()) return;
+  const std::string netId = e.getComponent<NetworkComponent>().netId;
+  Game::getInstance().getRegistry()->getSystem<NetSyncSystem>().resetCorrection(netId);
+}
+
 // Devuelve false si no hay URL configurada (--server / GAME_SERVER)
 inline bool netConnect() {
   return Game::getInstance().connectToServer();
@@ -189,4 +198,5 @@ inline void registerNetworkBindings(sol::state& lua) {
   lua.set_function("find_by_net_id", findByNetId);
   lua.set_function("get_owner", getOwner);
   lua.set_function("set_owner", setOwner);
+  lua.set_function("net_reset_correction", netResetCorrection);
 }

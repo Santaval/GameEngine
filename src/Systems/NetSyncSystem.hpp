@@ -227,6 +227,15 @@ class NetSyncSystem : public System {
       return out;
     }
 
+    // Olvida el "state" pendiente y la correccion en curso de una entidad (tras
+    // un teletransporte del dueno, para que no se interpole desde la posicion vieja)
+    void resetCorrection(const std::string& netId) {
+      auto it = this->tracked.find(netId);
+      if (it == this->tracked.end()) return;
+      it->second.pending.reset();
+      it->second.correction = Correction{};
+    }
+
     // Descarta todo el estado (cambio de escena)
     void clear() {
       this->tracked.clear();

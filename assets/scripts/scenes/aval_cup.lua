@@ -27,6 +27,10 @@ reactor_sites = nil
 -- Tormentas errantes (#21): netId -> true / netId -> radio; las llena wandering_storm.lua
 wandering_storms = {}
 wandering_storm_radius = {}
+-- Portales estables (#22): los pares los publica map_portal_world.lua (el
+-- minimapa los lee); local_portal_transit lo lee player.lua
+portal_sites = nil
+local_portal_transit = false
 
 -- Sin cinturones ni generadores: nadie crea asteroides en runtime salvo los
 -- fragmentos de una roca partida
@@ -124,6 +128,7 @@ local DIRECTORS = {
   "./assets/scripts/solar_hud.lua",
   "./assets/scripts/map_visuals.lua",
   "./assets/scripts/map_storm_world.lua",
+  "./assets/scripts/map_portal_world.lua",
   "./assets/scripts/game_director.lua",
 }
 for _, path in ipairs(DIRECTORS) do
@@ -165,6 +170,10 @@ scene = {
     {assetId="storm-edge", filePath="./assets/sprites/storm/storm_edge.png"},
     {assetId="icon-storm", filePath="./assets/sprites/hud/icon_storm.png"},
     {assetId="reactor-pulse", filePath="./assets/sprites/vfx/reactor_pulse.png"},
+    {assetId="portal-stable", filePath="./assets/sprites/portals/portal_stable.png"},
+    {assetId="portal-exit-flash", filePath="./assets/sprites/portals/portal_exit_flash.png"},
+    {assetId="portal-warning-halo", filePath="./assets/sprites/portals/portal_warning_halo.png"},
+    {assetId="portal-warp", filePath="./assets/sprites/vfx/portal_warp.png"},
   },
 
   -- El tamaño se fija al cargar: hace falta un fontId por cada tamaño
@@ -173,6 +182,7 @@ scene = {
     {fontId="default", filePath="./assets/fonts/DejaVuSansMono.ttf", fontSize=16},
     {fontId="debug-big", filePath="./assets/fonts/DejaVuSansMono.ttf", fontSize=28},
     {fontId="title", filePath="./assets/fonts/DejaVuSansMono.ttf", fontSize=56},
+    {fontId="small", filePath="./assets/fonts/DejaVuSansMono.ttf", fontSize=10},
   },
 
   keys = {

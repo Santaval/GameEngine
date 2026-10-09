@@ -60,7 +60,7 @@ only, masking every step with `& 0xFFFFFFFF`:
 - `hash(seed, cx, cy)` mixes the three integers with murmur3's `fmix32`.
   An optional fourth argument `salt` adds one more `fmix32` round, so each
   generation concern gets its own independent stream (`SALT_BIOME`,
-  `SALT_PLANET`, `SALT_ROCKS`, `SALT_DRIFT`, `SALT_WRECK`, `SALT_NEBULA`, `SALT_REACTOR`). Without a salt the
+  `SALT_PLANET`, `SALT_ROCKS`, `SALT_DRIFT`, `SALT_WRECK`, `SALT_NEBULA`, `SALT_REACTOR`, `SALT_PORTAL`). Without a salt the
   result is bit-identical to the original hash.
 - `rng(state)` is mulberry32 seeded with that hash. `next()` is `integer / 2^32`.
 
@@ -230,10 +230,12 @@ collisions.
 | `STORM` | table | Border storm: `damage` 4, `tick` 1 s, `tile_size` 250, sprite frames, `edge_height` 90, `edge_overlap` 0.5, `fps` 6, `alpha`, `tint_alpha` |
 | `WANDERING_STORM` | table | Wandering Storms: `count` 2, `radius` 1000..2000, `speed` 35..55, `turn_rate`, `damage` 3, `tick` 1 s, `push_speed` 110, `push_accel` 220, `front_pad`, `spawn_clear`, `edge_height`, `tile_alpha`, `icon_size` |
 | `UPDATE_RADIUS_CHUNKS` | 2 | Chunks around the player that are simulated |
-| `STABLE_PORTAL_PAIRS`, `NEXUS_COUNT` | 12, 1 | Portals (not used yet) |
-| `PORTAL_CLEAR_RADIUS` | 600 | Portals (not used yet) |
-| `PORTAL_COOLDOWN` | 4 | Portals (not used yet) |
-| `PORTAL_EXIT_WARNING` | 0.75 | Portals (not used yet) |
+| `STABLE_PORTAL_PAIRS` | 12 | Stable portal pairs |
+| `NEXUS_COUNT` | 1 | Portals (not used yet) |
+| `PORTAL_CLEAR_RADIUS` | 600 | No large rocks within this radius of a portal end |
+| `PORTAL_COOLDOWN` | 4 | Seconds before a ship can enter a portal again |
+| `PORTAL_EXIT_WARNING` | 0.75 | Seconds the exit flashes before the ship arrives |
+| `PORTAL` | table | Stable portals: `pair_sectors` 2..4, `planet_factor` 1.5, `spacing` 1500, `spawn_clear` 1500, `tries` 300, `enter_radius` 70, `pull_radius` 250, `pull_accel` 140, `exit_offset` 120, `min_exit_speed` 150, `storm_warn_pad` 1200, draw sizes, `warp_time`, `fps`, `icon_size`, `sheets` (sprite sheet sizes and frame counts) |
 | `UNSTABLE_PORTAL_LIFE` | 45..75 | Portals (not used yet) |
 | `EVENT_INTERVAL` | 60..120 | Events (not used yet) |
 | `STORM_CONTRACTION_INTERVAL` | 180..240 | Storm (not used yet) |
@@ -409,7 +411,56 @@ that drift slowly over the map and force players to keep moving.
 - Minimap: a faint outline of the cloud and the `icon-storm` icon, drawn on the
   `"hud"` image layer so it sits above the minimap panel.
 - Portals (#22): `storm.in_wandering(x, y, pad?)` tells whether a point is inside
-  any wandering storm.
+  any wandering storm; `map_portal_world.lua` uses the list from `storm.wandering()`.
+
+## Portals
+
+12 permanent two-way pairs let players cross the map on purpose (issue #22).
+
+- Placement: `map_portals.lua` is a pure function of the seed
+  (`portals.sites(seed)`, stream `hash(seed, 0, 0, SALT_PORTAL)`, no
+  `math.random`), so every client gets the same pairs. For each pair it picks the
+  sector of end A among the Deep Void and Debris sectors (so at least one end is
+  always there) and the sector of end B at 2..4 sectors from A (Chebyshev
+  distance); then a random point in each, kept `PORTAL_CLEAR_RADIUS` away from the
+  sector edges. A point is valid when it is inside the world minus the storm
+  band, clear of Reactor Remains structures (`reactor.blocks`), at least
+  `planet_factor` x `range` from every planet (1.5 gravity radii), at least
+  `spawn_clear` from `PLAYER_SPAWN` and at least `spacing` from every other end.
+  After `tries` failed attempts the pair is skipped and a line is printed. Each
+  end has a random exit axis. `portals.blocks(ends, x, y, radius)` is used by
+  `map_chunks.lua` so no rock spawns within `PORTAL_CLEAR_RADIUS` of an end, and
+  the ends count as obstacles for drifting rocks.
+- Entering: within `pull_radius` of an open end the ship feels a light pull
+  (`pull_accel`). Within `enter_radius` (and off cooldown) it enters: it is
+  parked on the portal with no input for `PORTAL_EXIT_WARNING` (0.75 s) while the
+  destination flashes. It then appears `exit_offset` px out of the other end,
+  along its axis, with the same speed (at least `min_exit_speed`). The cooldown
+  (`PORTAL_COOLDOWN`, 4 s) starts on exit and a box near the bottom of the
+  screen shows it. A chaser who enters right behind exits right behind: same
+  delay, same exit point.
+- Bullets: a bullet that touches an open end comes out of the other with the
+  same speed along its axis, with no delay. Each bullet hops only once
+  (`bullet_lifetime.lua` calls the global `portal_bullet_step`).
+- Storms: a pair is closed (portals dimmed, no pull or entry, bullets pass by)
+  while a Wandering Storm covers either end. If a storm is within
+  `storm_warn_pad` of an end, the opposite end shows the bordeaux
+  `portal-warning-halo`.
+- Networking: the owner of the ship applies the teleport and sends
+  `teleport { netId, x, y, vx, vy }`; other clients move their copy and call
+  `net_reset_correction`, so it is not smoothed as drift. On entry the owner
+  also sends `portal_warn { pair, side }` so every client flashes the exit. See
+  [multiplayer-protocol.md](multiplayer-protocol.md).
+- Visuals: `portal-stable` (8 frames, rotated to the axis; the art's notch points
+  up, so the angle is `deg(axis) + 90`), `portal-exit-flash` (6 frames over the
+  warning time), `portal-warning-halo` (4 frames), `portal-warp` (6 frames,
+  distortion on entry and exit). The sheets are not the sizes in the issue: the
+  real ones are in `PORTAL.sheets` and frames are drawn keeping their proportion.
+- Minimap: a violet square per end with the pair number next to it (`small` font).
+- Code-drawn: `icon_portal_pair.png` and `portal_cooldown.png` do not exist, so
+  the minimap icon and the cooldown box are drawn with `draw_rect`/`draw_text`.
+- Code: `map_portal_world.lua` (director, publishes `portal_sites` and
+  `local_portal_transit`; `player.lua` skips shooting and thrust while it is set).
 
 ## Known gap
 

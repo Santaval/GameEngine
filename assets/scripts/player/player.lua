@@ -89,11 +89,17 @@ function update()
   my_ship = this
   ensure_registered(this)
 
-  player_shooting_module.update(this)
   player_visual_helpers_module.update(this)
 
-  player_movement_module.face_mouse(this)
-  player_movement_module.update_thrust(this)
+  -- En transito por un portal (#22, map_portal_world.lua) la nave no dispara
+  -- ni acelera: el director la mantiene quieta sobre el portal
+  if local_portal_transit then
+    set_acceleration(this, 0, 0)
+  else
+    player_shooting_module.update(this)
+    player_movement_module.face_mouse(this)
+    player_movement_module.update_thrust(this)
+  end
   -- Dentro de la gravedad de un planeta se mina solo
   player_mining_module.update(this)
 

@@ -72,6 +72,7 @@ for cooldowns and key-edge state instead of globals.
 | `create_entity()` | entity | Created empty. It joins the systems on the next frame, once its components are in place. |
 | `add_transform(e, x, y, scale_x, scale_y, rotation)` | — | All arguments required. `rotation` in **radians**. |
 | `get_position(e)` | `x, y` | Two return values. |
+| `set_position(e, x, y)` | — | Moves the entity at once. `x, y` is the sprite's top-left corner, like `get_position`. Does not touch velocity and sends nothing over the network. |
 
 > **`position` is the sprite's top-left corner, not its centre.** To place an
 > entity centred on a point, subtract half its scaled size:
@@ -512,6 +513,7 @@ net_send("chat", { text = "psst" }, peer_id) -- one player
 | `find_by_net_id(id)` | The entity with that netId, or `nil`. |
 | `get_owner(e)` | The owner's player id, or `nil` if the entity is not networked. |
 | `set_owner(e, player_id)` | Rewrites the owner **locally only**; nothing is broadcast. |
+| `net_reset_correction(e)` | Drops the pending drift correction of a remote copy. Call it right after `set_position` on a copy teleported by its owner, so an older `state` does not pull it back. No-op if the entity is not networked. |
 
 `net_despawn` is a plain kill: `on_death` does **not** run, on either side.
 That way remote copies do not repeat gameplay hooks (loot drops, score...) the
@@ -619,7 +621,7 @@ of that slot left behind — entity ids are recycled.
 
 | Guarded, safe to call on anything | Unguarded, requires the component |
 | --- | --- |
-| `get_health`, `get_max_health`, `is_alive`, `set_health`, `heal`, `set_max_health`, `get_damage`, `set_damage`, `is_path_active`, `set_path_active`, `set_equipment_level`, `get_equipment_level`, `has_equipment`, `upgrade_equipment`, `remove_equipment`, `get_equipment_count`, `get_equipment_at`, `has_inventory`, `add_item`, `remove_item`, `update_item_count`, `get_item_count`, `has_item`, `get_inventory_total`, `get_inventory_capacity`, `set_inventory_capacity`, `get_inventory_count`, `get_inventory_at`, `clear_inventory`, `has_loot`, `get_loot_count`, `get_loot_at`, `set_loot`, `destroy_entity`, `draw_rect`, `draw_rect_world` | `get_position`, `get_rotation`, `set_rotation*`, every `*_velocity` / `*_acceleration` / `*_max_speed`, `get_speed`, `set_sprite`, `set_sprite_frame`, `set_text`, `set_text_color` |
+| `get_health`, `get_max_health`, `is_alive`, `set_health`, `heal`, `set_max_health`, `get_damage`, `set_damage`, `is_path_active`, `set_path_active`, `set_equipment_level`, `get_equipment_level`, `has_equipment`, `upgrade_equipment`, `remove_equipment`, `get_equipment_count`, `get_equipment_at`, `has_inventory`, `add_item`, `remove_item`, `update_item_count`, `get_item_count`, `has_item`, `get_inventory_total`, `get_inventory_capacity`, `set_inventory_capacity`, `get_inventory_count`, `get_inventory_at`, `clear_inventory`, `has_loot`, `get_loot_count`, `get_loot_at`, `set_loot`, `destroy_entity`, `draw_rect`, `draw_rect_world` | `get_position`, `set_position`, `get_rotation`, `set_rotation*`, every `*_velocity` / `*_acceleration` / `*_max_speed`, `get_speed`, `set_sprite`, `set_sprite_frame`, `set_text`, `set_text_color` |
 
 In practice: before calling anything in the right-hand column on an entity you
 did not build yourself, make sure it has the component.

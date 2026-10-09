@@ -71,6 +71,46 @@ config.NEXUS_COUNT = 1
 config.PORTAL_CLEAR_RADIUS = 600
 config.PORTAL_COOLDOWN = 4
 config.PORTAL_EXIT_WARNING = 0.75
+
+-- Portales estables (ver map_portals.lua, map_portal_world.lua y docs/aval-cup.md)
+--   pair_sectors: distancia entre los dos extremos de un par, en sectores
+--     (Chebyshev, min..max)
+--   planet_factor: un extremo queda a al menos planet_factor x range del planeta
+--   spacing: distancia minima (px) entre dos extremos cualquiera
+--   spawn_clear: distancia minima (px) a PLAYER_SPAWN
+--   tries: intentos por par antes de saltarlo
+--   enter_radius: distancia (px) a la que la nave (o la bala) entra al portal
+--   pull_radius / pull_accel: tiron suave (px, px/s^2) hacia un extremo cercano
+--   exit_offset: la nave sale a esta distancia (px) del extremo, sobre su eje
+--   min_exit_speed: velocidad minima (px/s) a la salida
+--   storm_warn_pad: margen (px) para avisar con el halo si una errante se acerca
+--   draw_size / flash_size / halo_size / warp_size: tamano (px de mundo) del
+--     portal, el destello de salida, el halo y la distorsion
+--   warp_time: duracion (s) de la distorsion; fps: animacion de portal y halo
+--   icon_size: lado (px) del icono del minimapa
+--   sheets: hojas de sprites (ancho, alto, frames), en fila y a todo el alto
+config.PORTAL = {
+  pair_sectors = { min = 2, max = 4 },
+  planet_factor = 1.5,
+  spacing = 1500,
+  spawn_clear = 1500,
+  tries = 300,
+  enter_radius = 70,
+  pull_radius = 250, pull_accel = 140,
+  exit_offset = 120,
+  min_exit_speed = 150,
+  storm_warn_pad = 1200,
+  draw_size = 220, flash_size = 260, halo_size = 300, warp_size = 160,
+  warp_time = 0.4,
+  fps = 10,
+  icon_size = 5,
+  sheets = {
+    stable = { w = 2172, h = 724, count = 8 },
+    flash = { w = 2172, h = 724, count = 6 },
+    halo = { w = 1983, h = 793, count = 4 },
+    warp = { w = 1881, h = 836, count = 6 },
+  },
+}
 config.UNSTABLE_PORTAL_LIFE = { min = 45, max = 75 }
 
 -- Eventos y tormenta (segundos)
