@@ -31,6 +31,11 @@ wandering_storm_radius = {}
 -- minimapa los lee); local_portal_transit lo lee player.lua
 portal_sites = nil
 local_portal_transit = false
+-- Portales inestables (#23): netId -> {x, y, life, age}, los llena
+-- unstable_portal.lua; unstable_portal_life_fix: netId -> vida que corrige un
+-- recien llegado (map_portal_world.lua)
+unstable_portals = {}
+unstable_portal_life_fix = {}
 
 -- Sin cinturones ni generadores: nadie crea asteroides en runtime salvo los
 -- fragmentos de una roca partida
@@ -174,6 +179,12 @@ scene = {
     {assetId="portal-exit-flash", filePath="./assets/sprites/portals/portal_exit_flash.png"},
     {assetId="portal-warning-halo", filePath="./assets/sprites/portals/portal_warning_halo.png"},
     {assetId="portal-warp", filePath="./assets/sprites/vfx/portal_warp.png"},
+    {assetId="portal-unstable", filePath="./assets/sprites/portals/portal_unstable.png"},
+    {assetId="portal-open", filePath="./assets/sprites/portals/portal_open.png"},
+    {assetId="portal-collapse", filePath="./assets/sprites/portals/portal_collapse.png"},
+    {assetId="nexus", filePath="./assets/sprites/portals/nexus.png"},
+    {assetId="icon-portal-unstable", filePath="./assets/sprites/hud/icon_portal_unstable.png"},
+    {assetId="icon-nexus", filePath="./assets/sprites/hud/icon_nexus.png"},
   },
 
   -- El tamaño se fija al cargar: hace falta un fontId por cada tamaño
@@ -199,6 +210,7 @@ scene = {
     {name = "menu", key = 109},
     {name = "toggle_pvp", key = 112},
     {name = "debug_pulse", key = 107},
+    {name = "debug_collapse", key = 108},
   },
 
   mouse = {

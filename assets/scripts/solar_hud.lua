@@ -153,10 +153,31 @@ local function draw_minimap(planets)
   if scene_map ~= nil and portal_sites ~= nil then
     local icon = scene_map.PORTAL.icon_size
     for _, e in ipairs(portal_sites.ends) do
-      local mx, my = to_map(e.x, e.y, ox, oy)
-      draw_rect(mx - icon / 2, my - icon / 2, icon, icon, PORTAL_COLOR[1], PORTAL_COLOR[2], PORTAL_COLOR[3], 255)
-      draw_rect(mx - icon / 2, my - icon / 2, icon, icon, PORTAL_GLOW[1], PORTAL_GLOW[2], PORTAL_GLOW[3], 255, false)
-      draw_text(mx + icon / 2 + 1, my - 6, tostring(e.pair), "small", PORTAL_GLOW[1], PORTAL_GLOW[2], PORTAL_GLOW[3], 255)
+      -- Un par que colapsa (#23) parpadea
+      local col = portal_sites.collapsing and portal_sites.collapsing[e.pair]
+      if col == nil or math.floor(col.t * 4) % 2 == 0 then
+        local mx, my = to_map(e.x, e.y, ox, oy)
+        draw_rect(mx - icon / 2, my - icon / 2, icon, icon, PORTAL_COLOR[1], PORTAL_COLOR[2], PORTAL_COLOR[3], 255)
+        draw_rect(mx - icon / 2, my - icon / 2, icon, icon, PORTAL_GLOW[1], PORTAL_GLOW[2], PORTAL_GLOW[3], 255, false)
+        draw_text(mx + icon / 2 + 1, my - 6, tostring(e.pair), "small", PORTAL_GLOW[1], PORTAL_GLOW[2], PORTAL_GLOW[3], 255)
+      end
+    end
+    -- Nexus (#23): solo el, sin sus salidas
+    local n = portal_sites.nexus
+    if n ~= nil then
+      local nsize = scene_map.NEXUS.icon_size
+      local mx, my = to_map(n.x, n.y, ox, oy)
+      draw_image("icon-nexus", mx - nsize / 2, my - nsize / 2, nsize, nsize, 255, "hud")
+    end
+    -- Portales inestables vivos (unstable_portals, los llena unstable_portal.lua)
+    if unstable_portals ~= nil then
+      local usize = scene_map.UNSTABLE_PORTAL.icon_size
+      for _, u in pairs(unstable_portals) do
+        if u.life > 0 then
+          local mx, my = to_map(u.x, u.y, ox, oy)
+          draw_image("icon-portal-unstable", mx - usize / 2, my - usize / 2, usize, usize, 255, "hud")
+        end
+      end
     end
   end
   for _, p in ipairs(planets) do

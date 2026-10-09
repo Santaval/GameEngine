@@ -153,7 +153,9 @@ Custom types used by the Aval Cup map (`aval_cup_world.lua`, see [aval-cup.md](a
 | --- | --- | --- | --- | --- |
 | `map_rock_destroyed` | all | host | `{ id }` | A chunk rock (`"cx:cy:i"`) died on the host. Clients drop it unless `from` is the host. |
 | `reactor_pulse` | all | host | `{ i }` | A Reactor Pulse starts at site `i` (index in `reactor_sites`, 1-based). Clients ignore it unless `from` is the host. |
-| `portal_warn` | all | ship owner | `{ pair, side }` | A ship entered a stable portal: the exit end (`pair` id, `side` `"a"` or `"b"`) flashes for 0.75 s on every client. |
+| `portal_warn` | all | ship owner | `{ pair, side }` or `{ nexus }` | A ship entered a stable portal: the exit end (`pair` id, `side` `"a"` or `"b"`) flashes for 0.75 s on every client. For the Nexus the payload is `{ nexus = dir }` (0 E, 1 S, 2 W, 3 N) and that exit flashes. |
+| `portal_collapse` | all | host | `{ pair }` | A Portal Collapse warning starts on pair `pair` (15 s, then the pair closes and reopens elsewhere under the same id). Clients ignore it unless `from` is the host. |
+| `portal_state` | direct | host | `{ history[], pending[{pair, t}], unstable{netId: life} }` | Answer to a late joiner's `snapshot_request`: finished collapses in order, warnings in progress with the seconds left, and the remaining life of each unstable portal. |
 | `teleport` | all | ship owner | `{ netId, x, y, vx, vy }` | The ship `netId` left a portal. `x, y` is its top-left position. Clients ignore it unless `from` owns the entity, then place the copy and reset its drift correction. |
 | `map_destroyed` | direct | host | `{ ids[] }` | Answer to a late joiner's `snapshot_request`: every destroyed rock id so far, in batches of 400. |
 

@@ -102,7 +102,8 @@ function chunks.generate_chunk(seed, cx, cy)
   local biome = layout.biomes[sx][sy]
   local planets = layout.planets
   local sites = reactor.sites(seed)
-  local pends = portals.sites(seed).ends
+  -- ends_all incluye los sitios de repuesto y el nexus (#23): ya estan limpios
+  local pends = portals.sites(seed).ends_all
 
   -- Para la deriva cada sitio cuenta como un planeta con su zona vedada como
   -- pozo (radio exterior + clear_pad): una roca no cruza una megaestructura

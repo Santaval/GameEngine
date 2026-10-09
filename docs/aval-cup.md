@@ -462,6 +462,83 @@ that drift slowly over the map and force players to keep moving.
 - Code: `map_portal_world.lua` (director, publishes `portal_sites` and
   `local_portal_transit`; `player.lua` skips shooting and thrust while it is set).
 
+### Unstable portals
+
+Issue #23. One-way portals to a random destination, owned by the host.
+
+- Count: the host keeps `ceil(players / per_players)` (10 players per step)
+  times a 1..2 roll alive (`UNSTABLE_PORTAL`), re-rolled after each spawn, with
+  `spawn_interval` (8-15 s) between spawns. The count comes from the shared
+  `unstable_portals` table, so a migrated host does not duplicate them.
+- Entity: `prefabs/unstable_portal.lua` (invisible, transform only) spawned with
+  `net_spawn("unstable_portal.lua", { pos, life, world = true })` at a point that
+  passes `portals.valid_point` and is `spawn_clear` from `PLAYER_SPAWN`. Its
+  script (`unstable_portal.lua`) counts `life` down (45-75 s,
+  `UNSTABLE_PORTAL_LIFE`) and writes `unstable_portals[netId] = {x, y, life, age}`
+  on every client; the owner despawns it `collapse_time` after `life` hits 0.
+- Phases: `portal-open` for `open_time` (not enterable), `portal-unstable`
+  looping with an irregular frame order, flicker (alpha) for the last
+  `flicker_time` (10 s), then `portal-collapse` over `collapse_time`.
+- Entering: within `enter_radius` (50 px) while open (a half-strength pull
+  applies). The destination is picked locally with `math.random` among points
+  that pass `portals.valid_point` (world band, no Reactor Remains, planets or
+  spawn nearby) with a random axis. Nobody knows it before coming out: no exit
+  flash and no `portal_warn`. Same transit, `teleport` event and cooldown.
+- Bullets: `portal_bullet_step` checks unstable portals first; a bullet within
+  `enter_radius` of an open one is destroyed (`destroy_entity`, local, returns
+  `"destroyed"`; `bullet_lifetime.lua` stops there). This applies even to a bullet
+  that already hopped.
+- Late join: `portal_state.unstable` carries the remaining life per netId; the
+  joiner stores it in `unstable_portal_life_fix`, which each script applies once.
+- Minimap: `icon-portal-unstable` at `icon_size`.
+- Sheets (not the sizes in the issue): `portal-unstable` 2172x724, 8 frames;
+  `portal-open` 1983x793, 10; `portal-collapse` 2172x724, 10; all in
+  `PORTAL.sheets`.
+
+### Nexus
+
+- Placement: `portals.sites(seed).nexus`, stream `SALT_NEXUS` (9), after the
+  pairs. A valid point (same rules, `spawn_clear` from the spawn, `spacing` from
+  other ends) in the center sector, then 4 exits, one per direction (E, S, W,
+  N): each a valid point in a sector at Chebyshev distance `exit_sectors` (2)
+  from the center in that direction (e.g. east: column center+2, any row). Each
+  exit's axis points away from the nexus. If anything fails after `tries`
+  attempts the nexus is skipped and a line is printed (`nexus = nil`).
+- Entering: pull within `pull_radius`, entry within `enter_radius`, same transit
+  as a stable end. The angle of the ship around the nexus center picks the mouth:
+  bucket `floor((a + pi/4) / (pi/2)) % 4` = E, S, W, N (y points down), and the
+  ship leaves by the exit of that direction. Bullets do the same, with no delay.
+  The exit flashes on every client via `portal_warn { nexus = dir }`.
+- Visuals: `nexus` sheet (1774x887, 8 frames, drawn unrotated at `draw_size`).
+  Minimap: `icon-nexus` (the exits are not shown).
+
+### Portal Collapse
+
+- Reserve sites: after the 12 pairs, `map_portals.lua` builds `reserve_pairs` (6)
+  more pairs from the same stream (so the 12 stay identical) in `reserve`. All
+  ends, reserves and nexus points are in `ends_all`, which `map_chunks.lua`
+  uses so reserve sites are already clear of rocks.
+- Flow: the pair starts a `warning` (15 s). While warning it draws as
+  `portal-unstable` and flickers (faster in the last 3 s) but is still usable;
+  within 2000 px of an end a centered "COLAPSO DE PORTAL" and the seconds show,
+  and the minimap square blinks. At 0 on every client: `portal-collapse` plays
+  on both old ends, the pair is removed, its site goes to the back of the queue,
+  and the first site that shares no sector with the old ends opens with the
+  same pair id (the minimap still shows 12 numbered pairs). It plays
+  `portal-open` and cannot be entered for `open_time`. Pairs are resolved in id
+  order, so every client gets the same result.
+- Stand-in for the event director (#24): the host fires a collapse every
+  `PORTAL_COLLAPSE.interval` (120-180 s; every client counts, so a new host
+  carries on), key `L` (`debug_collapse`, host only) fires one, and the global
+  `portal_collapse_fire(id)` (host only, random pair if no id) is what #24 calls.
+- Networking: `portal_collapse { pair }` (host to all, ignored unless from the
+  host and not from ourselves). On `snapshot_request` the host sends
+  `portal_state { history, pending, unstable }` straight to the joiner: the
+  ordered ids of finished collapses (replayed instantly, no effects), the
+  warnings in progress with their time left, and the unstable portals' life.
+  Every client records the history, so a migrated host has the same state.
+- Visuals: `portal-collapse` (also used for unstable portals) and `portal-open`.
+
 ## Known gap
 
 Chunk rocks are not synchronized once they exist. If a ship bump nudges a

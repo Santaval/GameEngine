@@ -11,8 +11,11 @@ function bullet_lifetime.make_update()
   local ported = false
   return function()
     age = age + get_delta_time()
-    if not ported and portal_bullet_step ~= nil then
-      ported = portal_bullet_step(this)
+    if portal_bullet_step ~= nil then
+      local r = portal_bullet_step(this, ported)
+      -- Portal inestable (#23): la bala ya se destruyo
+      if r == "destroyed" then return end
+      if r == true then ported = true end
     end
     if age >= bullet_lifetime.LIFETIME then
       -- Kill local: nunca net_despawn, las demas copias expiran solas

@@ -109,9 +109,61 @@ config.PORTAL = {
     flash = { w = 2172, h = 724, count = 6 },
     halo = { w = 1983, h = 793, count = 4 },
     warp = { w = 1881, h = 836, count = 6 },
+    unstable = { w = 2172, h = 724, count = 8 },
+    open = { w = 1983, h = 793, count = 10 },
+    collapse = { w = 2172, h = 724, count = 10 },
+    nexus = { w = 1774, h = 887, count = 8 },
   },
 }
 config.UNSTABLE_PORTAL_LIFE = { min = 45, max = 75 }
+
+-- Portales inestables (#23): entidades del host (net_spawn world = true), de
+-- ida y a un destino al azar. Viven UNSTABLE_PORTAL_LIFE segundos
+--   per_players / count: el host mantiene ceil(jugadores / per_players) x una
+--     tirada de count.min..count.max (se vuelve a tirar en cada spawn)
+--   flicker_time: los ultimos segundos de vida parpadea
+--   open_time / collapse_time: duracion (s) de la animacion de apertura (aun
+--     no se puede entrar) y de la de cierre (portal-collapse)
+--   enter_radius: distancia (px) a la que la nave entra; la bala se destruye
+--   draw_size / icon_size: tamano (px de mundo) del portal y (px) del icono
+--     del minimapa
+--   spawn_interval: espera (s) del host entre un spawn y el siguiente
+--   spawn_clear / tries: distancia minima (px) a PLAYER_SPAWN e intentos de
+--     encontrar un punto valido (portals.valid_point)
+config.UNSTABLE_PORTAL = {
+  per_players = 10, count = { min = 1, max = 2 },
+  flicker_time = 10,
+  open_time = 1.0, collapse_time = 1.0,
+  enter_radius = 50,
+  draw_size = 130, icon_size = 8,
+  spawn_interval = { min = 8, max = 15 },
+  spawn_clear = 1500, tries = 60,
+}
+
+-- Nexus (#23): un portal en el sector central con 4 bocas; el angulo con que
+-- se entra elige la salida (una por direccion E, S, O, N, ver map_portals.lua)
+--   draw_size: ancho (px de mundo) de un frame; enter_radius / pull_radius:
+--     entrada y tiron (px)
+--   exit_sectors: distancia (Chebyshev, en sectores) de cada salida al centro
+--   icon_size: lado (px) del icono del minimapa
+--   tries: intentos por punto antes de dar el nexus por fallido
+config.NEXUS = {
+  draw_size = 420, enter_radius = 110, pull_radius = 350,
+  exit_sectors = 2,
+  icon_size = 10,
+  tries = 300,
+}
+
+-- Colapso de portal (#23): tras `warning` segundos de aviso un par estable se
+-- cierra y se abre uno nuevo en otro sector (siempre hay STABLE_PORTAL_PAIRS)
+--   interval: segundos entre colapsos automaticos del host (hasta que el
+--     director de eventos, #24, llame a portal_collapse_fire)
+--   reserve_pairs: sitios de repuesto que genera map_portals.lua
+config.PORTAL_COLLAPSE = {
+  warning = 15,
+  interval = { min = 120, max = 180 },
+  reserve_pairs = 6,
+}
 
 -- Eventos y tormenta (segundos)
 config.EVENT_INTERVAL = { min = 60, max = 120 }
