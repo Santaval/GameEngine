@@ -1,16 +1,18 @@
 -- Script runtime de la nave de otro jugador (ver prefabs/player/remote_player.lua).
 -- No lee input: el movimiento viene de la fisica local y de las correcciones
--- de "state" (NetSyncSystem). Aqui solo se dibuja: llama, nombre y barra de vida.
+-- de "state" (NetSyncSystem). Aqui solo se dibuja: llama y el overlay de
+-- ship_overlay.lua (nombre, niveles y barra de vida).
+
+local ship_overlay_module = require("ship_overlay")
 
 -- spawn_state lo fija el motor mientras construye el prefab. Los locals del
 -- chunk son por entidad porque el SceneLoader corre este archivo por cada una
 local state = spawn_state or {}
 local name = state.name
 local max_hp = state.max_hp or 100
-
-local SHIP_WIDTH = 430 * 0.2
-local BAR_HEIGHT = 5
-local BAR_GAP = 8
+local engine = state.engine or 0
+local shield = state.shield or 0
+local gun = state.gun or 0
 
 -- player.lua guarda aqui los player_stats que llegan, por netId
 local function apply_stats(entity)
@@ -19,6 +21,9 @@ local function apply_stats(entity)
 
   if stats.max_hp then max_hp = stats.max_hp end
   if stats.max_speed then set_max_speed(entity, stats.max_speed) end
+  if stats.engine then engine = stats.engine end
+  if stats.shield then shield = stats.shield end
+  if stats.gun then gun = stats.gun end
   -- Se consume: no reaplicar cada frame
   remote_player_stats[get_net_id(entity)] = nil
 end
@@ -48,11 +53,6 @@ function update()
   end
 
   local px, py = get_position(this)
-  local hp = get_health(this)
-  local ratio = math.max(0, math.min(1, hp / max_hp))
-  local bar_y = py - BAR_GAP - BAR_HEIGHT
-
-  draw_rect_world(px, bar_y, SHIP_WIDTH, BAR_HEIGHT, 60, 60, 60, 200, true)
-  draw_rect_world(px, bar_y, SHIP_WIDTH * ratio, BAR_HEIGHT, 60, 200, 80, 255, true)
-  draw_text_world(px, bar_y - 16, name, "default", 255, 255, 255)
+  ship_overlay_module.draw(px, py, name, 255, 255, 255,
+    get_health(this), max_hp, engine, shield, gun)
 end

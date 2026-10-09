@@ -99,6 +99,16 @@ end
 
 ---
 
+## Levels over the ships
+
+Every player ship gets an overlay drawn above it by
+`assets/scripts/player/ship_overlay.lua`: name, `E<engine> S<shield> G<gun>`
+and the health bar (red below a third). The local ship reads its own levels
+with `get_equipment_level`; remote ships take them from the `spawn` state and
+keep them current with the `player_stats` message sent after each upgrade.
+
+---
+
 ## The upgrade menu
 
 Equipment levels are consumed by a compact HUD overlay, toggled with **E**,
