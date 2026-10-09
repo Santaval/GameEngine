@@ -157,6 +157,7 @@ local DIRECTORS = {
   "./assets/scripts/map_portal_world.lua",
   "./assets/scripts/map_spawn.lua",
   "./assets/scripts/map_ranking.lua",
+  "./assets/scripts/map_bot_scan.lua",
   "./assets/scripts/map_event_world.lua",
   "./assets/scripts/map_event_director.lua",
   "./assets/scripts/map_supply_world.lua",

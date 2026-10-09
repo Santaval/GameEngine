@@ -12,6 +12,8 @@ export interface Brain {
 }
 
 const MAX_HP = 100;
+/** A mining planet farther than this is not worth the trip. */
+const MINE_MAX_PX = 4000;
 
 /** Rule-based brain. Also the fallback of JevBrain. */
 export class HeuristicBrain implements Brain {
@@ -20,7 +22,7 @@ export class HeuristicBrain implements Brain {
   }
 
   decideSync(o: Observation): Decision {
-    const { self, enemies, loot, threat } = o;
+    const { self, enemies, loot, threat, rocks, planet } = o;
     const hpRatio = self.hp / MAX_HP;
     const aggression = clamp01(0.3 + 0.5 * hpRatio);
     const nearest = enemies[0] ?? null; // sorted by distance
@@ -31,15 +33,28 @@ export class HeuristicBrain implements Brain {
     }
     const danger = enemies.some((e) => e.distance < 800 && (e.approaching || self.pvp));
     const lootNear = loot[0] && loot[0].distance < (self.pvp ? 1500 : 6000);
+
+    // Retaliate against whoever shot us recently (while healthy enough)
+    if (self.pvp && self.recentlyAttackedBy !== null && hpRatio > 0.4) {
+      const attacker = enemies.find((e) => e.slot === self.recentlyAttackedBy);
+      if (attacker) return { mode: "attack", targetId: attacker.id, aggression };
+    }
     if (lootNear && !danger) return { mode: "collect", targetId: null, aggression };
 
-    if (self.pvp) {
+    if (self.pvp && self.canInitiateFights) {
       const weaker = enemies.find((e) => e.distance < 1200 && e.hp <= self.hp);
       if (weaker) return { mode: "attack", targetId: weaker.id, aggression };
       const leader = enemies.find((e) => e.isLeader && e.distance < 3000);
       if (leader && hpRatio > 0.6) {
         return { mode: "hunt_leader", targetId: leader.id, aggression };
       }
+    }
+    // Economy: mine a planet or farm rocks while the hold has room
+    if (self.holdFree > 0) {
+      const canMine = planet !== null && planet.distance < MINE_MAX_PX;
+      const canFarm = rocks.count > 0;
+      if (canMine && (self.preferMining || !canFarm)) return { mode: "mine", targetId: null, aggression: 0.3 };
+      if (canFarm) return { mode: "farm", targetId: null, aggression: 0.3 };
     }
     return { mode: "roam", targetId: null, aggression: 0.5 };
   }
@@ -76,12 +91,15 @@ export interface JevBrainOptions {
 
 const NEAR_ENEMY_PX = 3000;
 const NEAR_LOOT_PX = 2500;
+const NEAR_PLANET_PX = 4000;
 
 const MODE_CRITERIA: Record<Mode, string> = {
   attack: "Engage the chosen target: keep 350-600 px away, strafe and shoot. Needs pvp on and a target.",
   hunt_leader: "Attack the ranking leader (the enemy with the most minerals) to steal their score.",
   flee: "Run away from nearby enemies and bullets. Use when hurt or outgunned.",
   collect: "Fly to the nearest valuable mineral orb and pick it up to raise the score.",
+  farm: "Shoot the nearest asteroid from 300-500 px; broken rocks drop mineral orbs. Safe income.",
+  mine: "Fly to the nearest mining planet and orbit inside its gravity range to mine minerals slowly and safely.",
   roam: "Wander the safe area looking for action. Use when nothing is close.",
 };
 
@@ -112,7 +130,8 @@ export class JevBrain implements Brain {
     const fallback = this.fallback.decideSync(o);
     const nearEnemy = o.enemies.some((e) => e.distance <= NEAR_ENEMY_PX);
     const nearLoot = o.loot.some((l) => l.distance <= NEAR_LOOT_PX);
-    if (!nearEnemy && !nearLoot && o.threat.incomingBullets === 0) {
+    const nearEconomy = o.rocks.count > 0 || (o.planet !== null && o.planet.distance <= NEAR_PLANET_PX);
+    if (!nearEnemy && !nearLoot && !nearEconomy && o.threat.incomingBullets === 0) {
       return { mode: "roam", targetId: null, aggression: 0.5 };
     }
     if (this.breakerOpen) return fallback;
@@ -147,7 +166,8 @@ export class JevBrain implements Brain {
         type: "choice",
         instructions:
           "You pilot a ship in a space battle royale. Pick the best strategy for the next second or two. " +
-          "Score = minerals carried; dying drops 60% of them as orbs anyone can grab.",
+          "Score = minerals carried; dying drops 60% of them as orbs anyone can grab. " +
+          "Prefer farming and mining; fight only when provoked or clearly winning.",
         criteria: Object.fromEntries(modes.map((m) => [m, MODE_CRITERIA[m]])),
       },
       aggression: {
@@ -205,11 +225,21 @@ export class JevBrain implements Brain {
   private allowedModes(o: Observation): Mode[] {
     const modes: Mode[] = ["flee", "roam"];
     if (o.loot.length > 0) modes.push("collect");
-    if (o.self.pvp && o.enemies.length > 0) {
+    if (o.rocks.count > 0) modes.push("farm");
+    if (o.planet !== null) modes.push("mine");
+    const targets = this.attackable(o);
+    if (targets.length > 0) {
       modes.push("attack");
-      if (o.enemies.some((e) => e.isLeader)) modes.push("hunt_leader");
+      if (targets.some((e) => e.isLeader)) modes.push("hunt_leader");
     }
     return modes;
+  }
+
+  /** Enemies that may be attacked: anyone for sharp bots, else only who shot us. */
+  private attackable(o: Observation): EnemyObs[] {
+    if (!o.self.pvp) return [];
+    if (o.self.canInitiateFights) return o.enemies;
+    return o.enemies.filter((e) => e.slot === o.self.recentlyAttackedBy);
   }
 
   /** Validates the model's answers against what is possible; bad fields use the heuristic's. */
@@ -227,9 +257,10 @@ export class JevBrain implements Brain {
       const enemy = o.enemies.find((e) => `e${e.slot}` === rawTarget);
       if (enemy) targetId = enemy.id;
     }
-    if (mode === "hunt_leader") targetId = o.enemies.find((e) => e.isLeader)?.id ?? targetId;
-    if (mode === "attack" && targetId === null) {
-      targetId = fb.mode === "attack" ? fb.targetId : (o.enemies[0]?.id ?? null);
+    const targets = this.attackable(o);
+    if (mode === "hunt_leader") targetId = targets.find((e) => e.isLeader)?.id ?? targetId;
+    if (mode === "attack" && !targets.some((e) => e.id === targetId)) {
+      targetId = fb.mode === "attack" ? fb.targetId : (targets[0]?.id ?? null);
     }
     if ((mode === "attack" || mode === "hunt_leader") && targetId === null) return fb;
     return { mode, targetId, aggression };

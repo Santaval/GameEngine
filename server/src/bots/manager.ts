@@ -4,8 +4,8 @@
  */
 import type { Logger } from "../log.js";
 import type { PlayerId } from "../protocol.js";
-import { Bot, type Incoming, type Outgoing } from "./botLogic.js";
-import type { Brain } from "./brain.js";
+import { Bot, type Incoming, type Mode, type Outgoing } from "./botLogic.js";
+import type { Brain, Decision } from "./brain.js";
 
 /** What the manager needs from the server. */
 export interface BotHost {
@@ -22,16 +22,23 @@ export interface BotManagerOptions {
   decisionMs: number;
   /** Delay between adding/removing one bot and the next. */
   stepMs?: number;
+  /** Bot difficulty 0..1 (default DEFAULT_SKILL). */
+  skill?: number;
   debug?: boolean;
   rng?: () => number;
 }
 
 const NAMES = ["Vega", "Orion", "Lyra", "Altair", "Rigel", "Sirius", "Draco", "Nova", "Cygnus", "Pulsar", "Antares", "Hydra"];
 
+/** Farm, mine and roam decisions are kept at least this long unless something urgent fires. */
+export const HOLD_DECISION_MS = 4000;
+const CALM_MODES: ReadonlySet<Mode> = new Set<Mode>(["farm", "mine", "roam"]);
+
 /** Drives one Bot: ticks the controller and asks the brain on a jittered timer. */
 export class BotDriver {
   private nextDecisionAt = 0;
   private inFlight: AbortController | null = null;
+  private calmSince = -Infinity;
 
   constructor(
     readonly bot: Bot,
@@ -49,13 +56,24 @@ export class BotDriver {
     this.brain
       .decide(this.bot.observe(), ac.signal)
       .then((d) => {
-        if (!ac.signal.aborted) this.bot.setDecision(d);
+        if (!ac.signal.aborted) this.apply(d);
       })
       .catch(() => {})
       .finally(() => {
         this.inFlight = null;
         this.nextDecisionAt = Date.now() + this.decisionMs * (0.8 + 0.4 * this.rng());
       });
+  }
+
+  /** Hysteresis: do not flip between calm modes more often than HOLD_DECISION_MS. */
+  private apply(d: Decision): void {
+    const now = Date.now();
+    const cur = this.bot.decision.mode;
+    if (CALM_MODES.has(cur) && CALM_MODES.has(d.mode) && d.mode !== cur && now - this.calmSince < HOLD_DECISION_MS) {
+      return;
+    }
+    if (d.mode !== cur) this.calmSince = now;
+    this.bot.setDecision(d);
   }
 
   stop(): void {
@@ -128,6 +146,7 @@ export class BotManager {
       name,
       host: false,
       pvp: false,
+      skill: this.opts.skill,
       rng: this.rng,
       now: () => Date.now(),
       send: (m) => route(m),

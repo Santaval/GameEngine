@@ -1,6 +1,6 @@
 /**
  * Fake player for testing a game instance alone:
- *   npm run bot -- --host --pvp --duration 30 [--brain jev|heuristic]
+ *   npm run bot -- --host --pvp --duration 30 [--brain jev|heuristic] [--skill 0..1]
  */
 import { randomBytes } from "node:crypto";
 import { pathToFileURL } from "node:url";
@@ -18,6 +18,8 @@ export interface RunBotOptions {
   /** Strategy brain (default heuristic). */
   brain?: Brain;
   decisionMs?: number;
+  /** 0 (easy) .. 1 (sharp). */
+  skill?: number;
   log?: (line: string) => void;
 }
 
@@ -38,6 +40,7 @@ export function runBot(url: string, opts: RunBotOptions): RunningBot {
     host: opts.host,
     pvp: opts.pvp,
     log: opts.log,
+    skill: opts.skill,
     send: (m) => {
       if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(m));
     },
@@ -98,6 +101,7 @@ function main(): void {
       pvp: { type: "boolean", default: false },
       brain: { type: "string", default: "heuristic" },
       model: { type: "string" },
+      skill: { type: "string" },
       duration: { type: "string" },
     },
   });
@@ -118,6 +122,7 @@ function main(): void {
     name,
     host: values.host,
     pvp: values.pvp,
+    skill: num(values.skill),
     brain:
       values.brain === "jev"
         ? new JevBrain({ model: values.model ?? "typesafe-ai/jev", log: (e, f) => log(`${e} ${JSON.stringify(f)}`) })

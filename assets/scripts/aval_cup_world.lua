@@ -19,6 +19,7 @@ local chunks = require("map_chunks")
 local biomes = require("map_biomes")
 local grid = require("map_grid")
 local ui = require("ui_helpers")
+local asteroid_cfg = require("asteroid_config")
 
 -- Ids por mensaje map_destroyed: debe quedar bajo el limite de ~12 KB del relay
 local BATCH_SIZE = 400
@@ -27,6 +28,8 @@ local seed = nil
 local built = false
 -- chunk_id -> entidad viva (para borrarla si el host avisa que murio)
 local rocks = {}
+-- chunk_id -> radio del cuerpo de la roca en px (no hay getter del collider)
+local rock_radius = {}
 
 -- Estado compartido con asteroid.lua (la escena lo reinicia al cargar)
 map_destroyed = map_destroyed or {}
@@ -58,6 +61,49 @@ function map_rocks_near(x, y, r)
     end
   end
   return found
+end
+
+-- Rocas de chunk vivas a menos de r px de (x, y) como lista de
+-- { id, x, y, radius, hp }, las `limit` (20 por defecto) mas cercanas primero.
+-- Lo usa map_bot_scan.lua para contestar a los bots del servidor
+function map_rocks_info_near(x, y, r, limit)
+  limit = limit or 20
+  local r2 = r * r
+  local list = {}
+  local keys = {}
+  for id, e in pairs(rocks) do
+    if is_alive(e) then
+      local cx, cy = get_collider_center(e)
+      local dx, dy = cx - x, cy - y
+      local d2 = dx * dx + dy * dy
+      if d2 < r2 then
+        local item = {
+          id = id,
+          x = math.floor(cx + 0.5),
+          y = math.floor(cy + 0.5),
+          radius = math.floor(rock_radius[id] or asteroid_cfg.ASTEROID_SHEET.bodyRadius),
+          hp = get_health(e),
+        }
+        -- Insercion ordenada por distancia (no hay table.sort en este motor)
+        local i = #list
+        list[i + 1] = item
+        keys[i + 1] = d2
+        while i >= 1 and d2 < keys[i] do
+          list[i + 1] = list[i]
+          keys[i + 1] = keys[i]
+          i = i - 1
+        end
+        list[i + 1] = item
+        keys[i + 1] = d2
+        -- Solo las `limit` mas cercanas
+        if #list > limit then
+          list[#list] = nil
+          keys[#keys] = nil
+        end
+      end
+    end
+  end
+  return list
 end
 
 -- Lo llama asteroid.lua en el host cuando una roca de chunk muere: la anota y
@@ -135,6 +181,9 @@ local function build_world()
         local e = spawn_local("asteroid.lua", state)
         if e ~= nil then
           rocks[state.chunk_id] = e
+          local body = state.wreck and asteroid_cfg.WRECK_SHEET.bodyRadius
+            or asteroid_cfg.ASTEROID_SHEET.bodyRadius
+          rock_radius[state.chunk_id] = body * (state.scale or 1)
           count = count + 1
           if state.wreck then wrecks = wrecks + 1 end
           if state.drift then drifting = drifting + 1 end

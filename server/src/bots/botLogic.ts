@@ -27,6 +27,8 @@ export const SHIP_SCRIPT = "player/remote_player.lua";
 export const BULLET_SCRIPT = "bullet.lua";
 /** Loot prefabs the bot knows how to pick up (state: item, quantity). */
 export const LOOT_SCRIPTS: ReadonlySet<string> = new Set(["death_orb.lua", "pickup.lua"]);
+/** Rock fragments are host-owned net entities (asteroid.lua split). */
+export const ASTEROID_SCRIPT = "asteroid.lua";
 
 // ---- Constants copied from the game's Lua scripts. Keep in sync. ----------
 /** map_config.lua WORLD_SIZE / STORM_BAND / STORM.{damage,tick}. */
@@ -68,10 +70,53 @@ const DODGE_HORIZON_SEC = 0.5;
 const THREAT_HORIZON_SEC = 1.5;
 const THREAT_MISS_PX = 150;
 const STALE_SHIP_SEC = 15;
-const ATTACK_RANGE = 1200;
+/** Host scan (map_bot_scan.lua): radius, period and how many unanswered requests we remember. */
+export const SCAN_RADIUS = 2000;
+export const SCAN_INTERVAL_SEC = 2;
+const MAX_PENDING_SCANS = 4;
+/** Farming: stay 300-500 px from the rock, shoot within FARM_FIRE_RANGE. */
+const FARM_NEAR = 300;
+const FARM_FAR = 500;
+const FARM_FIRE_RANGE = 600;
+/** Loot this close is picked up before the next rock while farming. */
+const FARM_LOOT_PX = 600;
+const FRAGMENT_RADIUS = 20;
+const FRAGMENT_TTL_SEC = 60;
+/** Mining: orbit at this fraction of the planet's range, never closer than 2 body radii. */
+const MINE_ORBIT_FRAC = 0.6;
+const MINE_ORBIT_SPEED = 40;
+/** A player bullet hit counts as provocation for this long. */
+export const PROVOKED_SEC = 6;
 
-export type Mode = "attack" | "hunt_leader" | "flee" | "collect" | "roam";
-export const MODES: readonly Mode[] = ["attack", "hunt_leader", "flee", "collect", "roam"];
+export type Mode = "attack" | "hunt_leader" | "flee" | "collect" | "farm" | "mine" | "roam";
+export const MODES: readonly Mode[] = ["attack", "hunt_leader", "flee", "collect", "farm", "mine", "roam"];
+
+/** Default difficulty (0 = easy .. 1 = sharp). */
+export const DEFAULT_SKILL = 0.35;
+
+/** Skill-dependent tuning: `a + (b - a) * skill`. */
+export interface Tuning {
+  /** Half-width (rad) of the uniform aim error. */
+  aimError: number;
+  fireCooldown: number;
+  /** Chance of reacting to each incoming bullet. */
+  dodgeChance: number;
+  attackRange: number;
+  /** Seconds before a new attack/hunt target takes effect. */
+  reactionDelay: number;
+}
+
+export function tuningFor(skill: number): Tuning {
+  const k = Math.max(0, Math.min(1, skill));
+  const lerp = (a: number, b: number) => a + (b - a) * k;
+  return {
+    aimError: lerp(0.35, 0.05),
+    fireCooldown: lerp(1.2, 0.5),
+    dodgeChance: lerp(0.15, 0.85),
+    attackRange: lerp(700, 1200),
+    reactionDelay: lerp(0.8, 0.2),
+  };
+}
 
 export interface Decision {
   mode: Mode;
@@ -102,9 +147,22 @@ export interface Observation {
     edgeDistance: number;
     /** Seconds of spawn shield left. */
     shield: number;
+    skill: number;
+    /** `slot` of the enemy that shot us in the last PROVOKED_SEC s, or null. */
+    recentlyAttackedBy: number | null;
+    /** Free inventory space. */
+    holdFree: number;
+    /** Per-bot coin: true = prefers mining planets over farming rocks. */
+    preferMining: boolean;
+    /** Only sharp bots (skill >= 0.5) start fights. */
+    canInitiateFights: boolean;
   };
   enemies: EnemyObs[];
   loot: { distance: number; quantity: number }[];
+  /** Farmable rocks (outside planet gravity) known to the bot. */
+  rocks: { count: number; nearestDistance: number | null };
+  /** Nearest planet that can be mined, if any is known. */
+  planet: { distance: number; mineral: string } | null;
   threat: { incomingBullets: number; nearestEtaSec: number | null };
 }
 
@@ -122,6 +180,8 @@ export interface BotOptions {
   /** Random source in [0, 1); injectable for tests. */
   rng?: () => number;
   hitRadius?: number;
+  /** 0 (easy) .. 1 (sharp); default DEFAULT_SKILL. */
+  skill?: number;
 }
 
 /** A bullet in flight (own or remote). */
@@ -130,6 +190,36 @@ interface RemoteBullet {
   vel: Vec2;
   dmg: number;
   age: number;
+  /** Dodge roll, made once when the bullet first becomes a threat. */
+  dodge?: boolean;
+}
+
+interface Rock {
+  id: string;
+  pos: Vec2;
+  vel: Vec2;
+  radius: number;
+  hp: number;
+  fragment: boolean;
+  age: number;
+}
+
+interface Planet {
+  x: number;
+  y: number;
+  range: number;
+  bodyRadius: number;
+  mineral: string;
+  mineInterval: number;
+}
+
+/** What a farm/attack decision wants to shoot at. */
+interface Aim {
+  angle: number;
+  pos: Vec2;
+  /** Ships need pvp; rocks do not. */
+  needsPvp: boolean;
+  range: number;
 }
 
 interface Ship {
@@ -178,7 +268,23 @@ export class Bot {
   readonly inventory = new Map<string, number>();
   /** Other players' totals from rank_score. */
   readonly scores = new Map<PlayerId, number>();
+  /** Farmable rocks: chunk rocks from host scans plus split fragments. */
+  readonly rocks = new Map<string, Rock>();
+  /** Mining planets, received once from the host. */
+  planets: Planet[] = [];
+  planetsKnown = false;
+  readonly skill: number;
+  readonly tuning: Tuning;
+  /** Per-bot coin used by the brain to spread bots over mining and farming. */
+  readonly preferMining: boolean;
 
+  private readonly destroyedRocks = new Set<string>();
+  private scanTimer = 0;
+  private readonly pendingScans: { x: number; y: number; r: number }[] = [];
+  private mineTimer = 0;
+  private lastAttackerId: PlayerId | null = null;
+  private lastAttackedAt = -Infinity;
+  private pendingDecision: { d: Decision; at: number } | null = null;
   private seq = 0;
   private netCounter = 0;
   private time = 0;
@@ -198,6 +304,9 @@ export class Bot {
   constructor(private readonly o: BotOptions) {
     this.rng = o.rng ?? Math.random;
     this.hitRadius = o.hitRadius ?? 40;
+    this.skill = Math.max(0, Math.min(1, o.skill ?? DEFAULT_SKILL));
+    this.tuning = tuningFor(this.skill);
+    this.preferMining = this.rng() < 0.5;
   }
 
   get isHost(): boolean {
@@ -214,13 +323,26 @@ export class Bot {
   // ---- brain interface --------------------------------------------------
 
   setDecision(d: Decision): void {
-    this.decision = {
+    const next: Decision = {
       mode: d.mode,
       targetId: d.targetId,
       aggression: Math.max(0, Math.min(1, d.aggression)),
     };
+    // Reaction delay: a new fight target takes a moment to be picked up
+    const fight = next.mode === "attack" || next.mode === "hunt_leader";
+    const cur = this.decision;
+    if (fight && (next.mode !== cur.mode || next.targetId !== cur.targetId)) {
+      this.pendingDecision = { d: next, at: this.time + this.tuning.reactionDelay };
+      return;
+    }
+    this.pendingDecision = null;
+    this.applyDecision(next);
+  }
+
+  private applyDecision(d: Decision): void {
+    this.decision = d;
     this.o.log?.(
-      `decision: ${d.mode} target=${d.targetId ?? "-"} aggression=${this.decision.aggression.toFixed(2)}`,
+      `decision: ${d.mode} target=${d.targetId ?? "-"} aggression=${d.aggression.toFixed(2)}`,
     );
   }
 
@@ -252,6 +374,17 @@ export class Bot {
       .sort((a, b) => a.distance - b.distance)
       .slice(0, 3);
     const threats = this.bulletThreats(THREAT_HORIZON_SEC, THREAT_MISS_PX);
+    const farmable = this.farmableRocks();
+    let nearestRock: number | null = null;
+    for (const r of farmable) {
+      const d = Math.round(dist(this.pos, r.pos));
+      if (nearestRock === null || d < nearestRock) nearestRock = d;
+    }
+    const attacked =
+      this.lastAttackerId !== null && this.time - this.lastAttackedAt <= PROVOKED_SEC
+        ? enemies.find((e) => e.id === this.lastAttackerId)
+        : undefined;
+    const mp = this.nearestPlanet();
     return {
       self: {
         hp: Math.round(this.hp),
@@ -261,9 +394,16 @@ export class Bot {
         pvp: this.pvp,
         edgeDistance: Math.round(this.edgeDistance() - STORM_BAND),
         shield: Math.round(this.shield * 10) / 10,
+        skill: this.skill,
+        recentlyAttackedBy: attacked ? attacked.slot : null,
+        holdFree: Math.max(0, INVENTORY_CAPACITY - this.score),
+        preferMining: this.preferMining,
+        canInitiateFights: this.skill >= 0.5,
       },
       enemies,
       loot,
+      rocks: { count: farmable.length, nearestDistance: nearestRock },
+      planet: mp ? { distance: Math.round(dist(this.pos, mp)), mineral: mp.mineral } : null,
       threat: {
         incomingBullets: threats.length,
         nearestEtaSec: threats.length ? Math.round(Math.min(...threats) * 100) / 100 : null,
@@ -292,6 +432,8 @@ export class Bot {
         break;
       case "host_changed":
         this.hostId = m.hostId;
+        this.pendingScans.length = 0;
+        this.scanTimer = 0;
         this.logHostStatus();
         this.maybeAnnouncePvp();
         break;
@@ -361,6 +503,16 @@ export class Bot {
           typeof m.data?.total === "number"
         ) {
           this.scores.set(m.from, m.data.total);
+        } else if (m.type === "bot_scan_result" && m.from && m.from === this.hostId) {
+          this.onScanResult(m.data);
+        } else if (
+          m.type === "map_rock_destroyed" &&
+          m.from &&
+          m.from === this.hostId &&
+          typeof m.data?.id === "string"
+        ) {
+          this.destroyedRocks.add(m.data.id);
+          this.rocks.delete(m.data.id);
         }
         break;
       case "despawn":
@@ -368,8 +520,65 @@ export class Bot {
         this.remoteBullets.delete(m.netId);
         this.loot.delete(m.netId);
         this.ships.delete(m.netId);
+        this.rocks.delete(m.netId);
         break;
     }
+  }
+
+  /** bot_scan_result: replace every known chunk rock inside the scanned circle. */
+  private onScanResult(data: any): void {
+    if (typeof data !== "object" || data === null) return;
+    const scan = this.pendingScans.shift();
+    if (scan) {
+      const c = { x: scan.x, y: scan.y };
+      for (const [id, r] of [...this.rocks]) {
+        if (!r.fragment && dist(r.pos, c) < scan.r) this.rocks.delete(id);
+      }
+    }
+    if (Array.isArray(data.rocks)) {
+      for (const r of data.rocks) {
+        if (typeof r?.id !== "string" || !isNum(r.x) || !isNum(r.y)) continue;
+        if (this.destroyedRocks.has(r.id)) continue;
+        this.rocks.set(r.id, {
+          id: r.id,
+          pos: { x: r.x, y: r.y },
+          vel: { x: 0, y: 0 },
+          radius: isNum(r.radius) ? r.radius : 26,
+          hp: isNum(r.hp) ? r.hp : 1,
+          fragment: false,
+          age: 0,
+        });
+      }
+    }
+    if (Array.isArray(data.planets)) {
+      this.planets = [];
+      for (const p of data.planets) {
+        if (!isNum(p?.x) || !isNum(p?.y) || !isNum(p?.range) || !isNum(p?.body_radius)) continue;
+        if (typeof p.mineral !== "string" || !MINERALS.has(p.mineral)) continue;
+        this.planets.push({
+          x: p.x,
+          y: p.y,
+          range: p.range,
+          bodyRadius: p.body_radius,
+          mineral: p.mineral,
+          mineInterval: isNum(p.mine_interval) && p.mine_interval > 0 ? p.mine_interval : 2,
+        });
+      }
+      this.planetsKnown = true;
+    }
+  }
+
+  private sendScan(): void {
+    if (this.hostId === null || this.hostId === this.playerId) return;
+    const x = Math.round(this.pos.x);
+    const y = Math.round(this.pos.y);
+    this.pendingScans.push({ x, y, r: SCAN_RADIUS });
+    if (this.pendingScans.length > MAX_PENDING_SCANS) this.pendingScans.shift();
+    this.send(
+      "custom",
+      { type: "bot_scan", data: { x, y, r: SCAN_RADIUS, ...(this.planetsKnown ? {} : { planets: true }) } },
+      this.hostId,
+    );
   }
 
   private onSpawn(m: Incoming): void {
@@ -384,6 +593,17 @@ export class Bot {
         pos: { ...st.pos },
         vel: { ...st.vel },
         seen: this.time,
+      });
+    } else if (m.script === ASTEROID_SCRIPT && st.pos) {
+      // Fragment of a broken rock (host-owned); chunk rocks never come as spawn
+      this.rocks.set(m.netId, {
+        id: m.netId,
+        pos: { ...st.pos },
+        vel: { x: st.vel?.x ?? 0, y: st.vel?.y ?? 0 },
+        radius: FRAGMENT_RADIUS,
+        hp: 1,
+        fragment: true,
+        age: 0,
       });
     } else if (LOOT_SCRIPTS.has(m.script)) {
       this.loot.set(m.netId, {
@@ -410,7 +630,18 @@ export class Bot {
     }
 
     this.shield = Math.max(0, this.shield - dt);
+    if (this.pendingDecision && this.time >= this.pendingDecision.at) {
+      const d = this.pendingDecision.d;
+      this.pendingDecision = null;
+      this.applyDecision(d);
+    }
+    this.scanTimer -= dt;
+    if (this.scanTimer <= 0) {
+      this.scanTimer = SCAN_INTERVAL_SEC;
+      this.sendScan();
+    }
     this.pruneShips();
+    this.advanceRocks(dt);
     const aim = this.steer(dt);
     this.send("state", { netId: this.shipNetId, ...this.kinematics() });
 
@@ -426,6 +657,7 @@ export class Bot {
       }
     }
     this.pickupStep();
+    this.mineStep(dt);
     this.advanceRemoteBullets(dt, true);
     this.scoreStep();
   }
@@ -433,7 +665,7 @@ export class Bot {
   // ---- steering ---------------------------------------------------------
 
   /** Moves the ship toward what the decision asks for. Returns the fire solution, if any. */
-  private steer(dt: number): { angle: number; target: Ship } | null {
+  private steer(dt: number): Aim | null {
     const { desired, aim, face } = this.goal();
     let want = desired;
 
@@ -482,7 +714,7 @@ export class Bot {
   }
 
   /** Desired velocity, plus the fire solution (attack modes) or a facing angle. */
-  private goal(): { desired: Vec2; aim: { angle: number; target: Ship } | null; face: number | null } {
+  private goal(): { desired: Vec2; aim: Aim | null; face: number | null } {
     const d = this.decision;
     const maxV = MAX_SPEED;
     switch (d.mode) {
@@ -500,9 +732,129 @@ export class Bot {
         if (!l) return this.roam();
         return { desired: scale(unit(sub(l.pos, this.pos)), maxV), aim: null, face: null };
       }
+      case "farm":
+        return this.farm();
+      case "mine":
+        return this.mine();
       default:
         return this.roam();
     }
+  }
+
+  /** Nearest rock outside every planet's gravity, approach to 300-500 px and shoot it. */
+  private farm(): { desired: Vec2; aim: Aim | null; face: number | null } {
+    // Orbs from a broken rock first
+    if (this.score < INVENTORY_CAPACITY) {
+      const l = this.bestLoot();
+      if (l && dist(this.pos, l.pos) < FARM_LOOT_PX) {
+        return { desired: scale(unit(sub(l.pos, this.pos)), MAX_SPEED), aim: null, face: null };
+      }
+    }
+    let rock: Rock | null = null;
+    let best = Infinity;
+    for (const r of this.farmableRocks()) {
+      const d = dist(this.pos, r.pos);
+      if (d < best) {
+        rock = r;
+        best = d;
+      }
+    }
+    if (!rock) {
+      if (this.score < INVENTORY_CAPACITY && this.loot.size > 0) return this.goalCollect();
+      return this.roam();
+    }
+    const toward = unit(sub(rock.pos, this.pos));
+    let desired: Vec2 = { x: 0, y: 0 };
+    if (best > FARM_FAR) desired = scale(toward, MAX_SPEED);
+    else if (best < FARM_NEAR) desired = scale(toward, -MAX_SPEED * 0.5);
+    const angle = leadAngle(this.pos, rock.pos, rock.vel, BULLET_SPEED) ?? Math.atan2(toward.y, toward.x);
+    return {
+      desired,
+      aim: { angle, pos: rock.pos, needsPvp: false, range: FARM_FIRE_RANGE },
+      face: null,
+    };
+  }
+
+  private goalCollect(): { desired: Vec2; aim: null; face: null } {
+    const l = this.bestLoot();
+    if (!l) return this.roam();
+    return { desired: scale(unit(sub(l.pos, this.pos)), MAX_SPEED), aim: null, face: null };
+  }
+
+  /** Go to the nearest mining planet and hold a slow orbit inside its range. */
+  private mine(): { desired: Vec2; aim: null; face: null } {
+    const p = this.nearestPlanet();
+    if (!p) return this.roam();
+    const orbit = Math.max(MINE_ORBIT_FRAC * p.range, 2 * p.bodyRadius);
+    const d = dist(this.pos, { x: p.x, y: p.y });
+    const toward = unit({ x: p.x - this.pos.x, y: p.y - this.pos.y });
+    const err = d - orbit;
+    const radial = Math.max(-MAX_SPEED, Math.min(MAX_SPEED, err * 0.5));
+    const tang = Math.abs(err) < 300 ? MINE_ORBIT_SPEED : 0;
+    return {
+      desired: {
+        x: toward.x * radial - toward.y * tang,
+        y: toward.y * radial + toward.x * tang,
+      },
+      aim: null,
+      face: null,
+    };
+  }
+
+  /** Rocks the bot may shoot: not inside any planet's gravity. */
+  private farmableRocks(): Rock[] {
+    const out: Rock[] = [];
+    for (const r of this.rocks.values()) {
+      if (this.planets.some((p) => dist(r.pos, { x: p.x, y: p.y }) < p.range)) continue;
+      out.push(r);
+    }
+    return out;
+  }
+
+  private nearestPlanet(): Planet | null {
+    let best: Planet | null = null;
+    let bestD = Infinity;
+    for (const p of this.planets) {
+      const d = dist(this.pos, { x: p.x, y: p.y });
+      if (d < bestD) {
+        best = p;
+        bestD = d;
+      }
+    }
+    return best;
+  }
+
+  private advanceRocks(dt: number): void {
+    for (const [id, r] of [...this.rocks]) {
+      if (!r.fragment) continue;
+      r.age += dt;
+      if (r.age > FRAGMENT_TTL_SEC) {
+        this.rocks.delete(id);
+        continue;
+      }
+      r.pos = { x: r.pos.x + r.vel.x * dt, y: r.pos.y + r.vel.y * dt };
+    }
+  }
+
+  /** player_mining.lua: inside a planet's range, +1 of its mineral every mine_interval s. */
+  private mineStep(dt: number): void {
+    let planet: Planet | null = null;
+    let bestD = Infinity;
+    for (const p of this.planets) {
+      const d = dist(this.pos, { x: p.x, y: p.y });
+      if (d <= p.range && d < bestD) {
+        planet = p;
+        bestD = d;
+      }
+    }
+    if (!planet) {
+      this.mineTimer = 0;
+      return;
+    }
+    this.mineTimer += dt;
+    if (this.mineTimer < planet.mineInterval) return;
+    this.mineTimer -= planet.mineInterval;
+    this.addItems([{ name: planet.mineral, quantity: 1 }]);
   }
 
   private roam(): { desired: Vec2; aim: null; face: null } {
@@ -541,7 +893,7 @@ export class Bot {
       desired = scale({ x: -toward.y * this.strafeDir, y: toward.x * this.strafeDir }, MAX_SPEED * 0.6);
     }
     const angle = leadAngle(this.pos, target.pos, target.vel, BULLET_SPEED) ?? Math.atan2(toward.y, toward.x);
-    return { desired, aim: { angle, target }, face: null };
+    return { desired, aim: { angle, pos: target.pos, needsPvp: true, range: this.tuning.attackRange }, face: null };
   }
 
   /** Away from nearby enemies and incoming bullets. */
@@ -614,6 +966,9 @@ export class Bot {
     for (const b of this.remoteBullets.values()) {
       const c = closestApproach(this.pos, b);
       if (c.t > DODGE_HORIZON_SEC || c.miss > DODGE_MISS_PX) continue;
+      // Roll once per bullet: easy bots often do not react at all
+      if (b.dodge === undefined) b.dodge = this.rng() < this.tuning.dodgeChance;
+      if (!b.dodge) continue;
       const v = unit(b.vel);
       // Perpendicular to the bullet, on the side we already are
       const rel = sub(this.pos, b.pos);
@@ -644,14 +999,14 @@ export class Bot {
 
   // ---- actions ----------------------------------------------------------
 
-  private fireStep(dt: number, aim: { angle: number; target: Ship } | null): void {
+  private fireStep(dt: number, aim: Aim | null): void {
     this.fireTimer = Math.max(0, this.fireTimer - dt);
-    if (!aim || !this.pvp || this.fireTimer > 0) return;
-    if (dist(this.pos, aim.target.pos) > ATTACK_RANGE) return;
-    // A little aim error so bots can be out-flown
-    this.heading = aim.angle + (this.rng() - 0.5) * 0.08;
+    if (!aim || (aim.needsPvp && !this.pvp) || this.fireTimer > 0) return;
+    if (dist(this.pos, aim.pos) > aim.range) return;
+    // Aim error (skill based) so bots can be out-flown
+    this.heading = aim.angle + (this.rng() - 0.5) * 2 * this.tuning.aimError;
     this.rot = this.heading + Math.PI / 2;
-    this.fireTimer = FIRE_COOLDOWN_SEC;
+    this.fireTimer = this.tuning.fireCooldown;
     this.fire();
   }
 
@@ -808,6 +1163,8 @@ export class Bot {
     this.stormTimer = 0;
     this.roamTarget = null;
     this.shield = SPAWN_SHIELD_SEC;
+    this.scanTimer = 0;
+    this.mineTimer = 0;
     this.send("spawn", this.spawnBody());
     // map_spawn.lua: the owner announces the spawn shield
     this.send("custom", { type: "spawn_shield", data: { netId: this.shipNetId, t: SPAWN_SHIELD_SEC } });
@@ -870,6 +1227,13 @@ export class Bot {
   }
 
   private takeDamage(amount: number, source?: NetId): void {
+    if (source !== undefined) {
+      const attacker = netIdOwner(source);
+      if (attacker !== this.playerId) {
+        this.lastAttackerId = attacker;
+        this.lastAttackedAt = this.time;
+      }
+    }
     if (this.shield > 0) return;
     this.hp -= amount;
     this.o.log?.(`damage: -${amount} hp=${this.hp}`);
@@ -905,6 +1269,8 @@ export class Bot {
     this.lastScoreSent = 0;
     this.lastScoreAt = this.time;
     this.decision = { ...DEFAULT_DECISION };
+    this.pendingDecision = null;
+    this.lastAttackerId = null;
   }
 }
 
@@ -921,6 +1287,10 @@ function scale(v: Vec2, k: number): Vec2 {
 function unit(v: Vec2): Vec2 {
   const l = Math.hypot(v.x, v.y);
   return l < 1e-9 ? { x: 0, y: 0 } : { x: v.x / l, y: v.y / l };
+}
+
+function isNum(v: unknown): v is number {
+  return typeof v === "number" && Number.isFinite(v);
 }
 
 function dist(a: Vec2, b: Vec2): number {

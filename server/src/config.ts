@@ -16,6 +16,8 @@ export interface Config {
   botDebug: boolean;
   /** Delay between adding/removing one bot and the next. */
   botStepMs: number;
+  /** Bot difficulty, 0 (easy) .. 1 (sharp). */
+  botSkill: number;
 }
 
 function envInt(name: string, fallback: number): number {
@@ -39,6 +41,7 @@ export const DEFAULT_CONFIG: Config = {
   botDecisionMs: 1500,
   botDebug: false,
   botStepMs: 250,
+  botSkill: 0.35,
 };
 
 function envBrain(): Config["botBrain"] {
@@ -59,6 +62,7 @@ export function loadConfig(): Config {
     botBrain: envBrain(),
     botModel: process.env.BOT_MODEL || DEFAULT_CONFIG.botModel,
     botDecisionMs: envInt("BOT_DECISION_MS", DEFAULT_CONFIG.botDecisionMs),
+    botSkill: Math.max(0, Math.min(1, envInt("BOT_SKILL", DEFAULT_CONFIG.botSkill))),
     botDebug: ["1", "true", "yes", "on"].includes((process.env.BOT_DEBUG ?? "").toLowerCase()),
   };
 }

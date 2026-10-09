@@ -224,6 +224,7 @@ export async function createServer(opts: Partial<Config> = {}): Promise<RelaySer
       brain: brain.constructor.name,
       model: cfg.botModel,
       decisionMs: cfg.botDecisionMs,
+      skill: cfg.botSkill,
     });
     manager = new BotManager(
       {
@@ -258,6 +259,7 @@ export async function createServer(opts: Partial<Config> = {}): Promise<RelaySer
         bots: cfg.bots,
         decisionMs: cfg.botDecisionMs,
         stepMs: cfg.botStepMs,
+        skill: cfg.botSkill,
         debug: cfg.botDebug,
       },
       log,

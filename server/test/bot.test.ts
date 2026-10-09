@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import WebSocket from "ws";
 import { validateClientMessage, validateMessage } from "../src/protocol.js";
-import { Bot, MAX_HP, SHIP_SCRIPT, STORM_BAND, WORLD_SIZE, type Incoming, type Outgoing } from "../src/bots/botLogic.js";
+import { Bot, INVENTORY_CAPACITY, MAX_HP, tuningFor, SHIP_SCRIPT, STORM_BAND, WORLD_SIZE, type Incoming, type Outgoing } from "../src/bots/botLogic.js";
 import { TestClient, msg, useServer, type Msg } from "./helpers.js";
 
 const env = useServer();
@@ -223,14 +223,15 @@ interface Unit {
 }
 
 /** A bot welcomed into a room whose host is "host1", with a fixed rng. */
-function unitBot(opts: { pvp?: boolean } = {}): Unit {
+function unitBot(opts: { pvp?: boolean; skill?: number; rng?: () => number } = {}): Unit {
   const sent: Outgoing[] = [];
   const bot = new Bot({
     name: "u",
     host: false,
     pvp: false,
     now: () => 1,
-    rng: () => 0.5,
+    rng: opts.rng ?? (() => 0.5),
+    skill: opts.skill,
     send: (m) => sent.push(m),
   });
   bot.onMessage({ t: "welcome", playerId: "me", hostId: "host1", peers: ["host1"] });
@@ -281,8 +282,8 @@ describe("bot controller", () => {
     expect(u.bot.pos.x).toBeLessThan(WORLD_SIZE - STORM_BAND);
   });
 
-  it("dodges a bullet on a collision course (pvp on)", () => {
-    const u = unitBot({ pvp: true });
+  it("dodges a bullet on a collision course (pvp on, sharp bot)", () => {
+    const u = unitBot({ pvp: true, skill: 1 });
     u.bot.pos = { x: 10000, y: 10000 };
     u.bot.vel = { x: 0, y: 0 };
     u.bot.onMessage({
@@ -384,7 +385,7 @@ describe("bot controller", () => {
     u.bot.pos = { x: 10000, y: 10000 };
     u.bot.onMessage(enemySpawn("e1", 10500, 10000));
     u.bot.setDecision({ mode: "attack", targetId: "e1", aggression: 0.5 });
-    u.tick(2);
+    u.tick(20);
     expect(u.bot.shield).toBe(0);
     expect(u.of("custom", "spawn_shield").some((m) => (m.data as { t: number }).t === 0)).toBe(true);
   });
@@ -401,5 +402,247 @@ describe("bot controller", () => {
     expect(o.enemies[1].isLeader).toBe(true);
     expect(o.self.rank).toBe(2);
     expect(o.loot).toEqual([{ distance: 100, quantity: 3 }]);
+  });
+});
+
+// ---- scan, farm, mine, skill ------------------------------------------------
+
+function scanResult(rocks: unknown[], planets?: unknown[]): Incoming {
+  return { t: "custom", from: "host1", type: "bot_scan_result", data: { rocks, ...(planets ? { planets } : {}) } };
+}
+
+const PLANET = { x: 14000, y: 10000, range: 600, body_radius: 100, mineral: "plasma", mine_interval: 2 };
+
+describe("bot host scan", () => {
+  it("sends bot_scan to the host on spawn and every 2 s, with planets until they arrive", () => {
+    const u = unitBot();
+    u.tick(1);
+    let scans = u.of("custom", "bot_scan");
+    expect(scans).toHaveLength(1);
+    expect(scans[0].to).toBe("host1");
+    expect(scans[0].data).toMatchObject({ r: 2000, planets: true });
+    expect(validateClientMessage(scans[0])).toBe(true);
+
+    u.tick(20); // +2 s
+    scans = u.of("custom", "bot_scan");
+    expect(scans).toHaveLength(2);
+    expect((scans[1].data as { planets?: boolean }).planets).toBe(true);
+
+    u.bot.onMessage(scanResult([], [PLANET]));
+    u.tick(20);
+    scans = u.of("custom", "bot_scan");
+    expect(scans).toHaveLength(3);
+    expect((scans[2].data as { planets?: boolean }).planets).toBeUndefined();
+    expect(u.bot.planets).toHaveLength(1);
+  });
+
+  it("does not scan when it is the host itself", () => {
+    const sent: Outgoing[] = [];
+    const bot = new Bot({ name: "u", host: true, pvp: false, now: () => 1, send: (m) => sent.push(m) });
+    bot.onMessage({ t: "welcome", playerId: "me", hostId: "me", peers: [] });
+    for (let i = 0; i < 30; i++) bot.tick(0.1);
+    expect(sent.some((m) => m.type === "bot_scan")).toBe(false);
+  });
+
+  it("tracks rocks from scan results and drops them on map_rock_destroyed", () => {
+    const u = unitBot();
+    u.bot.pos = { x: 10000, y: 10000 };
+    u.tick(1);
+    u.bot.onMessage(
+      scanResult([
+        { id: "1:1:0", x: 10300, y: 10000, radius: 26, hp: 40 },
+        { id: "1:1:1", x: 10000, y: 10800, radius: 52, hp: 80 },
+      ]),
+    );
+    expect([...u.bot.rocks.keys()].sort()).toEqual(["1:1:0", "1:1:1"]);
+    expect(u.bot.observe().rocks).toEqual({ count: 2, nearestDistance: expect.any(Number) });
+
+    u.bot.onMessage({ t: "custom", from: "host1", type: "map_rock_destroyed", data: { id: "1:1:0" } });
+    expect([...u.bot.rocks.keys()]).toEqual(["1:1:1"]);
+    // a stale result must not bring a destroyed rock back
+    u.tick(20);
+    u.bot.onMessage(scanResult([{ id: "1:1:0", x: 10300, y: 10000, radius: 26, hp: 40 }]));
+    expect(u.bot.rocks.has("1:1:0")).toBe(false);
+    // and a result replaces the chunk rocks inside the scanned circle
+    expect(u.bot.rocks.has("1:1:1")).toBe(false);
+  });
+
+  it("ignores scan results and rock news that do not come from the host", () => {
+    const u = unitBot();
+    u.tick(1);
+    u.bot.onMessage({ ...scanResult([{ id: "a", x: 1, y: 1, radius: 1, hp: 1 }]), from: "other" });
+    expect(u.bot.rocks.size).toBe(0);
+  });
+
+  it("tracks asteroid fragments from spawn and removes them on despawn", () => {
+    const u = unitBot();
+    u.bot.onMessage({
+      t: "spawn",
+      from: "host1",
+      netId: "host1:9",
+      owner: "host1",
+      script: "asteroid.lua",
+      state: { pos: { x: 100, y: 100 }, vel: { x: 50, y: 0 }, rot: 0, acc: { x: 0, y: 0 } },
+    });
+    expect(u.bot.rocks.get("host1:9")?.fragment).toBe(true);
+    u.tick(10);
+    expect(u.bot.rocks.get("host1:9")?.pos.x).toBeGreaterThan(140);
+    u.bot.onMessage({ t: "despawn", from: "host1", netId: "host1:9" });
+    expect(u.bot.rocks.size).toBe(0);
+  });
+});
+
+describe("bot farming", () => {
+  it("farm: fires at the rock within the aim-error bound, even with pvp off", () => {
+    const u = unitBot();
+    u.bot.pos = { x: 10000, y: 10000 };
+    u.tick(1);
+    u.bot.onMessage(scanResult([{ id: "1:1:0", x: 10400, y: 10000, radius: 26, hp: 40 }]));
+    u.bot.setDecision({ mode: "farm", targetId: null, aggression: 0.3 });
+    u.tick(30);
+    const fires = u.of("fire");
+    expect(fires.length).toBeGreaterThan(1);
+    const bound = u.bot.tuning.aimError;
+    for (const f of fires) {
+      const v = f.vel as { x: number; y: number };
+      const pos = f.pos as { x: number; y: number };
+      const want = Math.atan2(10000 - pos.y, 10400 - pos.x);
+      const diff = Math.abs(Math.atan2(Math.sin(Math.atan2(v.y, v.x) - want), Math.cos(Math.atan2(v.y, v.x) - want)));
+      expect(diff).toBeLessThanOrEqual(bound + 1e-9);
+      expect(validateClientMessage(f)).toBe(true);
+    }
+  });
+
+  it("farm: skips rocks inside a planet's gravity", () => {
+    const u = unitBot();
+    u.bot.pos = { x: 13000, y: 10000 };
+    u.tick(1);
+    u.bot.onMessage(scanResult([{ id: "1:1:0", x: 13600, y: 10000, radius: 26, hp: 40 }], [PLANET]));
+    expect(u.bot.observe().rocks.count).toBe(0);
+    u.bot.setDecision({ mode: "farm", targetId: null, aggression: 0.3 });
+    u.tick(30);
+    expect(u.of("fire")).toHaveLength(0);
+  });
+
+  it("farm: goes for a nearby orb before the next rock", () => {
+    const u = unitBot();
+    u.bot.pos = { x: 10000, y: 10000 };
+    u.tick(1);
+    u.bot.onMessage(scanResult([{ id: "1:1:0", x: 10000, y: 11500, radius: 26, hp: 40 }]));
+    u.bot.onMessage(lootSpawn(7, 10040, 10000));
+    u.bot.setDecision({ mode: "farm", targetId: null, aggression: 0.3 });
+    u.tick(3);
+    expect(u.of("pickup_request")).toHaveLength(1);
+  });
+});
+
+describe("bot mining", () => {
+  it("mine: +1 mineral every mine_interval inside range, stops at capacity, sends rank_score", () => {
+    const u = unitBot();
+    u.bot.pos = { x: 10000, y: 10000 };
+    u.tick(1);
+    u.bot.onMessage(scanResult([], [PLANET]));
+    expect(u.bot.observe().planet).toEqual({ distance: 4000, mineral: "plasma" });
+
+    u.bot.pos = { x: 14000 - 360, y: 10000 }; // inside range (600)
+    u.bot.vel = { x: 0, y: 0 };
+    u.bot.setDecision({ mode: "mine", targetId: null, aggression: 0.3 });
+    u.tick(61); // 6.1 s -> 3 minerals
+    expect(u.bot.inventory.get("plasma")).toBe(3);
+    expect(dist2(u.bot.pos, PLANET)).toBeLessThan(PLANET.range);
+    expect(dist2(u.bot.pos, PLANET)).toBeGreaterThan(PLANET.body_radius * 2);
+    const scores = u.of("custom", "rank_score");
+    expect(scores.some((m) => (m.data as { total: number }).total === 3)).toBe(true);
+
+    u.bot.inventory.set("plasma", INVENTORY_CAPACITY);
+    u.tick(100);
+    expect(u.bot.score).toBe(INVENTORY_CAPACITY);
+  });
+
+  it("does not mine outside a planet's range", () => {
+    const u = unitBot();
+    u.bot.pos = { x: 10000, y: 10000 };
+    u.tick(1);
+    u.bot.onMessage(scanResult([], [PLANET]));
+    u.tick(50);
+    expect(u.bot.score).toBe(0);
+  });
+
+  it("mine: flies to the planet and starts mining", () => {
+    const u = unitBot();
+    u.bot.pos = { x: 13200, y: 10000 };
+    u.tick(1);
+    u.bot.onMessage(scanResult([], [PLANET]));
+    u.bot.setDecision({ mode: "mine", targetId: null, aggression: 0.3 });
+    u.tick(300);
+    expect(u.bot.score).toBeGreaterThan(5);
+  });
+});
+
+function dist2(a: { x: number; y: number }, b: { x: number; y: number }): number {
+  return Math.hypot(a.x - b.x, a.y - b.y);
+}
+
+describe("bot skill", () => {
+  it("skill 0 vs 1 changes cooldown, aim error, dodge, range and reaction", () => {
+    const easy = tuningFor(0);
+    const sharp = tuningFor(1);
+    expect(easy).toEqual({ aimError: 0.35, fireCooldown: 1.2, dodgeChance: 0.15, attackRange: 700, reactionDelay: 0.8 });
+    expect(sharp.aimError).toBeCloseTo(0.05);
+    expect(sharp.fireCooldown).toBeCloseTo(0.5);
+    expect(sharp.dodgeChance).toBeCloseTo(0.85);
+    expect(sharp.attackRange).toBeCloseTo(1200);
+    expect(sharp.reactionDelay).toBeCloseTo(0.2);
+  });
+
+  it("a skilled bot fires more often than an easy one", () => {
+    const count = (skill: number) => {
+      const u = unitBot({ pvp: true, skill });
+      u.bot.pos = { x: 10000, y: 10000 };
+      u.bot.onMessage(enemySpawn("e1", 10500, 10000));
+      u.bot.setDecision({ mode: "attack", targetId: "e1", aggression: 0.5 });
+      u.tick(100);
+      return u.of("fire").length;
+    };
+    expect(count(1)).toBeGreaterThan(count(0));
+  });
+
+  it("an easy bot (skill 0) often ignores an incoming bullet", () => {
+    const bullet = (u: Unit) =>
+      u.bot.onMessage({
+        t: "fire",
+        from: "e1",
+        bulletNetId: "e1:5",
+        shooterNetId: "e1:1",
+        pos: { x: 9700, y: 10000 },
+        vel: { x: 1000, y: 0 },
+        dmg: 20,
+      });
+    const easy = unitBot({ pvp: true, skill: 0, rng: () => 0.5 }); // 0.5 > 0.15: ignores it
+    easy.bot.pos = { x: 10000, y: 10000 };
+    bullet(easy);
+    easy.tick(1);
+    expect(Math.abs(easy.bot.vel.y)).toBeLessThan(1);
+  });
+
+  it("observe() exposes skill, hold and the provoker for 6 s", () => {
+    const u = unitBot({ pvp: true, skill: 0.8 });
+    u.bot.pos = { x: 10000, y: 10000 };
+    u.bot.onMessage(enemySpawn("e1", 10500, 10000));
+    expect(u.bot.observe().self).toMatchObject({ skill: 0.8, holdFree: INVENTORY_CAPACITY, recentlyAttackedBy: null, canInitiateFights: true });
+    u.bot.onMessage({
+      t: "fire",
+      from: "e1",
+      bulletNetId: "e1:5",
+      shooterNetId: "e1:1",
+      pos: { ...u.bot.pos },
+      vel: { x: 0, y: 0 },
+      dmg: 10,
+    });
+    u.tick(1);
+    expect(u.bot.observe().self.recentlyAttackedBy).toBe(0);
+    u.tick(70, 0.1);
+    expect(u.bot.observe().self.recentlyAttackedBy).toBeNull();
+    expect(unitBot({ skill: 0.35 }).bot.observe().self.canInitiateFights).toBe(false);
   });
 });

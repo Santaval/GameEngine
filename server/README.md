@@ -57,6 +57,7 @@ simulate the map), so with no humans there are no bots.
 | `BOT_BRAIN` | `auto` | `auto` (Jev if `AI_GATEWAY_API_KEY` is set, else heuristic), `jev` or `heuristic`. |
 | `BOT_MODEL` | `typesafe-ai/jev` | Vercel AI Gateway decision model id. |
 | `BOT_DECISION_MS` | `1500` | Brain interval per bot (with +-20 % jitter). |
+| `BOT_SKILL` | `0.35` | Bot difficulty, `0` (easy) to `1` (sharp): aim error, fire rate, dodging, attack range and reaction time. Bots below `0.5` never start a fight (they only retaliate). |
 | `BOT_DEBUG` | off | Log every bot decision and key event. |
 | `AI_GATEWAY_API_KEY` | - | Read by the AI SDK itself. Never commit it. |
 
@@ -67,14 +68,14 @@ bots go. Bots are added or removed one at a time (250 ms apart).
 Two layers. The brain (slow, async) turns an observation (own hp, score, rank,
 nearest enemies and loot, incoming bullets) into a decision
 `{mode, targetId, aggression}` with `mode` one of `attack`, `hunt_leader`,
-`flee`, `collect`, `roam`. The controller (10 Hz, pure) carries it out:
+`flee`, `collect`, `farm`, `mine`, `roam`. The controller (10 Hz, pure) carries it out:
 steering, lead aim, firing (only while pvp is on), orb pickup, plus reflexes
 that always run (dodge bullets, stay out of the storm band). Bots earn score
-by picking up orbs, send `rank_score`, drop their minerals on death
+by mining planets, shooting asteroids and picking up the orbs, send `rank_score`, drop their minerals on death
 (`death_drop`) and get a spawn shield, like the game client.
 
 - **Heuristic brain:** simple rules (flee when hurt, collect nearby loot,
-  attack a weaker enemy, hunt the leader, else roam). No network.
+  retaliate when shot, then mine a planet or farm rocks; sharp bots (`BOT_SKILL` >= 0.5) also attack weaker enemies and hunt the leader). No network. Rocks and planets come from the host through `bot_scan` (see `docs/aval-cup.md`).
 - **Jev brain:** one `experimental_decide` request per decision with the
   observation as `state`. It is skipped (bot roams) when nothing is near. On
   an error or after 1.2 s it falls back to the heuristic; after 3 failures in
@@ -109,6 +110,7 @@ npm run bot -- --host --pvp --duration 30
 | `--host` | Answer host-only requests (`snapshot_request` with a `snapshot`) while it is the host. Warns if it is not. A bot that is not answering as host still re-sends its ship `spawn` directly to the requester. |
 | `--pvp` | Broadcast `room_settings{pvp:true}` while it is the host, and take damage from player bullets. |
 | `--brain jev\|heuristic` | Strategy brain (default `heuristic`). `jev` needs `AI_GATEWAY_API_KEY`; `--model` overrides the model id. |
+| `--skill <0..1>` | Difficulty (default `0.35`). |
 | `--duration <sec>` | Exit automatically after this many seconds. |
 
 The bot logic lives in `src/bots/botLogic.ts` (pure, tested in `test/bot.test.ts`).

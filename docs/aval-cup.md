@@ -831,6 +831,23 @@ live top 10 as Pal's broadcast scoreboard, and the leader is marked.
   ships of the first `SPAWN.top_n` (3) players with minerals, so a respawn
   lands at least `top_clear` px from them.
 
+## Server bots
+
+The relay's bots (`server/src/bots/`, see `server/README.md`) do not know the
+map, which each client builds from the seed. `map_bot_scan.lua` (a director)
+makes the host their eyes. A bot sends the direct `custom` message
+`bot_scan { x, y, r, planets? }` about every 2 s; only the host answers, with a
+direct `bot_scan_result { rocks, planets? }`:
+
+- `rocks`: up to 20 live chunk rocks within `r` (clamped to 2500 px), nearest
+  first, as `{ id, x, y, radius, hp }` (`map_rocks_info_near` in
+  `aval_cup_world.lua`; `radius` is the body radius times the rock scale).
+- `planets` (only when the request had `planets = true`): every planet with a
+  mineral, as `{ x, y, range, body_radius, mineral, mine_interval }`.
+
+Bots shoot rocks with normal `fire` messages (the host's copy dies and
+broadcasts `map_rock_destroyed`) and mine by staying inside a planet's `range`.
+
 ## Known gap
 
 Chunk rocks are not synchronized once they exist. If a ship bump nudges a
