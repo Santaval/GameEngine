@@ -42,7 +42,8 @@ config.SPAWN_SHIELD = 5
 -- Biomas: cada sector tiene uno (ver map_biomes.lua). weight es la
 -- probabilidad relativa de salir. Dos sectores contiguos (vecinos ortogonales,
 -- sin diagonales) no repiten bioma salvo BIOME_REPEAT_OK. El sector central
--- es siempre uno de CENTER_BIOMES (lo elige map_biomes antes que el resto)
+-- es siempre uno de CENTER_BIOMES (lo elige map_biomes antes que el resto).
+-- Solo planetary: la megaestructura del reactor no puede caer en la aparicion
 config.BIOMES = {
   { id = "debris", name = "Debris", weight = 35 },
   { id = "planetary", name = "Planetary", weight = 20 },
@@ -52,7 +53,7 @@ config.BIOMES = {
   { id = "reactor", name = "Reactor", weight = 5 },
 }
 config.BIOME_REPEAT_OK = "debris"
-config.CENTER_BIOMES = { "planetary", "reactor" }
+config.CENTER_BIOMES = { "planetary" }
 
 -- Color de cada bioma en el minimapa (r, g, b)
 config.BIOME_COLORS = {
@@ -95,6 +96,45 @@ config.DRIFT = { chance = 0.2, speed = { min = 20, max = 40 }, tries = 12 }
 config.WRECK_CHANCE = 1 / 3
 config.WRECK_BIOMES = { "debris", "reactor" }
 
+-- Reactor Remains (ver map_reactor.lua y map_reactor_data.lua): una
+-- megaestructura por sector reactor, con huecos por los que pasa una nave.
+--   variants: pesos de las variantes (ring = anillo, hull = casco modular)
+--   ring_size: lado (px dibujados) del sprite del anillo
+--   hull_piece: lado (px dibujados) de las piezas cuadradas del casco; la
+--     recta (hull_01) se dibuja 1.5 veces mas ancha que alta
+--   core_size / core_frame / core_cols: nucleo animado (px dibujados, lado de
+--     un frame de la hoja y frames por fila)
+--   clear_pad: ninguna roca a menos de radio de la estructura + clear_pad px
+--   wrecks: pecios por chunk del sector reactor (las rocas grandes del chunk
+--     que pasan a pecio; reemplaza a WRECK_CHANCE en esos chunks)
+--   ship_clearance: holgura minima (px) entre el borde de un collider y el
+--     centro de un hueco (la usa la prueba del mapa)
+--   min_gap: ancho minimo (px) de los huecos del casco
+--   pulse: Pulso del Reactor. radius/max_push/min_push: alcance (px) y
+--     velocidad (px/s) que se suma hacia afuera, max_push pegado al nucleo
+--     y min_push como suelo; charge: segundos de carga antes del empuje;
+--     wave_time: segundos que tarda la onda en llegar al radio; interval:
+--     segundos entre pulsos automaticos del host (hasta que el director de
+--     eventos los dispare); warn_radius: a esta distancia sale el aviso
+config.REACTOR = {
+  variants = { ring = 1, hull = 1 },
+  ring_size = 2800,
+  hull_piece = 520,
+  core_size = 600,
+  core_frame = 362,
+  core_cols = 4,
+  clear_pad = 250,
+  wrecks = { min = 1, max = 2 },
+  ship_clearance = 120,
+  min_gap = 350,
+  pulse = {
+    radius = 1800, max_push = 450, min_push = 120,
+    charge = 2.0, wave_time = 0.6,
+    interval = { min = 45, max = 75 },
+    warn_radius = 2400,
+  },
+}
+
 -- Planetas de los sectores Planetary: cuantos por sector, separacion entre
 -- centros (multiplo de la suma de sus range) e intentos de colocacion.
 -- Regla de borde: pedir >= 1 chunk (2000 px) al borde del sector solo deja el
@@ -107,8 +147,8 @@ config.PLANET_EDGE_PAD = 100
 
 -- Punto de aparicion de la nave (centro del mundo, ver scenes/aval_cup.lua) y
 -- margen (px) que deja libre alrededor: ningun pozo de gravedad lo cubre, para
--- que nadie nazca dentro de un planeta. El sector central casi siempre es
--- Planetary
+-- que nadie nazca dentro de un planeta. El sector central es
+-- siempre Planetary (CENTER_BIOMES)
 config.PLAYER_SPAWN = { x = config.WORLD_SIZE / 2, y = config.WORLD_SIZE / 2 }
 config.SPAWN_CLEAR_PAD = 300
 

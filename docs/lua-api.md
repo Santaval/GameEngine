@@ -145,6 +145,7 @@ See [gravity.md](gravity.md) for the model.
 | --- | --- | --- |
 | `add_sprite(e, asset_id, width, height, src_x, src_y)` | — | `asset_id` must be registered in the scene's `sprites` list. `width`/`height` are the **source frame** size. |
 | `set_sprite(e, asset_id)` | — | Swaps the texture, keeps the frame geometry. |
+| `set_sprite_frame(e, src_x, src_y)` | — | Moves the source rect inside the sheet (px). For hand-animated sprites without an `animation` component. |
 | `add_animation(e, num_frames, frame_speed_rate, is_loop)` | — | `frame_speed_rate` is frames per second. |
 
 The rendered size is `width * scale.x` by `height * scale.y`, so scale lives on
@@ -618,7 +619,7 @@ of that slot left behind — entity ids are recycled.
 
 | Guarded, safe to call on anything | Unguarded, requires the component |
 | --- | --- |
-| `get_health`, `get_max_health`, `is_alive`, `set_health`, `heal`, `set_max_health`, `get_damage`, `set_damage`, `is_path_active`, `set_path_active`, `set_equipment_level`, `get_equipment_level`, `has_equipment`, `upgrade_equipment`, `remove_equipment`, `get_equipment_count`, `get_equipment_at`, `has_inventory`, `add_item`, `remove_item`, `update_item_count`, `get_item_count`, `has_item`, `get_inventory_total`, `get_inventory_capacity`, `set_inventory_capacity`, `get_inventory_count`, `get_inventory_at`, `clear_inventory`, `has_loot`, `get_loot_count`, `get_loot_at`, `set_loot`, `destroy_entity`, `draw_rect`, `draw_rect_world` | `get_position`, `get_rotation`, `set_rotation*`, every `*_velocity` / `*_acceleration` / `*_max_speed`, `get_speed`, `set_sprite`, `set_text`, `set_text_color` |
+| `get_health`, `get_max_health`, `is_alive`, `set_health`, `heal`, `set_max_health`, `get_damage`, `set_damage`, `is_path_active`, `set_path_active`, `set_equipment_level`, `get_equipment_level`, `has_equipment`, `upgrade_equipment`, `remove_equipment`, `get_equipment_count`, `get_equipment_at`, `has_inventory`, `add_item`, `remove_item`, `update_item_count`, `get_item_count`, `has_item`, `get_inventory_total`, `get_inventory_capacity`, `set_inventory_capacity`, `get_inventory_count`, `get_inventory_at`, `clear_inventory`, `has_loot`, `get_loot_count`, `get_loot_at`, `set_loot`, `destroy_entity`, `draw_rect`, `draw_rect_world` | `get_position`, `get_rotation`, `set_rotation*`, every `*_velocity` / `*_acceleration` / `*_max_speed`, `get_speed`, `set_sprite`, `set_sprite_frame`, `set_text`, `set_text_color` |
 
 In practice: before calling anything in the right-hand column on an entity you
 did not build yourself, make sure it has the component.

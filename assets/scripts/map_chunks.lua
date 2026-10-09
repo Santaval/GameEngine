@@ -6,12 +6,15 @@
 --  Es una funcion pura de (semilla, cx, cy): todos los clientes obtienen lo
 --  mismo sin enviar nada por la red. No usa math.random (ver map_grid.lua).
 --  Cada concepto (rocas, deriva, pecios) usa su propio flujo aleatorio, asi
---  que tocar un ajuste no baraja el resto.
+--  que tocar un ajuste no baraja el resto. Las rocas tambien esquivan las
+--  megaestructuras del Reactor Remains (map_reactor.lua) y en esos sectores
+--  hay mas pecios.
 -- =====================================================================
 
 local cfg = require("map_config")
 local grid = require("map_grid")
 local biomes = require("map_biomes")
+local reactor = require("map_reactor")
 local field = require("asteroid_field")
 local asteroid_cfg = require("asteroid_config")
 
@@ -97,9 +100,18 @@ function chunks.generate_chunk(seed, cx, cy)
   local sx, sy = grid.world_to_sector(bx, by)
   local biome = layout.biomes[sx][sy]
   local planets = layout.planets
+  local sites = reactor.sites(seed)
+
+  -- Para la deriva cada sitio cuenta como un planeta con su zona vedada como
+  -- pozo (radio exterior + clear_pad): una roca no cruza una megaestructura
+  local obstacles = {}
+  for _, p in ipairs(planets) do obstacles[#obstacles + 1] = p end
+  for _, site in ipairs(sites) do
+    obstacles[#obstacles + 1] = { x = site.x, y = site.y, range = site.radius + cfg.REACTOR.clear_pad }
+  end
 
   local function reject(x, y, radius)
-    return touches_planet(planets, x, y, radius)
+    return touches_planet(planets, x, y, radius) or reactor.blocks(sites, x, y, radius)
   end
 
   local r = grid.rng(grid.hash(seed, cx, cy, grid.SALT_ROCKS))
@@ -155,13 +167,27 @@ function chunks.generate_chunk(seed, cx, cy)
     list[i] = rock_state(p.x, p.y, p.scale, kind, rot, key .. ":" .. i)
   end
 
-  -- Pecio: una roca grande del chunk (nunca a la deriva) en debris y reactor
-  local wreckIndex = nil
+  -- Pecios (nunca a la deriva): en un sector reactor, REACTOR.wrecks rocas
+  -- grandes distintas del chunk (el botin gordo, sin tirar la moneda); en los
+  -- demas biomas de WRECK_BIOMES, una con probabilidad WRECK_CHANCE
+  local wrecked = {}
   if in_list(cfg.WRECK_BIOMES, biome) and #large > 0 then
     local w = grid.rng(grid.hash(seed, cx, cy, grid.SALT_WRECK))
-    if w.next() < cfg.WRECK_CHANCE then
-      wreckIndex = w.int(1, #large)
-      list[wreckIndex].wreck = w.int(1, #asteroid_cfg.WRECK_TYPES)
+    if biome == "reactor" then
+      local want = math.min(pick_count(w, cfg.REACTOR.wrecks), #large)
+      -- Fisher-Yates parcial sobre los indices de las rocas grandes
+      local order = {}
+      for i = 1, #large do order[i] = i end
+      for i = 1, want do
+        local j = w.int(i, #large)
+        order[i], order[j] = order[j], order[i]
+        wrecked[order[i]] = true
+        list[order[i]].wreck = w.int(1, #asteroid_cfg.WRECK_TYPES)
+      end
+    elseif w.next() < cfg.WRECK_CHANCE then
+      local index = w.int(1, #large)
+      wrecked[index] = true
+      list[index].wreck = w.int(1, #asteroid_cfg.WRECK_TYPES)
     end
   end
 
@@ -170,11 +196,11 @@ function chunks.generate_chunk(seed, cx, cy)
   -- duerme con el culling y el host la borra al salir del mundo
   local d = grid.rng(grid.hash(seed, cx, cy, grid.SALT_DRIFT))
   for i, p in ipairs(all) do
-    if i ~= wreckIndex and d.next() < cfg.DRIFT.chance then
+    if not wrecked[i] and d.next() < cfg.DRIFT.chance then
       for _ = 1, cfg.DRIFT.tries do
         local a = d.range(0, 2 * math.pi)
         local ux, uy = math.cos(a), math.sin(a)
-        if ray_is_clear(planets, p.x, p.y, ux, uy, p.radius) then
+        if ray_is_clear(obstacles, p.x, p.y, ux, uy, p.radius) then
           local speed = d.range(cfg.DRIFT.speed.min, cfg.DRIFT.speed.max)
           local s = list[i]
           s.vel = { x = ux * speed, y = uy * speed }

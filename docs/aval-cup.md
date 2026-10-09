@@ -60,7 +60,7 @@ only, masking every step with `& 0xFFFFFFFF`:
 - `hash(seed, cx, cy)` mixes the three integers with murmur3's `fmix32`.
   An optional fourth argument `salt` adds one more `fmix32` round, so each
   generation concern gets its own independent stream (`SALT_BIOME`,
-  `SALT_PLANET`, `SALT_ROCKS`, `SALT_DRIFT`, `SALT_WRECK`). Without a salt the
+  `SALT_PLANET`, `SALT_ROCKS`, `SALT_DRIFT`, `SALT_WRECK`, `SALT_NEBULA`, `SALT_REACTOR`). Without a salt the
   result is bit-identical to the original hash.
 - `rng(state)` is mulberry32 seeded with that hash. `next()` is `integer / 2^32`.
 
@@ -80,12 +80,12 @@ rng (`hash(seed, 0, 0, SALT_BIOME)`). The weights are in `BIOMES`:
 | `dense_belt` | 15 | 10-14 large rocks per chunk instead of 4-6 |
 | `deep_void` | 15 | Large rocks only, no medium/small ones |
 | `nebula` | 10 | Same rocks as debris (visuals come later) |
-| `reactor` | 5 | Can have wrecks |
+| `reactor` | 5 | One [Reactor Remains](#reactor-remains) megastructure and 1-2 wrecks per chunk |
 
 Rules:
 
-- The **center sector** (2, 2) is picked first, between `CENTER_BIOMES`
-  (`planetary` and `reactor`, weights 20:5).
+- The **center sector** (2, 2) is picked first, among `CENTER_BIOMES` (only
+  `planetary`, so the spawn point never lands on a reactor structure).
 - The other sectors follow in reading order. Each one picks (by weight) among
   the biomes that none of its **orthogonal** neighbours already assigned has:
   up, down, left and right. Diagonal neighbours may repeat. `debris`
@@ -239,7 +239,7 @@ collisions.
 | `DEATH_DROP_FRACTION` | 0.6 | Players (not used yet) |
 | `SPAWN_SHIELD` | 5 | Players (not used yet) |
 | `BIOMES` | see [Biomes](#biomes) | Id, name and weight of each biome |
-| `BIOME_REPEAT_OK`, `CENTER_BIOMES` | `debris`, `planetary`/`reactor` | Adjacency exception and centre sector pool |
+| `BIOME_REPEAT_OK`, `CENTER_BIOMES` | `debris`, `planetary` | Adjacency exception and centre sector pool |
 | `BIOME_COLORS` | per biome | Minimap tint |
 | `ROCK_SIZES` | 1.0..1.5 / 0.6..1.0 / 0.3..0.6 | Scale of large / medium / small rocks |
 | `LARGE_ROCKS`, `LARGE_ROCKS_DENSE` | 4..6, 10..14 | Large rocks per chunk |
@@ -252,10 +252,95 @@ collisions.
 | `PLANET_SPACING_FACTOR`, `PLANET_TRIES`, `PLANET_EDGE_PAD` | 2.5, 40, 100 | Planet placement |
 | `PLAYER_SPAWN`, `SPAWN_CLEAR_PAD` | world centre, 300 | Spawn point kept clear of gravity wells |
 | `PLANET_ROLES` | mining 3, merchant 1, tech 1 | Role weights |
+| `REACTOR.variants` | ring 1, hull 1 | Weights of the structure variants |
+| `REACTOR.ring_size`, `hull_piece` | 2800, 520 | Drawn size (px) of the ring and of the square hull pieces (the straight is 1.5x wider) |
+| `REACTOR.core_size`, `core_frame`, `core_cols` | 600, 362, 4 | Core sprite: drawn size, frame side in the sheet, frames per row |
+| `REACTOR.clear_pad` | 250 | No rocks within `site.radius + clear_pad` |
+| `REACTOR.wrecks` | 1..2 | Wrecks per reactor chunk (replaces `WRECK_CHANCE` there) |
+| `REACTOR.ship_clearance`, `min_gap` | 120, 350 | Min clearance from a gap point to any collider; min hull gap width (tests) |
+| `REACTOR.pulse` | see [Reactor Pulse](#reactor-pulse) | Radius, push, charge, wave time, interval, warning radius |
 
 The minimap in `solar_hud.lua` shows the biome of each sector as a tint, the
 5 x 5 sector grid, the storm band as an inset outline, the planets and the
 current sector or nearest planet when `scene_map` is set.
+
+## Reactor Remains
+
+Every `reactor` sector gets one collidable megastructure at its centre, built by
+`map_reactor.sites(seed)` (pure function of the seed, memoized per seed, own
+stream `hash(seed, sx, sy, SALT_REACTOR)`, no `math.random`). A site is
+`{ index, sx, sy, x, y, variant, rot, pieces, colliders, core, radius, gaps }`:
+
+- `variant`: `ring` (one 2800 px ring with four gaps) or `hull` (square
+  enclosure of modular pieces), picked by `REACTOR.variants`. `rot` is a
+  multiple of 90 degrees.
+- `pieces`: the drawn sprites (`reactor_hull_01..04`, `reactor_ring`).
+- `colliders`: invisible circles (`{x, y, r}`) placed along the art. The engine
+  only has circle colliders, so the templates (alpha-mask measurements, in
+  normalized piece units) live in `map_reactor_data.lua` as data to tune.
+  Press **C** in game to see them.
+- `gaps`: the world point at the middle of each gap. The hull has four, each at
+  least `min_gap` (350 px) wide; the ring has four narrower ones (about 270 px).
+  The map test checks that no collider circle is closer than `ship_clearance`
+  to a gap point.
+- `radius`: the farthest collider edge from the centre. `map_reactor.blocks`
+  and the rock generator keep rocks out of `radius + clear_pad`, and drifting
+  rocks never cross that disc (the site counts as a pseudo-planet in
+  `ray_is_clear`).
+- `core`: the animated core (`reactor-pulse` sheet) at the centre.
+
+The `hull` layout is a four-fold pinwheel of one side: `hull_02` corner,
+`hull_01` straight, a gap, and a `hull_03` block turned 180 degrees so its
+jagged edge faces the gap, plus two detached `hull_04` pieces inside the
+enclosure as cover. Outer extent stays within 1500 px of the centre so it fits
+a sector next to the storm band.
+
+Loot: a reactor chunk turns `REACTOR.wrecks` (1-2) distinct large rocks into
+wrecks with probability 1 (capped by the number of large rocks the chunk got).
+
+`map_reactor_world.lua` (a director after `aval_cup_world.lua`) builds every
+site once with `spawn_local`, in this order: pieces
+(`prefabs/reactor_piece.lua`, no collider), colliders
+(`prefabs/reactor_collider.lua`) and the core (`prefabs/reactor_core.lua`). All
+of them have `cull = true`. It publishes the site list as the global
+`reactor_sites` (the minimap draws a marker per site; Wandering Storms #21 can
+anchor to it).
+
+Collision: each collider runs `reactor_hull.lua`. A local ship (it has an
+inventory) and a rock (it has loot) get their velocity reflected off the circle
+normal (restitution 0.4; the ship also gets a minimum outward speed of 60). A
+bullet is recognised as "has damage and gravity, no health, loot or inventory"
+and is destroyed locally (`destroy_entity`, never `net_despawn`). The hull has
+no health, so ships and bullets cannot hurt it. Each collider carries the same
+`damage` component as an asteroid (`ASTEROID_DAMAGE` with `IMPACT_MIN_SPEED` /
+`IMPACT_FULL_SPEED`), so ramming it hard hurts through the usual
+`DamageSystem` impact path.
+
+### Reactor Pulse
+
+A radial wave pushes everything near a site outward. Phases per site: idle
+(core frames 0-1), charge (`pulse.charge` seconds, core frames 2-3, red warning
+ring and the text "PULSO DEL REACTOR" if the ship is within `warn_radius`) and
+wave (core frames 4-7 and an expanding dotted ring over `wave_time`).
+
+At the end of the charge every client adds `max_push * (1 - d / radius)` px/s
+outward velocity (at least `min_push`, for `d < radius`) to:
+
+- its own ship (owner-authoritative, replication carries it);
+- the chunk rocks near the site (`map_rocks_near(x, y, r)`, defined by
+  `aval_cup_world.lua`; each client pushes its local copy);
+- the net asteroids in `drifting_asteroids` that it owns (`is_local`).
+
+`set_velocity` is not capped by `max_speed`. A ship pushed into a rock or the
+hull takes impact damage; nothing new is needed.
+
+Trigger (interim, until the event director #24 exists): only the host fires
+pulses. A per-site timer (`pulse.interval`) and the debug key **K**
+(`debug_pulse`, nearest site to the ship) call the global
+`reactor_pulse_fire(i)`, which sends `reactor_pulse {i}` and starts the charge
+locally. Clients start the charge on `reactor_pulse` only if `from ==
+net_host_id()` (and never their own). #24 should call `reactor_pulse_fire(i)`
+instead of the timer.
 
 ## Biome visuals
 

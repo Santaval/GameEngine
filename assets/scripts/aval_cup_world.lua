@@ -44,6 +44,22 @@ function map_rock_gone(id)
   rocks[id] = nil
 end
 
+-- Rocas de chunk vivas cuyo centro esta a menos de r px de (x, y), como lista de
+-- entidades. Lo usa el Pulso del Reactor (map_reactor_world.lua): cada cliente
+-- empuja su propia copia local
+function map_rocks_near(x, y, r)
+  local found = {}
+  local r2 = r * r
+  for _, e in pairs(rocks) do
+    if is_alive(e) then
+      local cx, cy = get_collider_center(e)
+      local dx, dy = cx - x, cy - y
+      if dx * dx + dy * dy < r2 then found[#found + 1] = e end
+    end
+  end
+  return found
+end
+
 -- Lo llama asteroid.lua en el host cuando una roca de chunk muere: la anota y
 -- avisa a los demas
 function map_world_destroyed(id)

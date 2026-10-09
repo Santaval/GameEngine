@@ -28,6 +28,7 @@ local PLAYER_COLOR = { 255, 255, 0 }
 local OTHER_COLOR = { 255, 90, 90 }
 local SECTOR_LINE_COLOR = { 255, 255, 255, 45 }
 local STORM_COLOR = { 150, 30, 60, 200 }
+local REACTOR_COLOR = { 255, 225, 170 }
 
 local BELT_DOTS = 72
 -- Tamano de un punto de planeta en el minimapa: px de mundo por px de punto,
@@ -123,6 +124,14 @@ local function draw_minimap(planets)
     for _, p in ipairs(belt_points) do
       local mx, my = to_map(p.x, p.y, ox, oy)
       draw_rect(mx - 1, my - 1, 2, 2, BELT_COLOR[1], BELT_COLOR[2], BELT_COLOR[3], 160)
+    end
+  end
+  -- Megaestructuras del reactor (reactor_sites, lo fija map_reactor_world)
+  if scene_map ~= nil and reactor_sites ~= nil then
+    for _, site in ipairs(reactor_sites) do
+      local mx, my = to_map(site.x, site.y, ox, oy)
+      draw_rect(mx - 3, my - 3, 6, 6, REACTOR_COLOR[1], REACTOR_COLOR[2], REACTOR_COLOR[3], 255, false)
+      draw_rect(mx - 1, my - 1, 2, 2, REACTOR_COLOR[1], REACTOR_COLOR[2], REACTOR_COLOR[3], 255)
     end
   end
   for _, p in ipairs(planets) do

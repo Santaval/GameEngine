@@ -22,6 +22,8 @@ drifting_asteroids = {}
 ring_slots = {}
 player_ships = {}
 map_destroyed = {}
+-- Sitios del Reactor Remains: los publica map_reactor_world.lua (el minimapa los lee)
+reactor_sites = nil
 
 -- Sin cinturones ni generadores: nadie crea asteroides en runtime salvo los
 -- fragmentos de una roca partida
@@ -115,6 +117,7 @@ entities[0] = player
 -- Directores invisibles (solo script)
 local DIRECTORS = {
   "./assets/scripts/aval_cup_world.lua",
+  "./assets/scripts/map_reactor_world.lua",
   "./assets/scripts/solar_hud.lua",
   "./assets/scripts/map_visuals.lua",
   "./assets/scripts/game_director.lua",
@@ -149,6 +152,12 @@ scene = {
     {assetId="nebula-cloud-03", filePath="./assets/sprites/vfx/nebula_cloud_03.png"},
     {assetId="nebula-cloud-04", filePath="./assets/sprites/vfx/nebula_cloud_04.png"},
     {assetId="nebula-vignette", filePath="./assets/sprites/vfx/nebula_vignette.png"},
+    {assetId="reactor-hull-01", filePath="./assets/sprites/reactor/reactor_hull_01.png"},
+    {assetId="reactor-hull-02", filePath="./assets/sprites/reactor/reactor_hull_02.png"},
+    {assetId="reactor-hull-03", filePath="./assets/sprites/reactor/reactor_hull_03.png"},
+    {assetId="reactor-hull-04", filePath="./assets/sprites/reactor/reactor_hull_04.png"},
+    {assetId="reactor-ring", filePath="./assets/sprites/reactor/reactor_ring.png"},
+    {assetId="reactor-pulse", filePath="./assets/sprites/vfx/reactor_pulse.png"},
   },
 
   -- El tamaño se fija al cargar: hace falta un fontId por cada tamaño
@@ -172,6 +181,7 @@ scene = {
     {name = "confirm", key = 13},
     {name = "menu", key = 109},
     {name = "toggle_pvp", key = 112},
+    {name = "debug_pulse", key = 107},
   },
 
   mouse = {

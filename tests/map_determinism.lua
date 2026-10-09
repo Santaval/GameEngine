@@ -1,7 +1,8 @@
--- Prueba del mapa (issues #16 y #17): determinismo, biomas, planetas y
--- contenido de los chunks. Se corre desde la raiz del repo:
+-- Prueba del mapa (issues #16, #17 y #19): determinismo, biomas, planetas y
+-- contenido de los chunks y megaestructuras del reactor. Se corre desde la raiz del repo:
 --   lua5.3 tests/map_determinism.lua
--- Sin motor: solo map_config, map_grid, map_biomes, map_chunks y los config.
+-- Sin motor: solo map_config, map_grid, map_biomes, map_chunks, map_reactor y
+-- los config.
 
 package.path = "./assets/scripts/?.lua;" .. package.path
 
@@ -27,6 +28,7 @@ local cfg = require("map_config")
 local grid = require("map_grid")
 local chunks = require("map_chunks")
 local biomes = require("map_biomes")
+local reactor = require("map_reactor")
 local solar = require("solar_system_config")
 local asteroid_cfg = require("asteroid_config")
 
@@ -56,6 +58,11 @@ local function serialize(world, seed)
   -- Los planetas tambien forman parte del mundo
   for _, p in ipairs(biomes.layout(seed).planets) do
     parts[#parts + 1] = string.format("%s|%.6f,%.6f|%s|%d", p.name, p.x, p.y, p.role, p.range)
+  end
+  -- Y las megaestructuras del reactor
+  for _, site in ipairs(reactor.sites(seed)) do
+    parts[#parts + 1] = string.format("%s|%.6f,%.6f|%d|%.6f|%d|%d", site.variant, site.x, site.y,
+      #site.colliders, site.radius, #site.pieces, #site.gaps)
   end
   return table.concat(parts, ";")
 end
@@ -141,13 +148,14 @@ check(grid.hash(1, 2, 3, 1) ~= grid.hash(1, 2, 3, 2), "sales distintas dan hashe
 eq(grid.hash(12345, 4, 7), 1997987304, "hash(12345,4,7) no cambia")
 eq(grid.hash(0, 0, 0), 3502349708, "hash(0,0,0) no cambia")
 
--- Biomas: ids validos, centro planetary/reactor y vecinos ortogonales distintos
+-- Biomas: ids validos, centro planetary y vecinos ortogonales distintos
 -- salvo debris (las diagonales pueden repetir)
 for seed = 1, SEEDS do
   local layout = biomes.layout(seed)
   local bg = layout.biomes
   local mid = cfg.SECTORS // 2
-  check(contains(cfg.CENTER_BIOMES, bg[mid][mid]), "centro planetary o reactor, semilla " .. seed)
+  check(contains(cfg.CENTER_BIOMES, bg[mid][mid]), "centro dentro de CENTER_BIOMES, semilla " .. seed)
+  eq(bg[mid][mid], "planetary", "el centro es siempre planetary, semilla " .. seed)
   for sy = 0, cfg.SECTORS - 1 do
     for sx = 0, cfg.SECTORS - 1 do
       check(valid[bg[sx][sy]], "bioma valido, semilla " .. seed)
@@ -210,6 +218,7 @@ local drift_total, rock_total = 0, 0
 for seed = 1, 5 do
   local layout = biomes.layout(seed)
   local w = chunks.generate_world(seed)
+  local sites = reactor.sites(seed)
   local function bucket(map, x, y, item)
     local key = math.floor(x / CELL) .. ":" .. math.floor(y / CELL)
     map[key] = map[key] or {}
@@ -259,6 +268,13 @@ for seed = 1, 5 do
             local d = t < 0 and dist(x, y, p.x, p.y) or dist(rx, ry, t * ux, t * uy)
             check(d > p.range + radius, "el rumbo de una roca no cruza un planeta: " .. s.chunk_id)
           end
+          for _, site in ipairs(sites) do
+            local rx, ry = site.x - x, site.y - y
+            local t = rx * ux + ry * uy
+            local d = t < 0 and dist(x, y, site.x, site.y) or dist(rx, ry, t * ux, t * uy)
+            check(d > site.radius + cfg.REACTOR.clear_pad + radius,
+              "el rumbo de una roca no cruza un sitio del reactor: " .. s.chunk_id)
+          end
         else
           check(s.cull == true, "roca estatica con cull: " .. s.chunk_id)
           eq(s.vel.x, 0, "roca estatica sin velocidad")
@@ -285,6 +301,13 @@ for seed = 1, 5 do
       local clear = cx > 0 and cy > 0 and cx < CHUNKS - 1 and cy < CHUNKS - 1
       for _, p in ipairs(layout.planets) do
         if p.x + p.range > bx and p.x - p.range < bx + bw and p.y + p.range > by and p.y - p.range < by + bh then
+          clear = false
+        end
+      end
+      -- Ni donde una megaestructura del reactor quita rocas
+      for _, site in ipairs(sites) do
+        local reach = site.radius + cfg.REACTOR.clear_pad
+        if site.x + reach > bx and site.x - reach < bx + bw and site.y + reach > by and site.y - reach < by + bh then
           clear = false
         end
       end
@@ -335,6 +358,141 @@ for seed = 1, 20 do
   end
 end
 check(wrecks > 0, "se generan pecios")
+
+-- ---------------------------------------------------------------------
+--  Reactor Remains (issue #19): sitios, rocas, pecios y huecos
+-- ---------------------------------------------------------------------
+
+local RC = cfg.REACTOR
+
+-- Firma de un sitio: todo lo que depende de la semilla
+local function site_signature(site)
+  local parts = { site.variant, site.sx, site.sy, string.format("%.6f,%.6f,%.6f", site.x, site.y, site.rot) }
+  for _, p in ipairs(site.pieces) do
+    parts[#parts + 1] = string.format("%s,%.6f,%.6f,%.6f,%.6f,%.6f", p.asset, p.x, p.y, p.w, p.h, p.rot)
+  end
+  for _, c in ipairs(site.colliders) do
+    parts[#parts + 1] = string.format("%.6f,%.6f,%.6f", c.x, c.y, c.r)
+  end
+  for _, g in ipairs(site.gaps) do
+    parts[#parts + 1] = string.format("%.6f,%.6f", g.x, g.y)
+  end
+  return table.concat(parts, ";")
+end
+
+-- Determinismo: la cache guarda pocas semillas, asi que tras pedir otras la
+-- semilla 77 se calcula de nuevo desde cero
+local seed77 = {}
+for i, site in ipairs(reactor.sites(77)) do seed77[i] = site_signature(site) end
+for other = 1000, 1020 do reactor.sites(other) end
+local again = reactor.sites(77)
+eq(#again, #seed77, "mismo numero de sitios al recalcular")
+for i, site in ipairs(again) do eq(site_signature(site), seed77[i], "sitio " .. i .. " identico al recalcular") end
+
+local variantsSeen, siteTotal = {}, 0
+local halfSector = cfg.SECTOR_SIZE / 2
+for seed = 1, SEEDS do
+  local layout = biomes.layout(seed)
+  local sites = reactor.sites(seed)
+
+  -- Exactamente un sitio por sector reactor, en orden de lectura
+  local expected = {}
+  for sy = 0, cfg.SECTORS - 1 do
+    for sx = 0, cfg.SECTORS - 1 do
+      if layout.biomes[sx][sy] == "reactor" then expected[#expected + 1] = { sx, sy } end
+    end
+  end
+  eq(#sites, #expected, "un sitio por sector reactor, semilla " .. seed)
+  for i, site in ipairs(sites) do
+    siteTotal = siteTotal + 1
+    variantsSeen[site.variant] = true
+    check(expected[i] ~= nil and site.sx == expected[i][1] and site.sy == expected[i][2],
+      "sitios en orden de lectura, semilla " .. seed)
+    eq(site.index, i, "indice del sitio")
+    local bx, by, bw, bh = grid.sector_bounds(site.sx, site.sy)
+    eq(site.x, bx + bw / 2, "el sitio esta en el centro del sector (x)")
+    eq(site.y, by + bh / 2, "el sitio esta en el centro del sector (y)")
+    check(site.variant == "ring" or site.variant == "hull", "variante valida")
+    check(#site.pieces > 0 and #site.colliders > 0, "el sitio tiene piezas y colliders")
+    eq(#site.gaps, 4, "cuatro huecos por sitio")
+    eq(site.core.x, site.x, "el nucleo esta en el centro (x)")
+    check(site.core.size == RC.core_size, "tamano del nucleo")
+
+    -- Todo cabe en el sector sin tocar la franja de tormenta
+    local minX, maxX = math.max(bx, cfg.STORM_BAND), math.min(bx + bw, cfg.WORLD_SIZE - cfg.STORM_BAND)
+    local minY, maxY = math.max(by, cfg.STORM_BAND), math.min(by + bh, cfg.WORLD_SIZE - cfg.STORM_BAND)
+    local radius = 0
+    for _, c in ipairs(site.colliders) do
+      check(c.x - c.r >= minX and c.x + c.r <= maxX and c.y - c.r >= minY and c.y + c.r <= maxY,
+        "collider dentro del sector y de la franja de tormenta, semilla " .. seed)
+      radius = math.max(radius, dist(c.x, c.y, site.x, site.y) + c.r)
+    end
+    check(math.abs(site.radius - radius) < 1e-6, "radio del sitio = circulo mas lejano")
+
+    -- Se puede pasar por los huecos: ningun circulo a menos de ship_clearance
+    -- del centro del hueco. En el casco ademas el hueco mide al menos min_gap
+    for _, g in ipairs(site.gaps) do
+      local nearest = math.huge
+      for _, c in ipairs(site.colliders) do
+        nearest = math.min(nearest, dist(c.x, c.y, g.x, g.y) - c.r)
+      end
+      check(nearest >= RC.ship_clearance, string.format(
+        "hueco libre (%.1f px de holgura), semilla %d sitio %d", nearest, seed, i))
+      if site.variant == "hull" then
+        check(nearest * 2 >= RC.min_gap, string.format(
+          "hueco del casco de al menos %d px (holgura %.1f), semilla %d", RC.min_gap, nearest, seed))
+      end
+    end
+  end
+
+  -- blocks: un disco sobre el centro del sitio esta vedado, uno lejos no
+  for _, site in ipairs(sites) do
+    check(reactor.blocks(sites, site.x, site.y, 1), "blocks en el centro del sitio")
+    check(not reactor.blocks(sites, site.x + site.radius + RC.clear_pad + 10, site.y, 1),
+      "blocks fuera de la zona vedada")
+  end
+end
+check(siteTotal > 0, "se generan sitios de reactor")
+check(variantsSeen.ring and variantsSeen.hull, "salen las dos variantes del reactor")
+
+-- Rocas y pecios alrededor de los sitios
+local reactorChunks, wreckChunks = 0, 0
+for seed = 1, 40 do
+  local layout = biomes.layout(seed)
+  local sites = reactor.sites(seed)
+  if #sites > 0 then
+    local w = chunks.generate_world(seed)
+    for cy = 0, CHUNKS - 1 do
+      for cx = 0, CHUNKS - 1 do
+        local sx, sy = grid.world_to_sector(cx * cfg.CHUNK_SIZE, cy * cfg.CHUNK_SIZE)
+        local list = w[grid.chunk_key(cx, cy)]
+        local nLarge, nWreck = 0, 0
+        for _, s in ipairs(list) do
+          local half = asteroid_cfg.ASTEROID_SHEET.frameSize * s.scale / 2
+          local x, y = s.pos.x + half, s.pos.y + half
+          local radius = asteroid_cfg.ASTEROID_SHEET.bodyRadius * s.scale
+          for _, site in ipairs(sites) do
+            check(dist(x, y, site.x, site.y) >= site.radius + RC.clear_pad,
+              "ninguna roca dentro de la zona del reactor: " .. s.chunk_id)
+          end
+          if s.scale >= cfg.ROCK_SIZES.large.min then nLarge = nLarge + 1 end
+          if s.wreck then nWreck = nWreck + 1 end
+        end
+
+        if layout.biomes[sx][sy] == "reactor" then
+          reactorChunks = reactorChunks + 1
+          -- Entre wrecks.min y wrecks.max pecios, sin pasar de las rocas grandes
+          local lo, hi = math.min(RC.wrecks.min, nLarge), math.min(RC.wrecks.max, nLarge)
+          check(nWreck >= lo and nWreck <= hi, string.format(
+            "pecios del chunk reactor %d:%d entre %d y %d (hay %d)", cx, cy, lo, hi, nWreck))
+          if nWreck > 0 then wreckChunks = wreckChunks + 1 end
+        end
+      end
+    end
+  end
+end
+check(reactorChunks > 0, "se generan chunks de sector reactor")
+check(wreckChunks > 0, "hay pecios en los chunks del reactor")
 
 
 if failures == 0 then

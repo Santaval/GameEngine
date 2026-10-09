@@ -152,6 +152,7 @@ Custom types used by the Aval Cup map (`aval_cup_world.lua`, see [aval-cup.md](a
 | `type` | Direction | Sender | `data` | Notes |
 | --- | --- | --- | --- | --- |
 | `map_rock_destroyed` | all | host | `{ id }` | A chunk rock (`"cx:cy:i"`) died on the host. Clients drop it unless `from` is the host. |
+| `reactor_pulse` | all | host | `{ i }` | A Reactor Pulse starts at site `i` (index in `reactor_sites`, 1-based). Clients ignore it unless `from` is the host. |
 | `map_destroyed` | direct | host | `{ ids[] }` | Answer to a late joiner's `snapshot_request`: every destroyed rock id so far, in batches of 400. |
 
 ---
