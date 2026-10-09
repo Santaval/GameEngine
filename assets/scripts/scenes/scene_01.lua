@@ -249,6 +249,10 @@ scene = {
     {assetId="bullet", filePath="./assets/sprites/bullets/bullets.png"},
     {assetId="asteroid", filePath="./assets/sprites/asteroid/asteroid.png"},
     {assetId="mineral", filePath="./assets/sprites/minerals/tech.png"},
+    -- Pickups de loot (prefabs/pickup.lua usa los orbes de DEATH_DROP)
+    {assetId="orb-protection", filePath="./assets/sprites/items/orb_protection.png"},
+    {assetId="orb-weapon", filePath="./assets/sprites/items/orb_weapon.png"},
+    {assetId="orb-propulsion", filePath="./assets/sprites/items/orb_propulsion.png"},
     {assetId="planet-iron", filePath="./assets/sprites/planets/iron.png"},
     {assetId="planet-gunpowder", filePath="./assets/sprites/planets/gunpowder.png"},
     {assetId="planet-plasma", filePath="./assets/sprites/planets/plasma.png"},

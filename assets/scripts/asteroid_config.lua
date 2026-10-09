@@ -23,7 +23,8 @@ config.ASTEROID_SCALE = { min = 0.25, max = 1.5 }
 -- padre * SCALE_FACTOR (nunca menos que ASTEROID_SCALE.min; MIN_SCALE *
 -- SCALE_FACTOR.min tiene que ser >= ASTEROID_SCALE.min) que salen en
 -- abanico con SPEED px/s extra sobre la velocidad del padre. Una roca que se
--- parte no suelta loot: lo sueltan los fragmentos que ya no se pueden partir
+-- parte suelta 1 unidad de su mineral; el resto del loot lo sueltan los
+-- fragmentos que ya no se pueden partir
 config.SPLIT = {
   MIN_SCALE = 0.6,
   PIECES = { min = 2, max = 3 },

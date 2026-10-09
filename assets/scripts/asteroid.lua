@@ -16,7 +16,7 @@ local SPLIT = cfg.SPLIT
 local randRange = cfg.randRange
 
 -- Separacion entre pickups cuando el asteroide suelta varios items distintos
-local PICKUP_SPREAD = 20
+local PICKUP_SPREAD = 40
 
 -- Rebote contra la nave: RESTITUTION es cuanto de la velocidad de choque
 -- se devuelve (0 = sin rebote), MIN_KNOCKBACK es el empuje minimo (px/s) con
@@ -278,16 +278,23 @@ local function wreck_bonus()
   local wreck = state.wreck and cfg.WRECK_TYPES[state.wreck]
   if wreck == nil then return {} end
   local names = {}
-  for name in pairs(wreck.bonus) do names[#names + 1] = name end
-  table.sort(names)
+  -- Insercion a mano: table.sort no existe en este motor
+  for name in pairs(wreck.bonus) do
+    local i = #names
+    while i > 0 and names[i] > name do
+      names[i + 1] = names[i]
+      i = i - 1
+    end
+    names[i + 1] = name
+  end
   local items = {}
   for _, name in ipairs(names) do items[#items + 1] = { name, wreck.bonus[name] } end
   return items
 end
 
 -- Al morir: un pecio roto a tiros suelta sus extras ademas de partirse; una
--- roca que se parte no suelta loot propio (lo sueltan sus fragmentos) y si no
--- se parte suelta el de su tipo (ver ASTEROID_TYPES en asteroid_config.lua).
+-- roca que se parte suelta 1 unidad de su mineral (el resto lo sueltan sus
+-- fragmentos) y si no se parte suelta el de su tipo (ver ASTEROID_TYPES en asteroid_config.lua).
 -- vanish marca dead antes de borrar, asi que ese caso no llega aqui. Solo el
 -- duenio: las copias reciben el death pero no repiten el loot
 local function asteroid_on_death()
@@ -307,8 +314,18 @@ local function asteroid_on_death()
   -- Extras del pecio (no si lo rompio una nave: ahi no hay loot)
   if state.wreck and not rammed then drop_items(wreck_bonus()) end
 
-  -- Una roca que se parte no suelta loot: lo sueltan sus fragmentos
-  if split(this) then return end
+  -- Una roca que se parte suelta 1 unidad de su mineral (no si la embistio
+  -- una nave: el loot ya esta vacio) y el resto lo sueltan sus fragmentos
+  if split(this) then
+    for i = 1, get_loot_count(this) do
+      local name, quantity = get_loot_at(this, i)
+      if quantity > 0 then
+        drop_items({ { name, 1 } })
+        break
+      end
+    end
+    return
+  end
 
   local items = {}
   for i = 1, get_loot_count(this) do

@@ -5,18 +5,21 @@
 -- =====================================================================
 
 local loot_net = require("loot_net")
+local D = require("map_config").DEATH_DROP
 
 -- Iman de los pickups (estilo XP de Minecraft): dentro del radio vuelan hacia
 -- la nave, mas rapido cuanto mas cerca. MAX tiene que superar la max_speed
 -- del jugador o la nave los deja atras.
-local MAGNET_RADIUS = 200
+local MAGNET_RADIUS = 300
 local MAGNET_MIN_SPEED = 150
 local MAGNET_MAX_SPEED = 600
 
 -- position es la esquina sup-izq, no el centro: sprite de la nave 430x650 a
--- scale 0.2 (ver scene_01.lua) y pickup de 16x16 a scale 1
+-- scale 0.2 (ver scene_01.lua) y orbe de PICKUP_SIZE de ancho (prefabs/pickup.lua)
 local PLAYER_CENTER_X, PLAYER_CENTER_Y = 43, 65
-local PICKUP_HALF = 8
+local PICKUP_SIZE = 32
+local PICKUP_HALF_X = PICKUP_SIZE / 2
+local PICKUP_HALF_Y = PICKUP_SIZE * D.frame_h / D.frame_w / 2
 
 -- Segundos entre un pickup_request y el siguiente de este pickup: si el duenio
 -- cambio justo en ese momento y la peticion se perdio, se reintenta
@@ -50,8 +53,8 @@ function update()
 
   local x, y = get_position(this)
   local px, py = get_position(player_entity)
-  local dx = (px + PLAYER_CENTER_X) - (x + PICKUP_HALF)
-  local dy = (py + PLAYER_CENTER_Y) - (y + PICKUP_HALF)
+  local dx = (px + PLAYER_CENTER_X) - (x + PICKUP_HALF_X)
+  local dy = (py + PLAYER_CENTER_Y) - (y + PICKUP_HALF_Y)
   local d = math.sqrt(dx * dx + dy * dy)
 
   if d > MAGNET_RADIUS or d < 0.001 then
