@@ -250,6 +250,7 @@ collisions.
 | `DEATH_DROP` | table | Death orbs: `fraction` 0.6, `radius` 300, `ttl` 30 s, `push` 40..90 px/s, `push_time` 1 s, `per_orb` 5, `max_orbs` 8, `size` 48 and the `orb_*.png` frame (`frame_w` 543, `frame_h` 724, `frames` 4, `fps` 8), collider `radius_px` 150, `magnet_radius` 200, `orbs` (asset of each mineral) |
 | `SPAWN` | table | Spawn rules: `biomes` (`deep_void`, `debris`), `portal_min` 350 / `portal_max` 900, `player_clear` 4000, `top_clear` 8000, `top_n` 3, `tries` 60, `wait` 1 s |
 | `SPAWN_SHIELD` | table | Spawn shield: `time` 5 s, `size` 150, `sheet` (`spawn_shield.png` frame width, count and `src_y` / `src_h` band), `fps` 10, `alpha` 200 |
+| `RANKING` | table | Ranking: `size` 10, `send_interval` 0.5 s, `heartbeat` 5 s, `stale` 15 s, `panel` (`w` 260, `h` 290, `margin` 20, `top` 62, `alpha` 235, `header_frac`, `body_frac`), `row_h` 20, `name_chars` 10, `icon_size` 16, `crown_size` 32, `crown_gap` 70 |
 | `BIOMES` | see [Biomes](#biomes) | Id, name and weight of each biome |
 | `BIOME_REPEAT_OK`, `CENTER_BIOMES` | `debris`, `planetary` | Adjacency exception and centre sector pool |
 | `BIOME_COLORS` | per biome | Minimap tint |
@@ -777,9 +778,10 @@ back at a fresh spot with a few seconds of protection.
   `player_ships` and at least `top_clear` from the top players. After `tries`
   attempts it drops the top rule, then the ship rule, and finally uses
   `PLAYER_SPAWN` (each fallback is printed).
-- Ranking hook for #29: the optional global `map_ranking_top()` returns a list
-  of `{ x, y }` (the first `SPAWN.top_n` players). While it is `nil` the rule is
-  skipped.
+- Ranking hook: the optional global `map_ranking_top()` (defined by
+  `map_ranking.lua`, see [Ranking](#ranking)) returns a list of `{ x, y }` (the
+  ships of the first `SPAWN.top_n` players, without the local one). While it is
+  `nil` the rule is skipped.
 - Shield: at spawn `set_shield(player, SPAWN_SHIELD.time)` (5 s) makes
   `applyDamage` ignore the ship; the border, wandering and contraction storms
   also skip their `set_health` while `get_shield` is above 0. Firing cancels it
@@ -791,6 +793,42 @@ back at a fresh spot with a few seconds of protection.
 - Re-entry: when the ship dies, `game_director.lua` shows `SENAL PERDIDA`
   instead of GAME OVER in this scene; ENTER reloads the scene (fresh ship, no
   upgrades) and goes through the spawn rules again.
+
+## Ranking
+
+Issue #29. "The bigger you are, the bigger the target": every client shows a
+live top 10 as Pal's broadcast scoreboard, and the leader is marked.
+
+- Score: the total of minerals in the inventory (`get_inventory_total`), 0 while
+  the ship is dead (so a death drops you to the bottom at once).
+- Network (`map_ranking.lua`, wrapped in `pcall`): each client sends
+  `rank_score { total }` when its total changes, at most every `send_interval`
+  (0.5 s; a change that comes too early is sent when the interval ends), and
+  every `heartbeat` (5 s) even if unchanged, so a lost message heals. Every
+  client answers a `snapshot_request` with its own `rank_score` directly to the
+  joiner. A player is removed on `peer_left` or after `stale` (15 s) without
+  news. Only online games send; offline, the local player is stored under
+  `net_my_id()` (`""`) and shown as `TU`.
+- Order: total descending, ties by playerId ascending (string order), computed
+  every frame with a hand-written insertion sort (the engine Lua has no
+  `table.sort`). All clients show the same top. Globals: `ranking_scores`,
+  `ranking_list` (the first `size` as `{ id, total }`), `ranking_leader` (the
+  first id if its total is above 0) and the function `ranking_ship_of(id)`.
+- Panel: `ranking-panel` (`ranking_panel.png`, 1182x1330, stretched to 260x290)
+  at the top-right, at y 62 so it clears the `PvP` text and its `P - toggle`
+  hint (y 20 and 40) and ends above the minimap's sector label. The header says
+  `PAL TOP 10`; rows are `rank. name total`. The leader is gold, the local player
+  yellow `TU`; if the local player is outside the top 10 a separator and their
+  own row follow. Names are cut to `name_chars` letters. Drawn once `map_seed`
+  exists.
+- Leader marker: `leader-crown` (`leader_crown.png`, 1254x1254, drawn at 32 px)
+  above the leader's ship (its bottom edge `crown_gap` px above the ship's
+  top-left corner, over the name and health bar), on the `front` layer, and the
+  `icon-leader` minimap icon (`icon_leader.png`, 1254x1254, 16 px) in
+  `solar_hud.lua`, shown even inside a nebula.
+- Spawn rule: `map_ranking_top()` gives `map_spawn.lua` the positions of the
+  ships of the first `SPAWN.top_n` (3) players with minerals, so a respawn
+  lands at least `top_clear` px from them.
 
 ## Known gap
 

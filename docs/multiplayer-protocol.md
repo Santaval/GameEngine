@@ -163,6 +163,7 @@ Custom types used by the Aval Cup map (`aval_cup_world.lua`, see [aval-cup.md](a
 | `map_destroyed` | direct | host | `{ ids[] }` | Answer to a late joiner's `snapshot_request`: every destroyed rock id so far, in batches of 400. |
 | `death_drop` | direct | dead player | `{ x, y, items[{name, quantity}] }` | A ship was destroyed at `x, y` carrying `items`. Only the host acts on it: it validates the payload and `net_spawn`s the death orbs (`death_orb.lua`) so they outlive the dead player's scene reload. |
 | `spawn_shield` | all | ship owner | `{ netId, t }` | The ship `netId` spawned with a shield lasting `t` seconds (`0` = it fired or lost it). Clients draw the overlay and count it down; ignored unless `from` owns the entity. |
+| `rank_score` | all, or direct | each player | `{ total }` | The sender's total minerals (Aval Cup ranking). Sent on change (at most every 0.5 s) and every 5 s as a heartbeat; also sent directly to a joiner in answer to its `snapshot_request`. `from` identifies the player; ignored if `total` is not a number. |
 
 ---
 

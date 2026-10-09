@@ -294,6 +294,30 @@ config.SPAWN_SHIELD = {
   fps = 10, alpha = 200,
 }
 
+-- Ranking en vivo (#29): el total de minerales del inventario de cada jugador
+--   size: filas del top; send_interval: s minimos entre dos avisos rank_score
+--   al cambiar el total; heartbeat: s tras los que se reenvia aunque no cambie;
+--   stale: s sin noticias tras los que se descarta a un jugador
+--   panel: ranking_panel.png (1182x1330) estirado a w x h arriba a la derecha
+--   (top: y; alpha; header_frac / body_frac: fraccion de h que ocupan la
+--   cabecera y el borde superior del cuerpo, donde empiezan las filas)
+--   row_h: separacion entre filas; name_chars: letras del nombre
+--   icon_size: icono del lider en el minimapa (icon_leader.png, 1254x1254)
+--   crown_size / crown_gap: corona (leader_crown.png, 1254x1254) y px que
+--   quedan entre su borde de abajo y la esquina sup-izq de la nave
+config.RANKING = {
+  size = 10,
+  send_interval = 0.5,
+  heartbeat = 5,
+  stale = 15,
+  panel = { w = 260, h = 290, margin = 20, top = 62, alpha = 235, header_frac = 0.12, body_frac = 0.125 },
+  row_h = 20,
+  name_chars = 10,
+  icon_size = 16,
+  crown_size = 32,
+  crown_gap = 70,
+}
+
 -- Biomas: cada sector tiene uno (ver map_biomes.lua). weight es la
 -- probabilidad relativa de salir. Dos sectores contiguos (vecinos ortogonales,
 -- sin diagonales) no repiten bioma salvo BIOME_REPEAT_OK. El sector central

@@ -227,6 +227,18 @@ local function draw_minimap(planets)
     end
   end
 
+  -- Lider del ranking (#29): se ve aunque este en una nebulosa, ser el
+  -- objetivo es el punto
+  if scene_map ~= nil and ranking_leader ~= nil and ranking_ship_of ~= nil then
+    local e = ranking_ship_of(ranking_leader)
+    if e ~= nil then
+      local isize = scene_map.RANKING.icon_size
+      local lx, ly = get_collider_center(e)
+      local mx, my = to_map(lx, ly, ox, oy)
+      draw_image("icon-leader", mx - isize / 2, my - isize / 2, isize, isize, 255, "hud")
+    end
+  end
+
   if player_entity ~= nil and is_alive(player_entity) then
     local px, py = get_collider_center(player_entity)
     local mx, my = to_map(px, py, ox, oy)

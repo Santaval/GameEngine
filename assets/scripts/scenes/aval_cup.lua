@@ -33,6 +33,12 @@ portal_sites = nil
 local_portal_transit = false
 -- Escudo de aparicion (#28): lo lleva map_spawn.lua
 local_spawn_shield = false
+-- Ranking (#29): lo lleva map_ranking.lua. ranking_scores es playerId ->
+-- {total, t}, ranking_list los primeros {id, total} y ranking_leader el id del
+-- lider (nil si nadie tiene minerales)
+ranking_scores = {}
+ranking_list = {}
+ranking_leader = nil
 -- Portales inestables (#23): netId -> {x, y, life, age}, los llena
 -- unstable_portal.lua; unstable_portal_life_fix: netId -> vida que corrige un
 -- recien llegado (map_portal_world.lua)
@@ -149,6 +155,7 @@ local DIRECTORS = {
   "./assets/scripts/map_storm_world.lua",
   "./assets/scripts/map_portal_world.lua",
   "./assets/scripts/map_spawn.lua",
+  "./assets/scripts/map_ranking.lua",
   "./assets/scripts/map_event_world.lua",
   "./assets/scripts/map_event_director.lua",
   "./assets/scripts/map_supply_world.lua",
@@ -217,6 +224,9 @@ scene = {
     {assetId="orb-weapon", filePath="./assets/sprites/items/orb_weapon.png"},
     {assetId="orb-propulsion", filePath="./assets/sprites/items/orb_propulsion.png"},
     {assetId="spawn-shield", filePath="./assets/sprites/vfx/spawn_shield.png"},
+    {assetId="ranking-panel", filePath="./assets/sprites/hud/ranking_panel.png"},
+    {assetId="icon-leader", filePath="./assets/sprites/hud/icon_leader.png"},
+    {assetId="leader-crown", filePath="./assets/sprites/hud/leader_crown.png"},
   },
 
   -- El tamaño se fija al cargar: hace falta un fontId por cada tamaño
