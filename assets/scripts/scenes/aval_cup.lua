@@ -193,6 +193,7 @@ scene = {
     {assetId="icon-portal-unstable", filePath="./assets/sprites/hud/icon_portal_unstable.png"},
     {assetId="icon-nexus", filePath="./assets/sprites/hud/icon_nexus.png"},
     {assetId="event-banner", filePath="./assets/sprites/hud/event_banner.png"},
+    {assetId="loot-crate-pal", filePath="./assets/sprites/items/loot_crate_pal.png"},
     {assetId="icon-event-contraction", filePath="./assets/sprites/hud/icon_event_contraction.png"},
     {assetId="icon-event-pal-signal", filePath="./assets/sprites/hud/icon_event_pal_signal.png"},
     {assetId="icon-event-debris", filePath="./assets/sprites/hud/icon_event_debris.png"},

@@ -125,8 +125,10 @@ end
 -- Anillo de borde irregular alrededor del circulo (cx, cy, r), con el lado
 -- irregular hacia fuera. La pieza k va en el angulo t = 2*pi*k/n, con
 -- n = ceil(2*pi*r / largo), centrada en (cx + r cos t, cy + r sin t) y girada
--- deg(t) + 90 (arriba, t = -90, da 0: lado irregular hacia arriba)
-function storm.draw_edge_ring(cx, cy, r, height, camX, camY, sw, sh, frame)
+-- deg(t) + 90 (arriba, t = -90, da 0: lado irregular hacia arriba). filter(x, y)
+-- es opcional: las piezas cuyo centro no lo cumple no se dibujan (la contraccion
+-- lo usa para no salirse de su sector)
+function storm.draw_edge_ring(cx, cy, r, height, camX, camY, sw, sh, frame, filter)
   -- Todo el anillo fuera de pantalla
   local reach = r + height
   if cx + reach < camX or cx - reach > camX + sw or cy + reach < camY or cy - reach > camY + sh then
@@ -138,7 +140,8 @@ function storm.draw_edge_ring(cx, cy, r, height, camX, camY, sw, sh, frame)
   for k = 0, n - 1 do
     local t = 2 * math.pi * k / n
     local px, py = cx + r * math.cos(t), cy + r * math.sin(t)
-    if px >= camX - len and px <= camX + sw + len and py >= camY - len and py <= camY + sh + len then
+    if px >= camX - len and px <= camX + sw + len and py >= camY - len and py <= camY + sh + len
+        and (filter == nil or filter(px, py)) then
       local sx, sy = px - camX, py - camY
       draw_image("storm-edge", math.floor(sx - (len + 1) / 2), math.floor(sy - height / 2),
         math.ceil(len) + 1, math.ceil(height), S.alpha, "back",

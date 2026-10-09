@@ -167,6 +167,45 @@ config.EVENT_INTERVAL = { min = 60, max = 120 }
 config.STORM_CONTRACTION_INTERVAL = { min = 180, max = 240 }
 config.STORM_CONTRACTION_SAFE_RADIUS = 1500
 
+-- Contraccion de la tormenta (#25, ver map_storm_contraction.lua y
+-- docs/aval-cup.md). El sector elegido pasa por tres fases, contadas desde el
+-- inicio del evento: aviso (sin dano, contorno del sector y circulo final),
+-- cierre (el radio seguro baja de start_radius a STORM_CONTRACTION_SAFE_RADIUS)
+-- y espera (se mantiene cerrado). Zona de tormenta = dentro del sector y mas
+-- lejos del centro que el radio seguro
+--   warning / shrink / hold: duracion (s) de cada fase; su suma es la del evento
+--   damage / tick: dano por tiempo dentro de la zona de tormenta
+--   start_radius: radio inicial (px), la media diagonal del sector (cubre todo)
+--   edge_height / tile_alpha: alto (px de mundo) del anillo irregular y
+--     opacidad de las teselas
+--   highlight / highlight_alpha: color (r, g, b) y opacidad del contorno del
+--     sector y del circulo final; ring_dot_spacing: separacion (px) de sus puntos
+--   crate_clear: distancia minima (px) de la caja al cuerpo de un planeta
+--   crate_tries: intentos de buscar un punto libre para la caja
+config.STORM_CONTRACTION = {
+  warning = 30, shrink = 60, hold = 15,
+  damage = 5, tick = 1.0,
+  start_radius = config.SECTOR_SIZE * math.sqrt(2) / 2,
+  edge_height = 260, tile_alpha = 225,
+  highlight = { 150, 30, 60 }, highlight_alpha = 200,
+  ring_dot_spacing = 40,
+  crate_clear = 400, crate_tries = 40,
+}
+
+-- Caja de loot alto (#25; #27 la extiende): una entidad del host que se recoge
+-- por contacto con el flujo de loot_net.lua
+--   size: ancho (px de mundo) del dibujo
+--   sheet: hoja de frames en fila; frame_w px de ancho cada uno, count frames,
+--     y src_y / src_h: franja vertical de la hoja que ocupa la caja
+--   radius: radio del collider, en px del frame (el motor lo escala)
+--   loot: items (de asteroid_config.lua) y cantidad que suelta
+config.LOOT_CRATE_PAL = {
+  size = 72,
+  sheet = { frame_w = 362, count = 6, src_y = 189, src_h = 308 },
+  radius = 140,
+  loot = { iron = 30, gunpowder = 15, plasma = 8 },
+}
+
 -- Jugadores
 config.DEATH_DROP_FRACTION = 0.6
 config.SPAWN_SHIELD = 5
@@ -278,7 +317,8 @@ config.REACTOR = {
 --   icon_size: lado (px) del icono del minimapa
 --   types: nombre, color (r, g, b), icono del minimapa (sin icono se dibuja un
 --     cuadrado del color) y duracion (s) de cada tipo. El Pulso y el Colapso
---     duran lo que dura su efecto + un margen; el resto, lo que fije #25 y #26
+--     duran lo que dura su efecto + un margen; la Contraccion, la suma de sus
+--     fases; el resto, lo que fije #26
 config.EVENTS = {
   per_players = { events = 3, players = 10 },
   retry = 5,
@@ -297,7 +337,8 @@ config.EVENTS = {
     },
     storm_contraction = {
       name = "CONTRACCION DE TORMENTA", color = { 150, 30, 60 }, icon = "icon-event-contraction",
-      duration = 90,
+      duration = config.STORM_CONTRACTION.warning + config.STORM_CONTRACTION.shrink
+        + config.STORM_CONTRACTION.hold,
     },
     pal_signal = {
       name = "SENAL DE PAL", color = { 255, 255, 255 }, icon = "icon-event-pal-signal",

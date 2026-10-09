@@ -239,8 +239,10 @@ collisions.
 | `UNSTABLE_PORTAL_LIFE` | 45..75 | Portals (not used yet) |
 | `EVENT_INTERVAL` | 60..120 | Seconds between events in an occupied sector (see [Event director](#event-director)) |
 | `EVENTS` | table | Event director: `per_players` (3 events per 10 players), `retry` 5 s, `banner_time` 4 s, `banner` (640x80 at y 40), `banner_src` (strip inside `event_banner.png`), `icon_size` 12, `types` (name, colour, optional minimap icon and duration of each of the 6 event types) |
-| `STORM_CONTRACTION_INTERVAL` | 180..240 | Seconds between storm contractions (the director waits for #25 to register the type) |
-| `STORM_CONTRACTION_SAFE_RADIUS` | 1500 | Storm (not used yet) |
+| `STORM_CONTRACTION_INTERVAL` | 180..240 | Seconds between storm contractions (see [Storm Contraction](#storm-contraction)) |
+| `STORM_CONTRACTION_SAFE_RADIUS` | 1500 | Radius (px) of the final safe circle of a contraction |
+| `STORM_CONTRACTION` | table | `warning` 30 s, `shrink` 60 s, `hold` 15 s, `damage` 5, `tick` 1 s, `start_radius` (sector half-diagonal), `edge_height` 260, `tile_alpha` 225, `highlight` colour and alpha, `ring_dot_spacing`, `crate_clear` 400, `crate_tries` 40 |
+| `LOOT_CRATE_PAL` | table | High-loot crate: `size` 72, `sheet` (frame width, count and the `src_y` / `src_h` strip of the crate), collider `radius`, `loot` (30 iron, 15 gunpowder, 8 plasma) |
 | `DEATH_DROP_FRACTION` | 0.6 | Players (not used yet) |
 | `SPAWN_SHIELD` | 5 | Players (not used yet) |
 | `BIOMES` | see [Biomes](#biomes) | Id, name and weight of each biome |
@@ -552,8 +554,8 @@ host carries on.
 - Types: `EVENTS.types` knows all 6 (Reactor Pulse, Portal Collapse, Storm
   Contraction, Pal Signal, Debris Rain, Overcharged Planet) with name, colour,
   optional minimap icon and duration. A type only fires once its script
-  registers a hook. Today only `reactor_pulse` and `portal_collapse` do; #25
-  and #26 plug in without touching the director.
+  registers a hook. Today `reactor_pulse`, `portal_collapse` and `storm_contraction` do; #26
+  plugs in without touching the director.
 - Hook contract, global `map_event_types[type]` (the script sets
   `map_event_types = map_event_types or {}` first):
   `pick(sx, sy) -> params | nil` (host: an eligible target in that sector;
@@ -590,6 +592,42 @@ host carries on.
   types without an icon get a filled square.
 - Debug key **J** (`debug_event`, host only): sets the timer of the local ship's
   sector to 0. The normal rules still apply (cap, last type, target).
+
+## Storm Contraction
+
+Issue #25. `map_storm_contraction.lua` (required by `map_storm_world.lua`)
+registers `map_event_types.storm_contraction`. The [event director](#event-director)
+schedules it (own timer, one at a time, counts toward the cap); this module only
+supplies the gameplay and visuals.
+
+- Phases, from `elapsed = duration - ev.t` (so every client, a joiner included,
+  sees the same one; no extra net messages). `EVENTS.types.storm_contraction.duration`
+  is `warning + shrink + hold` = 105 s:
+  - `warning` (30 s): no damage. The sector outline blinks in the world and the
+    final safe circle (`STORM_CONTRACTION_SAFE_RADIUS`) shows as a dotted ring.
+    A ship inside the sector sees "CONTRACCION EN Ns".
+  - `shrink` (60 s): the safe radius goes linearly from `start_radius` (the
+    sector half-diagonal, so the circle covers the whole sector) to 1500.
+  - `hold` (15 s): stays at 1500 px. When the event ends the storm clears.
+- Storm area: inside the sector rectangle AND farther from the sector centre than
+  the current radius. Damage (`damage` every `tick` s), storm tiles (aligned to the
+  sector corner), the irregular edge ring (pieces outside the sector are skipped
+  through the `filter` of `storm.draw_edge_ring`) and the screen tint apply only
+  there; nothing changes outside the chosen sector. The damage is its own
+  accumulator in `map_storm_world.lua` and shares the tint and "TORMENTA" text
+  with the border and wandering storms.
+- Hook: `pick(sx, sy)` returns `{ x, y, cx, cy }` (`cx, cy` the sector centre;
+  `x, y` the crate spot and minimap icon). The spot is the centre, or, if a
+  planet's body plus `crate_clear` covers it, a random point (up to
+  `crate_tries`) inside the final circle; with none it returns nil and the sector
+  is skipped. `fire(p)` (host) spawns the crate and stores its netId in
+  `p.crate` (the director copies params after `fire`, so every client gets it).
+  `on_end(ev)` (host) despawns the crate if nobody opened it.
+- Crate: `prefabs/loot_crate_pal.lua` + `loot_crate.lua`, a still world entity
+  (frame 0 of `loot_crate_pal.png`) carrying `LOOT_CRATE_PAL.loot`. The local ship
+  that touches it gets the loot through the pickup flow of `loot_net.lua`
+  (single delivery, `pickup_request` if the crate is remote). No magnet. The
+  opening animation and the other crate kinds are left for #27.
 
 ## Known gap
 

@@ -9,8 +9,9 @@
 --      on_end(ev) }. pick (host) devuelve un objetivo elegible del sector (con
 --    x, y para el icono del minimapa), fire (host) arranca el efecto, y
 --    on_start / on_end (opcionales) corren en TODOS los clientes. Hoy solo
---    registran map_reactor_world.lua (Pulso) y map_portal_world.lua (Colapso);
---    #25 y #26 se enchufan sin tocar este archivo.
+--    registran map_reactor_world.lua (Pulso), map_portal_world.lua (Colapso) y
+--    map_storm_contraction.lua (Contraccion, via map_storm_world.lua); #26 se
+--    enchufa sin tocar este archivo.
 --  - Sectores: cada sector ocupado por una nave lleva un temporizador de
 --    EVENT_INTERVAL s (solo cuenta mientras esta ocupado). Al llegar a 0 el
 --    host elige al azar un tipo registrado que no repita el ultimo de ese

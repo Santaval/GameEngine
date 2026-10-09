@@ -4,17 +4,21 @@
 --  - Errantes (#21): el host mantiene WANDERING_STORM.count tormentas vivas
 --    (net_spawn world = true); todos las dibujan, y la nave local recibe
 --    dano por tiempo dentro y un empuje en la mitad delantera.
+--  - Contraccion (#25): map_storm_contraction.lua dibuja la del evento activo
+--    y dice si la nave local esta en su zona; aqui se le aplica el dano.
 --  Espera a map_seed (como el resto de directores). Publica el global
---  local_in_storm (borde o errante).
+--  local_in_storm (borde, errante o contraccion).
 --  Ver docs/aval-cup.md.
 -- =====================================================================
 
 local cfg = require("map_config")
 local storm = require("map_storm")
 local ui = require("ui_helpers")
+local contraction = require("map_storm_contraction")
 
 local S = cfg.STORM
 local WS = cfg.WANDERING_STORM
+local SC = cfg.STORM_CONTRACTION
 local B = cfg.STORM_BAND
 local W = cfg.WORLD_SIZE
 
@@ -30,6 +34,7 @@ local SPAWN_COOLDOWN = 0.5
 local clock = 0
 local dmg = storm.new_damage()
 local wdmg = storm.new_damage()
+local cdmg = storm.new_damage()
 local last_error = nil
 local spawn_cooldown = 0
 local initial_phase = nil
@@ -132,18 +137,25 @@ local function step()
     end
   end
 
+  -- Contraccion: dibuja y dice si la nave local esta en su zona
+  local alive = player_entity ~= nil and is_alive(player_entity)
+  local x, y
+  if alive then x, y = get_collider_center(player_entity) end
+  local in_c = contraction.step(dt, camX, camY, sw, sh, frame, x, y)
+
   local inside = false
-  if player_entity ~= nil and is_alive(player_entity) then
-    local x, y = get_collider_center(player_entity)
+  if alive then
     local in_border = storm.in_border(x, y)
     local in_w = storm.in_wandering(x, y)
     storm.tick_damage(dmg, player_entity, in_border, dt)
     storm.tick_damage(wdmg, player_entity, in_w, dt, WS.damage, WS.tick)
+    storm.tick_damage(cdmg, player_entity, in_c, dt, SC.damage, SC.tick)
     for _, w in ipairs(list) do push_ship(w, x, y, dt) end
-    inside = in_border or in_w
+    inside = in_border or in_w or in_c
   else
     dmg.acc = 0
     wdmg.acc = 0
+    cdmg.acc = 0
   end
   local_in_storm = inside
 
