@@ -14,6 +14,7 @@
 #include "../SceneManager/SceneLoader.hpp"
 #include "../Util/TextBuffer.hpp"
 #include "../Util/RectBuffer.hpp"
+#include "../Util/SpriteBuffer.hpp"
 
 class NetClient;
 class NetworkRegistry;
@@ -37,6 +38,7 @@ class Game {
         // Se llena desde los scripts en update() y se vacía en render()
         TextBuffer textBuffer;
         RectBuffer rectBuffer;
+        SpriteBuffer spriteBuffer;
 
         int milisecsPreviousFrame = 0;
         double deltaTime = 0.0;
@@ -88,6 +90,7 @@ class Game {
         ~Game();
         void processInput();
         void render();
+        void drawSprites(bool front);
         void update();
         void setup();
         void loadScene(const std::string& scenePath);
@@ -115,6 +118,7 @@ class Game {
      SDL_Rect& getCamera() { return camera; }
      TextBuffer& getTextBuffer() { return textBuffer; }
      RectBuffer& getRectBuffer() { return rectBuffer; }
+     SpriteBuffer& getSpriteBuffer() { return spriteBuffer; }
      int getWindowWidth() const { return windowWidth; }
      int getWindowHeight() const { return windowHeight; }
      bool isShowingColliders() const { return showColliders; }

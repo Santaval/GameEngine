@@ -116,6 +116,7 @@ entities[0] = player
 local DIRECTORS = {
   "./assets/scripts/aval_cup_world.lua",
   "./assets/scripts/solar_hud.lua",
+  "./assets/scripts/map_visuals.lua",
   "./assets/scripts/game_director.lua",
 }
 for _, path in ipairs(DIRECTORS) do
@@ -138,6 +139,16 @@ scene = {
     {assetId="planet-gunpowder", filePath="./assets/sprites/planets/gunpowder.png"},
     {assetId="planet-plasma", filePath="./assets/sprites/planets/plasma.png"},
     {assetId="planet-sun", filePath="./assets/sprites/planets/sun.png"},
+    {assetId="bg-default", filePath="./assets/sprites/biomes/bg_default.png"},
+    {assetId="bg-void", filePath="./assets/sprites/biomes/bg_void.png"},
+    {assetId="bg-dense-belt", filePath="./assets/sprites/biomes/bg_dense_belt.png"},
+    {assetId="bg-nebula", filePath="./assets/sprites/biomes/bg_nebula.png"},
+    {assetId="bg-reactor", filePath="./assets/sprites/biomes/bg_reactor.png"},
+    {assetId="nebula-cloud-01", filePath="./assets/sprites/vfx/nebula_cloud_01.png"},
+    {assetId="nebula-cloud-02", filePath="./assets/sprites/vfx/nebula_cloud_02.png"},
+    {assetId="nebula-cloud-03", filePath="./assets/sprites/vfx/nebula_cloud_03.png"},
+    {assetId="nebula-cloud-04", filePath="./assets/sprites/vfx/nebula_cloud_04.png"},
+    {assetId="nebula-vignette", filePath="./assets/sprites/vfx/nebula_vignette.png"},
   },
 
   -- El tamaño se fija al cargar: hace falta un fontId por cada tamaño

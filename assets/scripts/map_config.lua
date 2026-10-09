@@ -120,6 +120,29 @@ config.PLANET_ROLES = {
   { id = "tech", weight = 1 },
 }
 
+-- Fondos por bioma (assetId de la escena). El fondo se repite en teselas de
+-- BG_TILE px, se mueve al BG_PARALLAX de la velocidad de la camara y se
+-- mezcla con el del sector vecino en BG_BLEND px a cada lado del borde
+config.BIOME_BACKGROUNDS = { debris = "bg-default", planetary = "bg-default", dense_belt = "bg-dense-belt",
+  deep_void = "bg-void", nebula = "bg-nebula", reactor = "bg-reactor" }
+config.BG_TILE = 1024
+config.BG_PARALLAX = 0.2
+config.BG_BLEND = 800
+
+-- Nebulosa: ruido de valor con celdas de `cell` px; por encima de `threshold`
+-- cuenta como nube (~70% del sector). edge_pad: la densidad cae hacia el borde
+-- del sector (bordes irregulares). Nubes cada cloud_spacing px; las de delante
+-- (front) se dibujan sobre las naves con paralaje front_parallax
+config.NEBULA = {
+  cell = 900,
+  threshold = 0.42,
+  edge_pad = 600,
+  cloud_spacing = 700,
+  cloud_size = { min = 1100, max = 1500 },
+  back_alpha = 150, front_alpha = 70, front_parallax = 1.12,
+  vignette_fade = 0.5,
+}
+
 -- Comprueba que la rejilla es coherente; se llama al cargar el modulo
 function config.validate()
   assert(config.SECTOR_SIZE * config.SECTORS == config.WORLD_SIZE,

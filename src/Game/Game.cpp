@@ -223,6 +223,7 @@ void Game::loadScene(const std::string& scenePath) {
     }
     this->textBuffer.clear();
     this->rectBuffer.clear();
+    this->spriteBuffer.clear();
     this->camera.x = 0;
     this->camera.y = 0;
     // El area activa es de la escena que se descarga (set_active_area la vuelve a fijar)
@@ -286,10 +287,28 @@ void Game::processInput() {
     }
 }
 
+// Dibuja los comandos de draw_image de una capa (coordenadas de pantalla)
+void Game::drawSprites(bool front) {
+    for (const auto& cmd : this->spriteBuffer.getCommands()) {
+        if (cmd.front != front) continue;
+        SDL_Texture* texture = this->assetManager->getTexture(cmd.assetId);
+        if (texture == nullptr) continue;
+
+        SDL_Rect dst = { cmd.x, cmd.y, cmd.w, cmd.h };
+        SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND);
+        SDL_SetTextureAlphaMod(texture, cmd.alpha);
+        SDL_RenderCopy(this->renderer, texture, nullptr, &dst);
+        SDL_SetTextureAlphaMod(texture, 255);
+    }
+}
+
 void Game::render() {
     // Casi negro: fondo de espacio
     SDL_SetRenderDrawColor(this->renderer, 10, 10, 18, 255);
     SDL_RenderClear(this->renderer);
+
+    // Imagenes de la capa "back" (fondos, nubes): bajo las entidades
+    this->drawSprites(false);
 
     this->registry->getSystem<RenderSystem>().update(this->renderer, this->assetManager, this->camera);
 
@@ -300,6 +319,9 @@ void Game::render() {
     if (this->showColliders) {
         this->registry->getSystem<ColliderRenderSystem>().update(this->renderer, this->camera);
     }
+
+    // Imagenes de la capa "front": sobre las entidades y bajo el HUD
+    this->drawSprites(true);
 
     // Paneles del HUD (rectangulos): van antes del texto para que el texto quede encima
     SDL_SetRenderDrawBlendMode(this->renderer, SDL_BLENDMODE_BLEND);
@@ -325,6 +347,7 @@ void Game::render() {
     // Los comandos duran un frame: los scripts los vuelven a pedir en el próximo update()
     this->textBuffer.clear();
     this->rectBuffer.clear();
+    this->spriteBuffer.clear();
 
     SDL_RenderPresent(this->renderer);
 }

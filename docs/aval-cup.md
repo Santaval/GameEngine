@@ -257,6 +257,25 @@ The minimap in `solar_hud.lua` shows the biome of each sector as a tint, the
 5 x 5 sector grid, the storm band as an inset outline, the planets and the
 current sector or nearest planet when `scene_map` is set.
 
+## Biome visuals
+
+`map_visuals.lua` (a director) draws everything with `draw_image`.
+
+- **Backgrounds**: each biome has a tiled background (`BIOME_BACKGROUNDS`,
+  `BG_TILE`) that scrolls at `BG_PARALLAX` of the camera speed. Within
+  `BG_BLEND` px of a sector border the backgrounds of the neighbouring sectors
+  crossfade with continuous bilinear weights (0.5 / 0.5 on the border).
+- **Nebula**: `map_nebula.lua` computes a 2-octave value noise (`NEBULA.cell`)
+  scaled by a falloff towards the sector border (`edge_pad`); above
+  `threshold` the point is inside the cloud (about 70% of the sector, with
+  irregular edges). Clouds are placed on a jittered grid from the seed, so all
+  clients see the same ones. Back clouds are world-anchored; about a third are
+  front clouds drawn over the ships with a higher parallax.
+- **Vignette**: while the local ship is inside a cloud, `nebula-vignette` fades
+  in/out over `vignette_fade` seconds. `local_in_nebula` is a global flag.
+- **Minimap**: `solar_hud.lua` draws other players as red dots, except those
+  inside a nebula cloud; the local ship is always shown.
+
 ## Known gap
 
 Chunk rocks are not synchronized once they exist. If a ship bump nudges a

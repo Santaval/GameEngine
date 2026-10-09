@@ -10,6 +10,7 @@
 local solar = require("solar_system_config")
 local ui = require("ui_helpers")
 local grid = require("map_grid")
+local nebula = require("map_nebula")
 
 local MAP_SIZE = 220
 local MARGIN = 20
@@ -24,6 +25,7 @@ local MINERAL_COLORS = {
 local SUN_COLOR = { 255, 210, 80 }
 local BELT_COLOR = { 130, 120, 100 }
 local PLAYER_COLOR = { 255, 255, 0 }
+local OTHER_COLOR = { 255, 90, 90 }
 local SECTOR_LINE_COLOR = { 255, 255, 255, 45 }
 local STORM_COLOR = { 150, 30, 60, 200 }
 
@@ -128,6 +130,20 @@ local function draw_minimap(planets)
     local dot = math.max(MIN_DOT, math.min(MAX_DOT, p.body_radius * 2 * k * 4))
     local c = color_for(p)
     draw_rect(mx - dot / 2, my - dot / 2, dot, dot, c[1], c[2], c[3], 255)
+  end
+
+  -- Otras naves: las que estan dentro de una nebulosa no aparecen
+  if player_ships ~= nil then
+    for id in pairs(player_ships) do
+      local e = find_by_net_id(id)
+      if e ~= nil and is_alive(e) then
+        local ex, ey = get_collider_center(e)
+        if map_biomes == nil or not nebula.inside(map_seed, map_biomes, ex, ey) then
+          local mx, my = to_map(ex, ey, ox, oy)
+          draw_rect(mx - 1.5, my - 1.5, 3, 3, OTHER_COLOR[1], OTHER_COLOR[2], OTHER_COLOR[3], 255)
+        end
+      end
+    end
   end
 
   if player_entity ~= nil and is_alive(player_entity) then

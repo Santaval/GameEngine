@@ -21,5 +21,6 @@
 #include "PathBindings.hpp"
 #include "ScriptBindings.hpp"
 #include "ShapeBindings.hpp"
+#include "ImageBindings.hpp"
 #include "SpriteBindings.hpp"
 #include "TextBindings.hpp"
