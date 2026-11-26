@@ -25,6 +25,7 @@ class SceneLoader {
     void addRigidBodyComponent(Entity entity, const sol::table& components);
     void addSpriteComponent(Entity entity, const sol::table& components);
     void addCircleColliderComponent(Entity entity, const sol::table& components);
+    void addBoxColliderComponent(Entity entity, const sol::table& components);
     void addAnimationComponent(Entity entity, const sol::table& components);
     void addTextComponent(Entity entity, const sol::table& components);
     void addPathComponent(Entity entity, const sol::table& components);

@@ -227,6 +227,25 @@ point SDL rotates the sprite around. Any other value drifts as the entity turns.
 Scene entities cannot declare an `owner` — that is a runtime-only argument of
 `add_circle_collider`.
 
+### `box_collider`
+
+```lua
+box_collider = {
+  width    = 32,
+  height   = 48,    -- spelled correctly here; "heigth" is NOT accepted
+  offset_x = 0,     -- from the sprite's top-left corner, scaled
+  offset_y = 0,
+  solid    = false, -- blocks `mover` boxes
+  trigger  = false, -- enter / stay / exit events; wins over solid (the loader warns)
+  mover    = false, -- moved by the sweep against walls instead of plain integration
+}
+```
+
+All keys are optional (default `0` / `false`). An entity can have both a
+`circle_collider` and a `box_collider`. See [collision.md](collision.md) for
+what each flag combination does. `owner` and `enabled` are runtime-only
+(`add_box_collider`, `set_box_collider`).
+
 ### `health`
 
 ```lua
@@ -352,9 +371,10 @@ script = { path = "scripts/player.lua" }
 ```
 
 The file is executed immediately, and its globals `update`, `on_damage`,
-`on_death` and `on_collision` are captured as that entity's callbacks.
+`on_death`, `on_collision`, `on_trigger_enter`, `on_trigger_stay` and
+`on_trigger_exit` are captured as that entity's callbacks.
 
-> The loader clears those four globals before executing each file, so a script
+> The loader clears those globals before executing each file, so a script
 > that defines only `update` will not inherit the `on_death` of whichever file
 > happened to load before it. This also means every entity loaded from the
 > same script file shares whatever `on_collision` that file defines as a

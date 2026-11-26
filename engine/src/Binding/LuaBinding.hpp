@@ -20,6 +20,7 @@
 #include "NetworkBindings.hpp"
 #include "GravityBindings.hpp"
 #include "PathBindings.hpp"
+#include "PhysicsBindings.hpp"
 #include "ScriptBindings.hpp"
 #include "ShapeBindings.hpp"
 #include "ImageBindings.hpp"

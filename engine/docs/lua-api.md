@@ -20,6 +20,7 @@ implemented one domain per file under [`src/Binding/`](../src/Binding/).
 - [Gravity](#gravity)
 - [Sprites & animation](#sprites--animation)
 - [Colliders](#colliders)
+- [Box colliders & static walls](#box-colliders--static-walls)
 - [Health & damage](#health--damage)
 - [Equipment](#equipment)
 - [Inventory](#inventory)
@@ -195,6 +196,28 @@ add_circle_collider(bullet, 30, 64, 32, this)
 
 `CollisionSystem` then skips that pair entirely, so a ship never shoots itself.
 The debug overlay also draws owned colliders in a different colour.
+
+---
+
+## Box colliders & static walls
+
+Axis-aligned boxes for walls, fences, houses and trigger zones. The full model
+(flags, sweep, TMX conventions) is in [collision.md](collision.md).
+
+| Function | Returns | Notes |
+| --- | --- | --- |
+| `add_box_collider(e, w, h, opts?)` | — | `opts = { x, y, solid, trigger, mover, owner }`. `x`, `y` is the offset from the sprite's top-left corner; `w`, `h`, `x`, `y` are scaled by the transform scale. Rotation is ignored. Enrols the entity in the box systems at once. |
+| `set_box_collider(e, opts)` | `bool` | Updates any of `width, height, x, y, solid, trigger, mover, enabled, owner`. `false` if `e` has no box. `enabled = false` removes the box from every check. |
+| `get_wall_contacts(e)` | `left, right, top, bottom` | Sides blocked by a wall or solid box during the entity's last move. |
+| `add_static_box(x, y, w, h)` | `id` | A wall that is not an entity (world px, top-left corner). |
+| `remove_static_box(id)` | `bool` | |
+| `clear_static_colliders()` | — | Static walls are also cleared on every scene load. |
+| `static_collider_count()` | `int` | |
+| `overlaps_static(x, y, w, h)` | `bool` | Does this box overlap any static wall? |
+| `load_tmx_colliders(path, opts?)` | `count` or `nil, err` | Creates walls from a Tiled map. `opts = { tile_layers = {"name"}, object_layer = "collision", x, y, scale }`. Warnings (skipped polygons, ellipses...) are logged as `[TmxColliders] ...`. |
+
+`get_collider_center(e)` falls back to the centre of the box when the entity has
+a box collider and no circle (a circle still wins when both exist).
 
 ---
 
@@ -389,6 +412,9 @@ of speed nothing is drawn, so a parked ship has no stub of a line.
 | `add_script(e, fn)` | — | `fn` becomes the entity's `update`. |
 | `set_on_damage(e, fn)` | — | `fn(amount, source)`. |
 | `set_on_death(e, fn)` | — | `fn()`. |
+| `set_on_trigger_enter(e, fn)` | — | `fn(other)`. A collider starts overlapping a trigger zone. Fires on **both** sides: `this` is the entity owning the hook, `other` the one it touched. |
+| `set_on_trigger_stay(e, fn)` | — | `fn(other)`. Every frame the overlap continues. |
+| `set_on_trigger_exit(e, fn)` | — | `fn(other)`. The overlap ends (also when either side goes dormant or is disabled). An entity that is *killed* gets no exit: use `on_death`. |
 | `set_on_collision(e, fn)` | — | `fn(other)`. Fires every frame the two colliders keep overlapping, not once per contact — see [inventory.md](inventory.md#gotchas-and-limits) for the pickup pattern this implies. |
 
 A script file loaded through a scene defines its hooks as globals:
@@ -398,6 +424,9 @@ function update() end
 function on_damage(amount, source) end
 function on_death() end
 function on_collision(other) end
+function on_trigger_enter(other) end
+function on_trigger_stay(other) end
+function on_trigger_exit(other) end
 ```
 
 For entities spawned at runtime, use the closure form instead:

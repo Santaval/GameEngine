@@ -15,12 +15,15 @@
 #include "../Components/TransformComponent.hpp"
 #include "../Components/SpriteComponent.hpp"
 #include "../Components/RigidBodyComponent.hpp"
+#include "../Components/BoxColliderComponent.hpp"
 #include "../Components/CircleColliderComponent.hpp"
 #include "../Components/AnimationComponent.hpp"
 #include "../Components/ScriptComponent.hpp"
 #include "../Components/TextComponent.hpp"
 #include "../Components/PathComponent.hpp"
 
+#include "../Systems/BoxColliderSystem.hpp"
+#include "../Systems/BoxColliderRenderSystem.hpp"
 #include "../Systems/CollisionSystem.hpp"
 #include "../Systems/RenderSystem.hpp"
 #include "../Systems/MovementSystem.hpp"
@@ -169,6 +172,7 @@ void Game::setup() {
     this->registry->addSystem<RenderSystem>();
     this->registry->addSystem<MovementSystem>();
     this->registry->addSystem<GravitySystem>();
+    this->registry->addSystem<BoxColliderSystem>();
     this->registry->addSystem<CollisionSystem>();
     this->registry->addSystem<DamageSystem>();
     this->registry->addSystem<AnimationSystem>();
@@ -177,6 +181,12 @@ void Game::setup() {
     this->registry->addSystem<TextRenderSystem>();
     this->registry->addSystem<PathRenderSystem>();
     this->registry->addSystem<ColliderRenderSystem>();
+    this->registry->addSystem<BoxColliderRenderSystem>();
+
+    // Una entidad muerta se borra de los pares de trigger sin generar Exit
+    this->registry->onEntityKilled([this](Entity entity) {
+        this->registry->getSystem<CollisionSystem>().forgetEntity(entity.getId());
+    });
 
     this->lua.open_libraries(sol::lib::base, sol::lib::math, sol::lib::string, sol::lib::package);
     this->lua["package"]["path"] = this->buildPackagePath() +
@@ -301,6 +311,9 @@ void Game::loadScene(const std::string& requestedScene) {
     this->camera.y = 0;
     // El area activa es de la escena que se descarga (set_active_area la vuelve a fijar)
     activeArea().enabled = false;
+    // La geometria estatica y los pares de trigger tambien son de la escena
+    this->staticWorld.clear();
+    this->registry->getSystem<CollisionSystem>().resetTriggers();
 
     // Los modulos cacheados por require guardan estado en sus locals
     // (cooldowns, menus abiertos...): se descargan para empezar limpio
@@ -392,6 +405,8 @@ void Game::render() {
     // Overlay de debug: se salta por completo cuando está apagado
     if (this->showColliders) {
         this->registry->getSystem<ColliderRenderSystem>().update(this->renderer, this->camera);
+        this->registry->getSystem<BoxColliderRenderSystem>().update(this->renderer, this->camera);
+        this->registry->getSystem<BoxColliderRenderSystem>().drawStatic(this->renderer, this->camera, this->staticWorld);
     }
 
     // Imagenes de la capa "front": sobre las entidades y bajo el HUD
@@ -456,6 +471,7 @@ void Game::update() {
     this->eventManager->reset();
     this->registry->getSystem<DamageSystem>().subscribeToCollisionEvent(this->eventManager);
     this->registry->getSystem<ScriptSystem>().subscribeToCollisionEvent(this->eventManager);
+    this->registry->getSystem<ScriptSystem>().subscribeToTriggerEvent(this->eventManager);
 
     this->registry->update();
     this->registry->getSystem<ScriptSystem>().update(this->lua);
@@ -468,7 +484,11 @@ void Game::update() {
     // La gravedad suma a la velocidad antes de integrar el movimiento
     this->registry->getSystem<GravitySystem>().update(deltaTime);
     this->registry->getSystem<MovementSystem>().update(deltaTime);
-    this->registry->getSystem<CollisionSystem>().update(this->eventManager);
+    // Movers con caja: barrido contra paredes y cajas solidas (MovementSystem
+    // solo les actualizo la velocidad)
+    this->registry->getSystem<BoxColliderSystem>().resolveMovers(deltaTime, this->staticWorld);
+    this->registry->getSystem<CollisionSystem>().update(this->eventManager,
+        this->registry->getSystem<BoxColliderSystem>().getEntities());
 }
 
 

@@ -39,9 +39,26 @@ inline void setOnCollision(Entity e, sol::function onCollision) {
   e.getComponent<ScriptComponent>().onCollision = onCollision;
 }
 
+// Hooks de trigger (on_trigger_enter / stay / exit): mismo patron, con other
+// como argumento. Ver engine/docs/collision.md.
+inline void setScriptHook(Entity e, sol::function ScriptComponent::* hook, sol::function fn) {
+  if (!e.hasComponent<ScriptComponent>()) {
+    e.addComponent<ScriptComponent>();
+  }
+
+  e.getComponent<ScriptComponent>().*hook = fn;
+}
+
+inline void setOnTriggerEnter(Entity e, sol::function fn) { setScriptHook(e, &ScriptComponent::onTriggerEnter, fn); }
+inline void setOnTriggerStay(Entity e, sol::function fn) { setScriptHook(e, &ScriptComponent::onTriggerStay, fn); }
+inline void setOnTriggerExit(Entity e, sol::function fn) { setScriptHook(e, &ScriptComponent::onTriggerExit, fn); }
+
 inline void registerScriptBindings(sol::state& lua) {
   lua.set_function("add_script", addScript);
   lua.set_function("set_on_damage", setOnDamage);
   lua.set_function("set_on_death", setOnDeath);
   lua.set_function("set_on_collision", setOnCollision);
+  lua.set_function("set_on_trigger_enter", setOnTriggerEnter);
+  lua.set_function("set_on_trigger_stay", setOnTriggerStay);
+  lua.set_function("set_on_trigger_exit", setOnTriggerExit);
 }

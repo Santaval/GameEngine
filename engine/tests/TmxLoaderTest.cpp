@@ -3,6 +3,7 @@
 
 #include <sol/sol.hpp>
 
+#include "../src/Map/TmxColliders.hpp"
 #include "../src/Map/TmxLoader.hpp"
 #include "../src/Map/TmxLua.hpp"
 
@@ -18,6 +19,7 @@ static int failures = 0;
 
 // Se ejecuta desde la raiz del repo (make test)
 static const char* MAP_PATH = "tests/fixtures/tmx/map.tmx";
+static const char* COLLISION_PATH = "tests/fixtures/tmx/collision.tmx";
 
 static const tmx::Object* findObject(const tmx::Map& map, const std::string& name) {
   for (const auto& l : map.layers) {
@@ -263,6 +265,73 @@ static void testLua() {
   check("map.objects[6].rect.y == 16");
 }
 
+static bool rectIs(const tmx::Rect& r, double x, double y, double w, double h) {
+  return r.x == x && r.y == y && r.w == w && r.h == h;
+}
+
+static void testSolidRects() {
+  // map.tmx: el tile 3 del tileset es solid -> gid 4, celda (3, 0) de "ground"
+  tmx::Result base = tmx::loadFile(MAP_PATH);
+  CHECK(base.ok);
+  if (!base.ok) return;
+  std::vector<std::string> warnings;
+  tmx::SolidOptions onlyGround;
+  onlyGround.tileLayers = {"ground"};
+  tmx::SolidResult r = tmx::collectSolidRects(base.map, onlyGround, warnings);
+  CHECK(r.ok && r.rects.size() == 1 && warnings.empty());
+  if (r.rects.size() == 1) CHECK(rectIs(r.rects[0], 48, 0, 16, 16));
+
+  // collision.tmx
+  tmx::Result col = tmx::loadFile(COLLISION_PATH);
+  CHECK(col.ok);
+  if (!col.ok) {
+    std::cerr << col.error << std::endl;
+    return;
+  }
+
+  warnings.clear();
+  r = tmx::collectSolidRects(col.map, tmx::SolidOptions(), warnings);
+  CHECK(r.ok);
+  // walls: bloque 3x2 fusionado + tile suelto; decor: tile solido del tileset;
+  // hidden_tiles (solid=false) excluida; collision: pared + caja de la elipse
+  CHECK(r.rects.size() == 5);
+  if (r.rects.size() == 5) {
+    CHECK(rectIs(r.rects[0], 16, 16, 48, 32));
+    CHECK(rectIs(r.rects[1], 80, 32, 16, 16));
+    CHECK(rectIs(r.rects[2], 0, 48, 16, 16));
+    // capa de objetos con offset (8, 4)
+    CHECK(rectIs(r.rects[3], 104, 4, 16, 64));
+    CHECK(rectIs(r.rects[4], 8, 68, 24, 12));
+  }
+  // elipse, poligono y objeto rotado avisan; solid=false y punto, no
+  CHECK(warnings.size() == 3);
+
+  // Sin capa de objetos: solo tiles
+  warnings.clear();
+  tmx::SolidOptions noObjects;
+  noObjects.objectLayer = "";
+  r = tmx::collectSolidRects(col.map, noObjects, warnings);
+  CHECK(r.ok && r.rects.size() == 3 && warnings.empty());
+
+  // Origen y escala
+  warnings.clear();
+  tmx::SolidOptions scaled;
+  scaled.tileLayers = {"walls"};
+  scaled.objectLayer = "";
+  scaled.offsetX = 100;
+  scaled.offsetY = 200;
+  scaled.scale = 2;
+  r = tmx::collectSolidRects(col.map, scaled, warnings);
+  CHECK(r.ok && r.rects.size() == 2);
+  if (r.rects.size() == 2) CHECK(rectIs(r.rects[0], 132, 232, 96, 64));
+
+  // Mapas no ortogonales: error
+  tmx::Map iso = col.map;
+  iso.orientation = "isometric";
+  r = tmx::collectSolidRects(iso, tmx::SolidOptions(), warnings);
+  CHECK(!r.ok && !r.error.empty());
+}
+
 int main() {
   testBase64();
   testJoinPath();
@@ -271,6 +340,7 @@ int main() {
   testObjects();
   testErrors();
   testLua();
+  testSolidRects();
 
   if (failures == 0) {
     std::cout << "TmxLoaderTest: OK" << std::endl;

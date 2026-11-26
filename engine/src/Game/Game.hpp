@@ -13,6 +13,7 @@
 #include "../EventManager/EventManager.hpp"
 #include "../ControllerManager/ControllerManager.hpp"
 #include "../SceneManager/SceneLoader.hpp"
+#include "../Physics/StaticWorld.hpp"
 #include "../Util/TextBuffer.hpp"
 #include "../Util/RectBuffer.hpp"
 #include "../Util/SpriteBuffer.hpp"
@@ -50,6 +51,10 @@ class Game {
         std::unique_ptr<EventManager> eventManager;
         std::unique_ptr<Registry> registry;
         sol::state lua;
+
+        // Paredes y tiles solidos del nivel (no son entidades). Se vacia al
+        // cargar una escena; lo llenan los scripts (add_static_box, load_tmx_colliders)
+        physics::StaticWorld staticWorld;
 
         std::unique_ptr<SceneLoader> sceneLoader;
 
@@ -134,6 +139,7 @@ class Game {
      double getDeltaTime() const { return deltaTime; }
      Registry* getRegistry() const { return registry.get(); }
      sol::state& getLua() { return lua; }
+     physics::StaticWorld& getStaticWorld() { return staticWorld; }
      SDL_Rect& getCamera() { return camera; }
      TextBuffer& getTextBuffer() { return textBuffer; }
      RectBuffer& getRectBuffer() { return rectBuffer; }

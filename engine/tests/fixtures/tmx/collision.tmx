@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.10" tiledversion="1.10.2" orientation="orthogonal" renderorder="right-down" width="6" height="4" tilewidth="16" tileheight="16" infinite="0" nextlayerid="6" nextobjectid="7">
+ <tileset firstgid="1" source="tileset.tsx"/>
+ <layer id="1" name="walls" width="6" height="4">
+  <properties>
+   <property name="solid" type="bool" value="true"/>
+  </properties>
+  <data encoding="csv">
+0,0,0,0,0,0,
+0,1,1,1,0,0,
+0,1,1,1,0,2,
+0,0,0,0,0,0
+</data>
+ </layer>
+ <layer id="2" name="decor" width="6" height="4">
+  <data encoding="csv">
+0,0,1,0,0,0,
+0,0,0,0,0,0,
+0,0,0,0,0,0,
+4,0,0,0,0,0
+</data>
+ </layer>
+ <layer id="3" name="hidden_tiles" width="6" height="4">
+  <properties>
+   <property name="solid" type="bool" value="false"/>
+  </properties>
+  <data encoding="csv">
+4,4,4,4,4,4,
+0,0,0,0,0,0,
+0,0,0,0,0,0,
+0,0,0,0,0,0
+</data>
+ </layer>
+ <objectgroup id="4" name="collision" offsetx="8" offsety="4">
+  <object id="1" name="wall" x="96" y="0" width="16" height="64"/>
+  <object id="2" name="pond" x="0" y="64" width="24" height="12">
+   <ellipse/>
+  </object>
+  <object id="3" name="roof" x="10" y="10">
+   <polygon points="0,0 16,0 16,16"/>
+  </object>
+  <object id="4" name="spinner" x="0" y="0" width="16" height="16" rotation="45"/>
+  <object id="5" name="ghost" x="0" y="0" width="16" height="16">
+   <properties>
+    <property name="solid" type="bool" value="false"/>
+   </properties>
+  </object>
+  <object id="6" name="marker" x="8" y="40">
+   <point/>
+  </object>
+ </objectgroup>
+</map>

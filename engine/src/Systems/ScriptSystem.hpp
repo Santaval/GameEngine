@@ -8,12 +8,16 @@
 #include "../ECS/Entity.hpp"
 #include "../Components/ScriptComponent.hpp"
 #include "../Events/CollisionEvent.hpp"
+#include "../Events/TriggerEvent.hpp"
 #include "../EventManager/EventManager.hpp"
 #include "../Util/Damage.hpp"
 #include "../Util/Culling.hpp"
 #include "../Binding/LuaBinding.hpp"
 
 class ScriptSystem : public System {
+ private:
+  using ScriptHook = sol::function ScriptComponent::*;
+
  public:
   ScriptSystem() {
    this->requireComponent<ScriptComponent>();
@@ -46,6 +50,22 @@ class ScriptSystem : public System {
     callScriptHook(e.b, &ScriptComponent::onCollision, e.a);
   }
 
+  void subscribeToTriggerEvent(std::unique_ptr<EventManager>& eventManager) {
+    eventManager->subscribe<TriggerEvent, ScriptSystem>(this, &ScriptSystem::onTrigger);
+  }
+
+  // Cada lado de la zona se entera de quien entro, siguio dentro o salio.
+  // Un par trigger-vs-cuerpo avisa a los dos: el hook corre con this = uno y
+  // other = el otro.
+  void onTrigger(TriggerEvent& e) {
+    ScriptHook hook = &ScriptComponent::onTriggerEnter;
+    if (e.phase == TriggerEvent::Phase::Stay) hook = &ScriptComponent::onTriggerStay;
+    if (e.phase == TriggerEvent::Phase::Exit) hook = &ScriptComponent::onTriggerExit;
+
+    callScriptHook(e.a, hook, e.b);
+    callScriptHook(e.b, hook, e.a);
+  }
+
   void createLuaBiding(sol::state& lua) {
     // classes
     lua.new_usertype<Entity>("entity");
@@ -71,5 +91,6 @@ class ScriptSystem : public System {
     registerNetworkBindings(lua);
     registerCullingBindings(lua);
     registerMapBindings(lua);
+    registerPhysicsBindings(lua);
   }
 };

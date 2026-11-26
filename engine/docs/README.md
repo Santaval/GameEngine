@@ -7,6 +7,7 @@ entirely in Lua.
 | --- | --- |
 | [lua-api.md](lua-api.md) | Every function the engine exposes to Lua. |
 | [scene-format.md](scene-format.md) | The `scene` table: assets, input mappings, entities and every component. |
+| [collision.md](collision.md) | Box colliders, static walls, solid Tiled tiles, trigger zones and wall sliding. |
 | [health-and-damage.md](health-and-damage.md) | Hit points, contact damage, invulnerability and death hooks. |
 | [equipment.md](equipment.md) | Named upgrade levels tracked per entity. |
 | [inventory.md](inventory.md) | Named item quantities, an optional capacity, and the mineral pickup gameplay. |
@@ -116,15 +117,19 @@ game.
 6. **GravitySystem** — adds the pull of every attractor to the velocity of
    every affected body (see [gravity.md](gravity.md)).
 7. **MovementSystem** — integrates acceleration into velocity into position.
-8. **CollisionSystem** — circle-vs-circle over every collider pair, emitting a
-   collision event for each overlap. **DamageSystem** reacts to those events
-   immediately.
+8. **BoxColliderSystem** — moves every `mover` box collider with an exact
+   sweep against static walls and solid boxes (see [collision.md](collision.md)).
+9. **CollisionSystem** — circles and boxes share one 256 px uniform-grid
+   broadphase. Overlaps emit a collision event (circle-vs-circle, circle-vs-box,
+   box-vs-box), and overlaps with a trigger zone emit enter / stay / exit
+   events instead. **DamageSystem** reacts to collision events immediately.
 
 Then `Game::render()` draws, back to front:
 
 1. **RenderSystem** — sprites.
 2. **PathRenderSystem** — predicted trajectories.
-3. **ColliderRenderSystem** — the hitbox overlay, skipped entirely when off.
+3. **ColliderRenderSystem** and **BoxColliderRenderSystem** — the hitbox
+   overlay (circles, boxes and static walls), skipped entirely when off.
 4. **TextRenderSystem** — world labels and the HUD.
 
 The loop is capped at 30 FPS.
@@ -146,6 +151,7 @@ says "thrust forward", and the engine resolves what forward means.
 | `SpriteComponent` | Texture id, frame size, source rect. | `sprite` |
 | `AnimationComponent` | Spritesheet playback. | `animation` |
 | `CircleColliderComponent` | Collision circle plus an owner exclusion. | `circle_collider` |
+| `BoxColliderComponent` | Axis-aligned collision box: solid, trigger zone and/or wall-sliding mover. | `box_collider` |
 | `HealthComponent` | Hit points and invulnerability window. | `health` |
 | `DamageComponent` | Contact damage dealt. | `damage` |
 | `GravityComponent` | Mass, plus whether it attracts and/or is attracted. | `gravity` |
@@ -154,7 +160,7 @@ says "thrust forward", and the engine resolves what forward means.
 | `TextComponent` | A label pinned to the entity. | `text` |
 | `PathComponent` | Trajectory prediction toggle. | `path` |
 | `NetworkComponent` | Network identity (`netId`) and owner (`ownerId`); set via `NetworkRegistry`. | none yet |
-| `ScriptComponent` | `update`, `on_damage`, `on_death`, `on_collision`. | `script` |
+| `ScriptComponent` | `update`, `on_damage`, `on_death`, `on_collision`, `on_trigger_enter/stay/exit`. | `script` |
 
 ---
 
@@ -165,6 +171,9 @@ system's signature exactly once, when it is first flushed into the registry.
 Adding a component to an entity that is already alive will not enrol it in a
 new system. In practice: give an entity its `transform`, `sprite`,
 `rigid_body` and `circle_collider` in the same frame you create it.
+
+`add_box_collider` is the exception: it re-enrols the entity in the systems
+itself, so a box can be added to a live entity.
 
 Components that only get read on demand — `health`, `damage`, `path` — are
 exempt, because the systems that use them either are event-driven or filter
@@ -206,11 +215,12 @@ Object `shape` is one of `rect`, `ellipse`, `point`, `polygon`, `polyline`,
 `x`, `y`. `type` is the Tiled 1.9+ `class`, falling back to the older `type`
 attribute. Object templates are not supported.
 
+`load_tmx_colliders(path, opts?)` turns the solid tiles and the `collision`
+object layer of a map into static walls; see [collision.md](collision.md).
+
 ---
 
 ## What is not here yet
 
 - No entity lifetime — a projectile that never hits anything lives forever.
-- Collision detection is O(n²) over every collider, every frame. This is the
-  first thing that will limit scene size.
 - Only one scene, hardcoded in `Game::setup()`; there is no scene switching.

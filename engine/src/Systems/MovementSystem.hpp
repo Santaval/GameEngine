@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <cmath>
 #include "../ECS/System.hpp"
+#include "../Components/BoxColliderComponent.hpp"
 #include "../Components/RigidBodyComponent.hpp"
 #include "../Components/TransformComponent.hpp"
 #include "../Util/Culling.hpp"
@@ -45,6 +46,14 @@ class MovementSystem : public System {
                     rigidBody.velocity.x *= scale;
                     rigidBody.velocity.y *= scale;
                 }
+            }
+
+            // Un mover con caja la mueve BoxColliderSystem (barrido contra
+            // paredes): aqui solo se actualiza su velocidad. Un trigger no
+            // choca con nada, asi que se integra como cualquier otro cuerpo.
+            if (entity.hasComponent<BoxColliderComponent>()) {
+                const auto& box = entity.getComponent<BoxColliderComponent>();
+                if (box.enabled && box.mover && !box.trigger) continue;
             }
 
             // 3) Integrar posición desde la velocidad ya acumulada (espacio mundo)

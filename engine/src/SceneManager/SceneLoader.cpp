@@ -4,6 +4,7 @@
 #include <glm/glm.hpp>
 #include <iostream>
 
+#include "../Components/BoxColliderComponent.hpp"
 #include "../Components/CircleColliderComponent.hpp"
 #include "../Components/RigidBodyComponent.hpp"
 #include "../Components/SpriteComponent.hpp"
@@ -164,6 +165,31 @@ void SceneLoader::addCircleColliderComponent(Entity entity, const sol::table& co
     circleCollider["radius"],
     circleCollider["width"],
     circleCollider["heigth"]
+  );
+}
+
+// box_collider = { width, height, offset_x, offset_y, solid, trigger, mover }
+// (height se escribe bien; "heigth" del circle_collider no se acepta aqui).
+// trigger gana sobre solid.
+void SceneLoader::addBoxColliderComponent(Entity entity, const sol::table& components) {
+  sol::optional<sol::table> hasBoxCollider = components["box_collider"];
+  if (hasBoxCollider == sol::nullopt) return;
+
+  sol::table boxCollider = *hasBoxCollider;
+  bool solid = boxCollider["solid"].get_or(false);
+  bool trigger = boxCollider["trigger"].get_or(false);
+  if (trigger && solid) {
+    std::cout << "[SceneLoader] box_collider: trigger y solid a la vez, gana trigger (no bloquea)" << std::endl;
+  }
+
+  entity.addComponent<BoxColliderComponent>(
+    boxCollider["width"].get_or(0.0f),
+    boxCollider["height"].get_or(0.0f),
+    boxCollider["offset_x"].get_or(0.0f),
+    boxCollider["offset_y"].get_or(0.0f),
+    solid,
+    trigger,
+    boxCollider["mover"].get_or(false)
   );
 }
 
@@ -348,6 +374,9 @@ void SceneLoader::addScriptComponent(sol::state& lua, Entity entity, const sol::
   lua["on_damage"] = sol::lua_nil;
   lua["on_death"] = sol::lua_nil;
   lua["on_collision"] = sol::lua_nil;
+  lua["on_trigger_enter"] = sol::lua_nil;
+  lua["on_trigger_stay"] = sol::lua_nil;
+  lua["on_trigger_exit"] = sol::lua_nil;
 
   lua.script_file(path);
 
@@ -355,8 +384,12 @@ void SceneLoader::addScriptComponent(sol::state& lua, Entity entity, const sol::
   sol::function onDamage = lua["on_damage"];
   sol::function onDeath = lua["on_death"];
   sol::function onCollision = lua["on_collision"];
+  sol::function onTriggerEnter = lua["on_trigger_enter"];
+  sol::function onTriggerStay = lua["on_trigger_stay"];
+  sol::function onTriggerExit = lua["on_trigger_exit"];
 
-  entity.addComponent<ScriptComponent>(update, onDamage, onDeath, onCollision);
+  entity.addComponent<ScriptComponent>(update, onDamage, onDeath, onCollision,
+    onTriggerEnter, onTriggerStay, onTriggerExit);
 }
 
 Entity SceneLoader::buildEntity(sol::state& lua, const sol::table& entityDef, Registry& registry) {
@@ -370,6 +403,7 @@ Entity SceneLoader::buildEntity(sol::state& lua, const sol::table& entityDef, Re
     addRigidBodyComponent(newEntity, components);
     addSpriteComponent(newEntity, components);
     addCircleColliderComponent(newEntity, components);
+    addBoxColliderComponent(newEntity, components);
     addAnimationComponent(newEntity, components);
     addTextComponent(newEntity, components);
     addPathComponent(newEntity, components);
