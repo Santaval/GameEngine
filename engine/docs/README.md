@@ -78,6 +78,37 @@ is fullscreen at desktop size (Aval sets only a `title`). An unknown or invalid
 game name (`--game nope`, `--game ../x`), or a game without
 `scenes/main.lua`, exits with an error.
 
+For pixel art, a game can draw at a small logical resolution and let the engine
+scale it by a whole number. Add `logical_size` and `pixel_perfect = true`:
+
+```lua
+return {
+    title = "Quebrada",
+    width = 1280, height = 720,           -- window (optional)
+    logical_size = { w = 480, h = 270 },  -- resolution the game sees
+    pixel_perfect = true,
+}
+```
+
+Rules:
+
+- The mode is on only with `logical_size` (w and h > 0) **and**
+  `pixel_perfect = true`. `logical_size` alone is ignored (a log line is printed).
+- The scale is the largest whole number that fits the window; the leftover
+  space is black bars (letterbox), centred. Textures use nearest-neighbour
+  filtering, so there is no blur.
+- Make the window a multiple of the logical size (e.g. 1280x720 for 480x270)
+  to avoid bars on a 1x scale. A window smaller than the logical size is not
+  supported.
+- Scripts only see logical coordinates: `get_window_size`, `get_screen_size`,
+  `get_mouse_position` and the camera functions. The camera position is rounded
+  to the nearest logical pixel.
+- Sprites and world rectangles are scaled with the world. HUD rectangles and
+  HUD sprites are scaled too, but text is drawn at native resolution (glyphs
+  are not scaled). Size fonts for the real screen, not for the logical size.
+- Without `logical_size`, or with `pixel_perfect` off, nothing changes (Aval
+  does not set either).
+
 The binary is `engine/engine` and must be run from the repository root
 (`make run` does this; or `./engine/engine --game quebrada`): the game roots
 are relative to the working directory. Asset paths written in scenes and

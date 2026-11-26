@@ -83,7 +83,7 @@ bool Game::setGame(const std::string& name, std::string& error) {
     return true;
 }
 
-// <raiz>/game.lua es opcional: return { title=, width=, height= }
+// <raiz>/game.lua es opcional: return { title=, width=, height=, logical_size={ w=, h= }, pixel_perfect= }
 void Game::loadGameConfig() {
     const std::string path = this->gameRoot + "/game.lua";
     if (!std::filesystem::is_regular_file(path)) {
@@ -100,6 +100,13 @@ void Game::loadGameConfig() {
     this->windowTitle = cfg.get_or<std::string>("title", this->windowTitle);
     this->configWidth = cfg.get_or("width", 0);
     this->configHeight = cfg.get_or("height", 0);
+    // logical_size es opcional; solo cuenta si ademas pixel_perfect = true (ver init)
+    sol::optional<sol::table> logical = cfg["logical_size"];
+    if (logical) {
+        this->configLogicalW = logical->get_or("w", 0);
+        this->configLogicalH = logical->get_or("h", 0);
+    }
+    this->configPixelPerfect = cfg.get_or("pixel_perfect", false);
 }
 
 std::string Game::buildPackagePath() const {
@@ -139,8 +146,26 @@ void Game::init() {
     SDL_GetCurrentDisplayMode(0, &displayMode);
 
     const bool customSize = this->configWidth > 0 && this->configHeight > 0;
-    this->windowWidth = customSize ? this->configWidth : displayMode.w;
-    this->windowHeight = customSize ? this->configHeight : displayMode.h;
+    this->nativeWidth = customSize ? this->configWidth : displayMode.w;
+    this->nativeHeight = customSize ? this->configHeight : displayMode.h;
+
+    // Pixel-perfect: logical_size > 0 y pixel_perfect = true. Sin pixel_perfect, logical_size se ignora
+    const bool hasLogical = this->configLogicalW > 0 && this->configLogicalH > 0;
+    if (hasLogical && !this->configPixelPerfect) {
+        std::cout << "[Game] logical_size sin pixel_perfect = true: ignorado" << std::endl;
+    }
+    this->pixelPerfect = hasLogical && this->configPixelPerfect;
+
+    if (this->pixelPerfect) {
+        this->logicalWidth = this->configLogicalW;
+        this->logicalHeight = this->configLogicalH;
+        // Lua ve el tamaño logico; la ventana nativa se crea aparte
+        this->windowWidth = this->logicalWidth;
+        this->windowHeight = this->logicalHeight;
+    } else {
+        this->windowWidth = this->nativeWidth;
+        this->windowHeight = this->nativeHeight;
+    }
 
     this->camera = { 0, 0, this->windowWidth, this->windowHeight };
 
@@ -148,8 +173,8 @@ void Game::init() {
         this->windowTitle.c_str(),
         SDL_WINDOWPOS_CENTERED,
         SDL_WINDOWPOS_CENTERED,
-        this->windowWidth,
-        this->windowHeight,
+        this->nativeWidth,
+        this->nativeHeight,
         customSize ? SDL_WINDOW_SHOWN : (SDL_WINDOW_SHOWN | SDL_WINDOW_FULLSCREEN_DESKTOP)
     );
 
@@ -158,12 +183,27 @@ void Game::init() {
         return;
     }
     
+    if (this->pixelPerfect) {
+        // Sin filtrado: el pixel art se escala al vecino mas cercano (nitido)
+        SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "0");
+    }
+
     renderer = SDL_CreateRenderer(this->window,-1,0);
 
     if (!this->renderer) {
         std::cout << "[Game] Error creating renderer" << std::endl;
         return;
     }
+
+    // SDL_RenderSetLogicalSize necesita SDL >= 2.0.5; si falla, se vuelve al modo normal
+    if (this->pixelPerfect && SDL_RenderSetLogicalSize(this->renderer, this->logicalWidth, this->logicalHeight) != 0) {
+        std::cout << "[Game] SDL_RenderSetLogicalSize failed, pixel_perfect off: " << SDL_GetError() << std::endl;
+        this->pixelPerfect = false;
+        this->windowWidth = this->nativeWidth;
+        this->windowHeight = this->nativeHeight;
+        this->camera = { 0, 0, this->windowWidth, this->windowHeight };
+    }
+    this->updateLayout();
 
     this->isRunning = true;
 }
@@ -338,9 +378,24 @@ void Game::loadScene(const std::string& requestedScene) {
 }
 
 
+// Escala entera y letterbox segun el tamaño de salida actual del renderer
+void Game::updateLayout() {
+    if (!this->pixelPerfect) return;
+    int outW = 0;
+    int outH = 0;
+    SDL_GetRendererOutputSize(this->renderer, &outW, &outH);
+    this->layout = pixelperfect::computeLayout(outW, outH, this->logicalWidth, this->logicalHeight);
+}
+
 void Game::processInput() {
     int mouseX, mouseY;
     SDL_GetMouseState(&mouseX, &mouseY);
+    if (this->pixelPerfect) {
+        // Sin ALLOW_HIGHDPI los puntos de SDL son pixeles de salida: se pasa a coordenadas logicas.
+        // No se recorta: sobre las barras del letterbox el valor puede ser negativo o mayor que el logico
+        mouseX = pixelperfect::windowToLogical(mouseX, this->layout.offsetX, this->layout.scale);
+        mouseY = pixelperfect::windowToLogical(mouseY, this->layout.offsetY, this->layout.scale);
+    }
     this->controllerManager->setMousePosition(mouseX, mouseY);
 
     SDL_Event sdlEvent;
@@ -373,14 +428,20 @@ void Game::processInput() {
     }
 }
 
-// Dibuja los comandos de draw_image de una capa (coordenadas de pantalla)
-void Game::drawSprites(int layer) {
+// Dibuja los comandos de draw_image de una capa (coordenadas de pantalla).
+// "view" pasa las coordenadas logicas a pixeles nativos (identidad si el modo esta apagado)
+void Game::drawSprites(int layer, const pixelperfect::Layout& view) {
     for (const auto& cmd : this->spriteBuffer.getCommands()) {
         if (cmd.layer != layer) continue;
         SDL_Texture* texture = this->assetManager->getTexture(cmd.assetId);
         if (texture == nullptr) continue;
 
-        SDL_Rect dst = { cmd.x, cmd.y, cmd.w, cmd.h };
+        SDL_Rect dst = {
+            view.offsetX + cmd.x * view.scale,
+            view.offsetY + cmd.y * view.scale,
+            cmd.w * view.scale,
+            cmd.h * view.scale
+        };
         SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND);
         SDL_SetTextureAlphaMod(texture, cmd.alpha);
         SDL_RenderCopyEx(this->renderer, texture, cmd.hasSrc ? &cmd.src : nullptr, &dst, cmd.angle, nullptr,
@@ -389,10 +450,69 @@ void Game::drawSprites(int layer) {
     }
 }
 
+// Paneles del HUD (rectangulos). World: solo los de mundo (con camara); Hud: solo los de pantalla,
+// pasados a pixeles nativos con el layout; All: todos, como antes del modo pixel-perfect
+void Game::drawRects(RectPass pass) {
+    SDL_SetRenderDrawBlendMode(this->renderer, SDL_BLENDMODE_BLEND);
+    for (const auto& rect : this->rectBuffer.getCommands()) {
+        if (pass == RectPass::World && !rect.isWorldSpace) continue;
+        if (pass == RectPass::Hud && rect.isWorldSpace) continue;
+
+        SDL_Rect sdlRect = { rect.x, rect.y, rect.w, rect.h };
+        if (rect.isWorldSpace) {
+            sdlRect.x -= this->camera.x;
+            sdlRect.y -= this->camera.y;
+        }
+        if (pass == RectPass::Hud) {
+            sdlRect.x = pixelperfect::logicalToNative(sdlRect.x, this->layout.offsetX, this->layout.scale);
+            sdlRect.y = pixelperfect::logicalToNative(sdlRect.y, this->layout.offsetY, this->layout.scale);
+            sdlRect.w *= this->layout.scale;
+            sdlRect.h *= this->layout.scale;
+        }
+
+        SDL_SetRenderDrawColor(this->renderer, rect.color.r, rect.color.g, rect.color.b, rect.color.a);
+        if (rect.filled) {
+            SDL_RenderFillRect(this->renderer, &sdlRect);
+        } else {
+            SDL_RenderDrawRect(this->renderer, &sdlRect);
+        }
+    }
+}
+
+// Barras del letterbox (pixeles nativos): solo si sobra espacio a algun lado
+void Game::drawLetterbox() {
+    if (!this->pixelPerfect) return;
+    int outW = 0;
+    int outH = 0;
+    SDL_GetRendererOutputSize(this->renderer, &outW, &outH);
+
+    SDL_SetRenderDrawBlendMode(this->renderer, SDL_BLENDMODE_NONE);
+    SDL_SetRenderDrawColor(this->renderer, 10, 10, 18, 255);
+    if (this->layout.offsetX > 0) {
+        SDL_Rect left = { 0, 0, this->layout.offsetX, outH };
+        SDL_Rect right = { outW - this->layout.offsetX, 0, this->layout.offsetX, outH };
+        SDL_RenderFillRect(this->renderer, &left);
+        SDL_RenderFillRect(this->renderer, &right);
+    }
+    if (this->layout.offsetY > 0) {
+        SDL_Rect top = { 0, 0, outW, this->layout.offsetY };
+        SDL_Rect bottom = { 0, outH - this->layout.offsetY, outW, this->layout.offsetY };
+        SDL_RenderFillRect(this->renderer, &top);
+        SDL_RenderFillRect(this->renderer, &bottom);
+    }
+}
+
 void Game::render() {
     // Casi negro: fondo de espacio
     SDL_SetRenderDrawColor(this->renderer, 10, 10, 18, 255);
     SDL_RenderClear(this->renderer);
+
+    // Pasada del mundo: todo se dibuja en coordenadas logicas y SDL lo escala entero
+    if (this->pixelPerfect) {
+        this->updateLayout();
+        SDL_RenderSetLogicalSize(this->renderer, this->logicalWidth, this->logicalHeight);
+        SDL_RenderSetIntegerScale(this->renderer, SDL_TRUE);
+    }
 
     // Imagenes de la capa "back" (fondos, nubes): bajo las entidades
     this->drawSprites(0);
@@ -412,29 +532,26 @@ void Game::render() {
     // Imagenes de la capa "front": sobre las entidades y bajo el HUD
     this->drawSprites(1);
 
-    // Paneles del HUD (rectangulos): van antes del texto para que el texto quede encima
-    SDL_SetRenderDrawBlendMode(this->renderer, SDL_BLENDMODE_BLEND);
-    for (const auto& rect : this->rectBuffer.getCommands()) {
-        SDL_Rect sdlRect = { rect.x, rect.y, rect.w, rect.h };
-        if (rect.isWorldSpace) {
-            sdlRect.x -= this->camera.x;
-            sdlRect.y -= this->camera.y;
-        }
+    if (this->pixelPerfect) {
+        // Rectangulos de mundo: aun en la pasada logica
+        this->drawRects(RectPass::World);
 
-        SDL_SetRenderDrawColor(this->renderer, rect.color.r, rect.color.g, rect.color.b, rect.color.a);
-        if (rect.filled) {
-            SDL_RenderFillRect(this->renderer, &sdlRect);
-        } else {
-            SDL_RenderDrawRect(this->renderer, &sdlRect);
-        }
+        // Pasada nativa: barras del letterbox, HUD y sprites de HUD en pixeles de la ventana
+        SDL_RenderSetLogicalSize(this->renderer, 0, 0);
+        this->drawLetterbox();
+        this->drawRects(RectPass::Hud);
+        this->drawSprites(2, this->layout);
+    } else {
+        // Paneles del HUD (rectangulos): van antes del texto para que el texto quede encima
+        this->drawRects(RectPass::All);
+
+        // Imagenes de la capa "hud": sobre los paneles del HUD (iconos del minimapa)
+        this->drawSprites(2);
     }
 
-    // Imagenes de la capa "hud": sobre los paneles del HUD (iconos del minimapa)
-    this->drawSprites(2);
-
-    // El texto va después de los sprites para que quede encima
+    // El texto va después de los sprites para que quede encima (en pixeles nativos)
     this->registry->getSystem<TextRenderSystem>().update(this->renderer, this->assetManager,
-        this->camera, this->textBuffer);
+        this->camera, this->textBuffer, this->layout);
 
     // Los comandos duran un frame: los scripts los vuelven a pedir en el próximo update()
     this->textBuffer.clear();

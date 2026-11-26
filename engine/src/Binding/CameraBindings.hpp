@@ -4,11 +4,20 @@
 #include <tuple>
 
 #include "../Game/Game.hpp"
+#include "../Util/PixelPerfect.hpp"
+
+// Coordenada de camara: en pixel-perfect se redondea al pixel mas cercano (sin temblor)
+inline int cameraCoord(float v) {
+  if (Game::getInstance().isPixelPerfect()) {
+    return pixelperfect::snapCamera(v);
+  }
+  return static_cast<int>(v);
+}
 
 inline void setCameraPosition(float x, float y) {
   auto& camera = Game::getInstance().getCamera();
-  camera.x = static_cast<int>(x);
-  camera.y = static_cast<int>(y);
+  camera.x = cameraCoord(x);
+  camera.y = cameraCoord(y);
 }
 
 inline std::tuple<int, int> getCameraPosition() {
@@ -19,8 +28,8 @@ inline std::tuple<int, int> getCameraPosition() {
 // Deja el punto (x, y) del mundo en el centro de la pantalla
 inline void centerCameraOn(float x, float y) {
   auto& camera = Game::getInstance().getCamera();
-  camera.x = static_cast<int>(x) - camera.w / 2;
-  camera.y = static_cast<int>(y) - camera.h / 2;
+  camera.x = cameraCoord(x) - camera.w / 2;
+  camera.y = cameraCoord(y) - camera.h / 2;
 }
 
 inline std::tuple<int, int> getScreenSize() {

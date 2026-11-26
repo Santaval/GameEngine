@@ -12,6 +12,7 @@
 #include "../Components/TextComponent.hpp"
 #include "../Components/TransformComponent.hpp"
 #include "../Util/TextBuffer.hpp"
+#include "../Util/PixelPerfect.hpp"
 
 class TextRenderSystem : public System {
     private:
@@ -37,8 +38,10 @@ class TextRenderSystem : public System {
             this->requireComponent<TransformComponent>();
         }
 
+        // "view" pasa las posiciones logicas a pixeles nativos (identidad fuera del modo pixel-perfect)
         void update(SDL_Renderer* renderer, std::unique_ptr<AssetManager>& assetManager,
-            const SDL_Rect& camera, const TextBuffer& textBuffer) {
+            const SDL_Rect& camera, const TextBuffer& textBuffer,
+            const pixelperfect::Layout& view = pixelperfect::Layout()) {
 
             this->currentFrame++;
 
@@ -50,13 +53,13 @@ class TextRenderSystem : public System {
                 this->draw(renderer, assetManager, camera, text.text, text.fontId,
                     static_cast<int>(transform.position.x) + text.offsetX,
                     static_cast<int>(transform.position.y) + text.offsetY,
-                    text.color, text.isWorldSpace);
+                    text.color, text.isWorldSpace, view);
             }
 
             // 2. Modo inmediato: lo que los scripts pidieron este frame (va encima)
             for (const auto& command : textBuffer.getCommands()) {
                 this->draw(renderer, assetManager, camera, command.text, command.fontId,
-                    command.x, command.y, command.color, command.isWorldSpace);
+                    command.x, command.y, command.color, command.isWorldSpace, view);
             }
 
             this->evictOldEntries();
@@ -73,7 +76,8 @@ class TextRenderSystem : public System {
     private:
         void draw(SDL_Renderer* renderer, std::unique_ptr<AssetManager>& assetManager,
             const SDL_Rect& camera, const std::string& text, const std::string& fontId,
-            int x, int y, SDL_Color color, bool isWorldSpace) {
+            int x, int y, SDL_Color color, bool isWorldSpace,
+            const pixelperfect::Layout& view = pixelperfect::Layout()) {
 
             CachedText* cached = this->getOrCreate(renderer, assetManager, fontId, text);
             if (!cached) return;
@@ -81,9 +85,12 @@ class TextRenderSystem : public System {
             SDL_SetTextureColorMod(cached->texture, color.r, color.g, color.b);
             SDL_SetTextureAlphaMod(cached->texture, color.a);
 
+            // Posicion logica (con camara si es de mundo); el texto no se escala, se dibuja 1:1
+            const int lx = isWorldSpace ? x - camera.x : x;
+            const int ly = isWorldSpace ? y - camera.y : y;
             SDL_Rect dstRec = {
-                isWorldSpace ? x - camera.x : x,
-                isWorldSpace ? y - camera.y : y,
+                view.offsetX + lx * view.scale,
+                view.offsetY + ly * view.scale,
                 cached->width,
                 cached->height
             };

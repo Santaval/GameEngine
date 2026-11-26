@@ -351,6 +351,8 @@ draw_text(20, 20, string.format("Speed: %.1f", get_speed(this)), "default", 120,
 
 > **Font size is baked in at load time.** One `fontId` per size: register
 > `debug-big` separately if you want 28px alongside the 16px `default`.
+> In pixel-perfect mode text is drawn at native resolution, not scaled, so
+> size fonts for the real screen.
 
 ---
 
@@ -358,10 +360,10 @@ draw_text(20, 20, string.format("Speed: %.1f", get_speed(this)), "default", 120,
 
 | Function | Returns | Notes |
 | --- | --- | --- |
-| `center_camera_on(x, y)` | — | Puts the world point `(x, y)` in the middle of the screen. |
-| `set_camera_position(x, y)` | — | Sets the camera's top-left corner. |
+| `center_camera_on(x, y)` | — | Puts the world point `(x, y)` in the middle of the screen. In pixel-perfect mode the camera is rounded to the nearest logical pixel. |
+| `set_camera_position(x, y)` | — | Sets the camera's top-left corner. In pixel-perfect mode the position is rounded to the nearest logical pixel. |
 | `get_camera_position()` | `x, y` | |
-| `get_screen_size()` | `w, h` | |
+| `get_screen_size()` | `w, h` | The logical size in pixel-perfect mode (`logical_size`), otherwise the window size. |
 
 Nothing follows the player automatically — a script has to drive it:
 
@@ -377,7 +379,7 @@ center_camera_on(x, y)
 | Function | Returns | Notes |
 | --- | --- | --- |
 | `is_action_activated(name)` | `bool` | Works for both keyboard and mouse actions. |
-| `get_mouse_position()` | `x, y` | Screen coordinates. |
+| `get_mouse_position()` | `x, y` | Screen coordinates. In pixel-perfect mode, logical coordinates: over the letterbox bars they can be negative or larger than the logical size. |
 | `get_mouse_world_position()` | `x, y` | Screen position plus the camera offset. |
 
 Action names come from the scene's `keys` and `mouse` tables — see
@@ -455,7 +457,7 @@ that exist — defining none is fine.
 | --- | --- |
 | `load_scene(path)` | Switches to another scene file. **Deferred**: the current frame finishes normally and the new scene loads at the start of the next one. |
 | `quit_game()` | Closes the game at the end of the current frame. |
-| `get_window_size()` | Returns `w, h` of the window in pixels (for centering HUD/menus). |
+| `get_window_size()` | Returns `w, h` of the window in pixels (for centering HUD/menus). In pixel-perfect mode it returns the logical size (`logical_size`), see the README. |
 | `random_seed()` | A random integer in `0..2^31-1` from `std::random_device`. Use it to pick a seed (`math.random` is C `rand()` and there is no `os`). |
 | `set_active_area(minX, minY, maxX, maxY)` | Enables the active area (world px). Entities with the `cull` component outside it sleep: no scripts, animation, gravity, movement, collision or rendering. |
 | `clear_active_area()` | Disables the active area (also done on every scene load). |

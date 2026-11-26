@@ -141,7 +141,7 @@ $(IXWS_LIB): $(DEPS_STAMP)
 	done
 	ar rcs $@ $(IXWS_OBJ)/*.o
 
-# Tests unitarios: NetworkRegistry, NetSyncSystem, DamageSync, WorldSync e ImpactDamage (solo ECS, sin SDL ni red), LuaJson (solo sol + nlohmann), TmxLoader (pugixml + zlib + sol, incluye TmxColliders), Physics (cajas, barrido y triggers, header-only), AsepriteAtlas (JSON de Aseprite y reproduccion por tags, header-only). El determinismo del mapa de Aval lo ejecuta el Makefile de la raiz
+# Tests unitarios: NetworkRegistry, NetSyncSystem, DamageSync, WorldSync e ImpactDamage (solo ECS, sin SDL ni red), LuaJson (solo sol + nlohmann), TmxLoader (pugixml + zlib + sol, incluye TmxColliders), Physics (cajas, barrido y triggers, header-only), AsepriteAtlas (JSON de Aseprite y reproduccion por tags, header-only), PixelPerfect (escala entera, letterbox y redondeo de camara, header-only). El determinismo del mapa de Aval lo ejecuta el Makefile de la raiz
 test: $(DEPS_STAMP) $(PUGI_HDR)
 	$(CC) $(CFLAGS) $(STD) $(INC_PATH) -I./src tests/NetworkRegistryTest.cpp src/ECS/*.cpp src/Network/NetworkRegistry.cpp -o tests/network_registry_test
 	./tests/network_registry_test
@@ -161,9 +161,11 @@ test: $(DEPS_STAMP) $(PUGI_HDR)
 	./tests/physics_test
 	$(CC) $(CFLAGS) $(STD) $(INC_PATH) tests/AsepriteAtlasTest.cpp -o tests/aseprite_atlas_test
 	./tests/aseprite_atlas_test
+	$(CC) $(CFLAGS) $(STD) $(INC_PATH) tests/PixelPerfectTest.cpp -o tests/pixel_perfect_test
+	./tests/pixel_perfect_test
 
 clean:
-	rm -f engine-bin tests/network_registry_test tests/net_sync_test tests/damage_sync_test tests/world_sync_test tests/lua_json_test tests/impact_damage_test tests/tmx_loader_test tests/physics_test tests/aseprite_atlas_test
+	rm -f engine-bin tests/network_registry_test tests/net_sync_test tests/damage_sync_test tests/world_sync_test tests/lua_json_test tests/impact_damage_test tests/tmx_loader_test tests/physics_test tests/aseprite_atlas_test tests/pixel_perfect_test
 
 clean-deps:
 	rm -rf $(IXWS_OBJ) $(IXWS_LIB) $(IXWS_DIR)/build $(IXWS_DIR)/libixwebsocket.a

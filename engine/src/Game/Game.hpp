@@ -17,6 +17,7 @@
 #include "../Util/TextBuffer.hpp"
 #include "../Util/RectBuffer.hpp"
 #include "../Util/SpriteBuffer.hpp"
+#include "../Util/PixelPerfect.hpp"
 
 class NetClient;
 class NetworkRegistry;
@@ -34,6 +35,17 @@ class Game {
 
         int windowWidth = 0;
         int windowHeight = 0;
+
+        // Ventana nativa (pixeles reales de la pantalla o de game.lua width/height)
+        int nativeWidth = 0;
+        int nativeHeight = 0;
+        // Modo pixel-perfect activo: logical_size + pixel_perfect = true
+        bool pixelPerfect = false;
+        // Resolucion logica (lo que ve Lua) cuando el modo esta activo
+        int logicalWidth = 0;
+        int logicalHeight = 0;
+        // Escala entera y letterbox del area logica dentro de la salida
+        pixelperfect::Layout layout;
 
         SDL_Rect camera = {0, 0, 0, 0};
 
@@ -93,6 +105,10 @@ class Game {
         std::string windowTitle = "Engine";
         int configWidth = 0;
         int configHeight = 0;
+        // logical_size = { w=, h= } y pixel_perfect = bool (opcionales, ver docs)
+        int configLogicalW = 0;
+        int configLogicalH = 0;
+        bool configPixelPerfect = false;
 
         void loadGameConfig();
         std::string buildPackagePath() const;
@@ -109,7 +125,12 @@ class Game {
         ~Game();
         void processInput();
         void render();
-        void drawSprites(int layer);
+        void drawSprites(int layer, const pixelperfect::Layout& view = pixelperfect::Layout());
+        // Pasada del modo pixel-perfect: solo mundo, solo HUD, o todo (modo apagado)
+        enum class RectPass { All, World, Hud };
+        void drawRects(RectPass pass);
+        void drawLetterbox();
+        void updateLayout();
         void update();
         void setup();
         void loadScene(const std::string& requestedScene);
@@ -146,6 +167,8 @@ class Game {
      SpriteBuffer& getSpriteBuffer() { return spriteBuffer; }
      int getWindowWidth() const { return windowWidth; }
      int getWindowHeight() const { return windowHeight; }
+     bool isPixelPerfect() const { return pixelPerfect; }
+     const pixelperfect::Layout& getLayout() const { return layout; }
      bool isShowingColliders() const { return showColliders; }
      void setShowColliders(bool value) { showColliders = value; }
      void toggleShowColliders() { showColliders = !showColliders; }
