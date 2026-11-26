@@ -36,7 +36,8 @@
 --   }
 --
 -- API del objeto: M.new(cfg), obj:step(entity), obj:get_facing(),
--- obj:set_facing(dir), obj:is_moving(). M.make_update(cfg) devuelve el closure.
+-- obj:set_facing(dir), obj:is_moving(). M.make_update(cfg) devuelve el closure y
+-- el objeto (`local fn, obj = make_update(cfg)`).
 local math2 = require("walker_math")
 
 local M = {}
@@ -231,11 +232,14 @@ end
 
 -- El motor fija el global `this` antes de cada llamada: se lee al ejecutar el
 -- closure, no al crearlo
+-- Devuelve el closure y, como segundo valor, el objeto walker (para leer o
+-- cambiar el facing desde fuera, p. ej. al teletransportar). Los llamadores que
+-- solo asignan `update = make_update(cfg)` ignoran el segundo valor.
 function M.make_update(cfg)
   local obj = M.new(cfg)
   return function()
     obj:step(this)
-  end
+  end, obj
 end
 
 return M

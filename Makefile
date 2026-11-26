@@ -3,7 +3,7 @@
 # los juegos son relativas a ella).
 
 # Interprete de Lua independiente para games/aval/tests/map_determinism.lua y
-# games/quebrada/tests/walker_math.lua (opcional)
+# games/quebrada/tests/walker_math.lua y games/quebrada/tests/door_logic.lua (opcional)
 LUA_BIN := $(firstword $(shell command -v lua5.3 lua5.4 lua 2>/dev/null))
 
 .PHONY: build test deps clean clean-deps lua-info run run-quebrada
@@ -16,8 +16,9 @@ test:
 ifneq ($(LUA_BIN),)
 	$(LUA_BIN) games/aval/tests/map_determinism.lua
 	$(LUA_BIN) games/quebrada/tests/walker_math.lua
+	$(LUA_BIN) games/quebrada/tests/door_logic.lua
 else
-	@echo "Sin interprete de Lua (lua5.3/lua): se omiten games/aval/tests/map_determinism.lua y games/quebrada/tests/walker_math.lua"
+	@echo "Sin interprete de Lua (lua5.3/lua): se omiten games/aval/tests/map_determinism.lua y games/quebrada/tests/walker_math.lua y games/quebrada/tests/door_logic.lua"
 endif
 
 run:

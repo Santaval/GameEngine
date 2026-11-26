@@ -2,7 +2,8 @@
 -- Also a demo of Aseprite atlas animations (#45): sprites/fx.png + fx.json.
 -- Laid out for a 480x270 logical size (pixel_perfect); fine at 1280x720 too.
 -- Keys 1-4 restart each effect from its first frame. Key 5 opens the top-down
--- walker demo (#61); key 0 there comes back here.
+-- walker demo (#61), key 6 the doors/interiors/zones demo (#62); key 0 there
+-- comes back here.
 local hello = require("hello")
 local ui = require("ui_helpers")
 
@@ -32,6 +33,7 @@ scene = {
         { name = "fx3", key = 51 },
         { name = "fx4", key = 52 },
         { name = "walkdemo", key = 53 }, -- 5
+        { name = "towndemo", key = 54 }, -- 6
     },
     entities = {
         [0] =
@@ -44,6 +46,13 @@ scene = {
             components = {
                 transform = { position = { x = 0, y = 0 } },
                 script = { path = "scripts/walk_demo_launch.lua" },
+            },
+        },
+        {
+            -- Press 6: load the doors / interiors / zones demo
+            components = {
+                transform = { position = { x = 0, y = 0 } },
+                script = { path = "scripts/town_demo_launch.lua" },
             },
         },
     },

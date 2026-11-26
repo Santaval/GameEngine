@@ -473,6 +473,12 @@ globals are cleared, and every module loaded with `require` is unloaded so its
 module-level locals (cooldowns, open menus...) start fresh. Textures and fonts
 already loaded are kept and reused by id.
 
+**Lua globals survive `load_scene`** (only `player_entity` and `game_over` are
+cleared), while modules are unloaded and re-run on the next `require`. Keep state
+that must outlive a scene in a global table created with `x = x or {...}`; Quebrada's
+`world_state` does this for flags and door transitions
+([doors-and-zones.md](../../games/quebrada/docs/doors-and-zones.md)).
+
 Flow used by the game: `scenes/menu.lua` (start screen) → `scenes/aval_cup.lua`
 (ENTER for single player, M for Multiplayer). The menu stores the chosen
 scene in the global `current_game_scene` (globals survive scene loads).

@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Barrio de prueba (issue #62): solo capas de objetos, sin tileset. 40x30 tiles de 16 px = 640x480.
+     Los puntos de spawn marcan el CENTRO de la caja de pies del jugador. -->
+<map version="1.10" tiledversion="1.10.2" orientation="orthogonal" renderorder="right-down" width="40" height="30" tilewidth="16" tileheight="16" infinite="0" nextlayerid="5" nextobjectid="30">
+ <objectgroup id="1" name="collision">
+  <object id="1" name="wall_top" x="-16" y="-16" width="672" height="16"/>
+  <object id="2" name="wall_bottom" x="-16" y="480" width="672" height="16"/>
+  <object id="3" name="wall_left" x="-16" y="0" width="16" height="480"/>
+  <object id="4" name="wall_right" x="640" y="0" width="16" height="480"/>
+  <object id="5" name="house_mama" x="64" y="64" width="128" height="96"/>
+  <object id="6" name="house_chayo" x="320" y="64" width="128" height="96"/>
+  <object id="7" name="shed" x="480" y="300" width="64" height="64"/>
+ </objectgroup>
+ <objectgroup id="2" name="doors">
+  <object id="10" name="door_mama" class="door" x="112" y="160" width="32" height="12">
+   <properties>
+    <property name="target_map" value="maps/house_mama.tmx"/>
+    <property name="target_spawn" value="inside_door"/>
+    <property name="exit_spawn" value="exit_mama"/>
+    <property name="prompt" value="E: entrar"/>
+   </properties>
+  </object>
+  <object id="11" name="door_chayo" class="door" x="368" y="160" width="32" height="12">
+   <properties>
+    <property name="target_map" value="maps/house_mama.tmx"/>
+    <property name="target_spawn" value="inside_door"/>
+    <property name="exit_spawn" value="exit_chayo"/>
+    <property name="locked" value="!house.chayo.open"/>
+    <property name="locked_line" value="Está cerrado. Ña Chayo no le abre a nadie de noche."/>
+    <property name="prompt" value="E: tocar"/>
+   </properties>
+  </object>
+  <object id="12" name="door_shed" class="door" x="496" y="364" width="32" height="12">
+   <properties>
+    <property name="target_spawn" value="shed_out"/>
+    <property name="prompt" value="E: pasar al fondo"/>
+   </properties>
+  </object>
+ </objectgroup>
+ <objectgroup id="3" name="spawns">
+  <object id="20" name="default" class="spawn" x="320" y="300">
+   <point/>
+  </object>
+  <object id="21" name="exit_mama" class="spawn" x="128" y="188">
+   <point/>
+  </object>
+  <object id="23" name="exit_chayo" class="spawn" x="384" y="188">
+   <point/>
+  </object>
+  <object id="22" name="shed_out" class="spawn" x="80" y="420">
+   <point/>
+  </object>
+ </objectgroup>
+ <objectgroup id="4" name="zones">
+  <object id="25" name="zone_barrio_alto" class="zone" x="0" y="0" width="640" height="200">
+   <properties>
+    <property name="zone" value="barrio_alto"/>
+    <property name="title" value="Barrio Alto"/>
+    <property name="ambience" value="viento"/>
+   </properties>
+  </object>
+  <object id="26" name="zone_plaza" class="zone" x="0" y="200" width="640" height="280">
+   <properties>
+    <property name="zone" value="plaza"/>
+    <property name="title" value="La Plaza"/>
+    <property name="ambience" value="gente"/>
+    <property name="save" type="bool" value="true"/>
+   </properties>
+  </object>
+ </objectgroup>
+</map>
