@@ -114,6 +114,15 @@ Maps a name to an SDL keycode. Scripts then ask for the name, never the code.
 For printable ASCII keys the code is simply the character's byte value, so
 `string.byte("w")` gives you `119`.
 
+Non-ASCII keys use the raw SDL keysym (Right `1073741903`, Left `1073741904`,
+Down `1073741905`, Up `1073741906`, Left Shift `1073742049`, Right Shift
+`1073742053`).
+
+> **One key per action name.** Duplicate names are silently ignored (the first
+> one wins), so an action cannot be bound to two keys. To accept both WASD and
+> the arrow keys, declare two names (`walk_up` and `walk_up_alt`) and have the
+> script check both, as `walker.lua` does in the Quebrada walk demo.
+
 ## `mouse`
 
 ```lua

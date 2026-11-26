@@ -100,6 +100,17 @@ inline bool animationFinished(Entity e) {
   return e.getComponent<AnimationComponent>().finished;
 }
 
+// Indice (base 0) del frame mostrado dentro del tag actual; -1 si no hay
+// animacion, atlas o tag valido. Sirve para sincronizar efectos con la animacion
+inline int getAnimationFrame(Entity e) {
+  if (!e.hasComponent<AnimationComponent>()) return -1;
+  const auto& animation = e.getComponent<AnimationComponent>();
+  if (!animation.atlas) return -1;
+  const int tagIndex = animation.playback.tagIndex;
+  if (tagIndex < 0 || tagIndex >= static_cast<int>(animation.atlas->tags.size())) return -1;
+  return animation.playback.frameIndex(*animation.atlas) - animation.atlas->tags[tagIndex].from;
+}
+
 inline void registerSpriteBindings(sol::state& lua) {
   lua.set_function("set_sprite", setSprite);
   lua.set_function("set_sprite_frame", setSpriteFrame);
@@ -111,4 +122,5 @@ inline void registerSpriteBindings(sol::state& lua) {
   lua.set_function("add_animation_atlas", addAnimationAtlas);
   lua.set_function("play_animation", playAnimation);
   lua.set_function("animation_finished", animationFinished);
+  lua.set_function("get_animation_frame", getAnimationFrame);
 }

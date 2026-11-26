@@ -157,6 +157,7 @@ See [gravity.md](gravity.md) for the model.
 | `set_sprite_sort_offset(e, px)` | — | Where the sprite's "feet" are for y-sorting: `px` from the top of the current frame, multiplied by `scale.y`. `-1` (default) means the bottom edge of the frame. |
 | `set_sprite_flip(e, flip_h)` | — | Mirrors the sprite horizontally (no vertical flip). |
 | `animation_finished(e)` | bool | `true` once a `loop = false` atlas animation has played to its end. `false` while it plays, when it loops or when `e` has no animation. |
+| `get_animation_frame(e)` | int | Index (0-based) of the frame shown within the current tag, e.g. `0..3` for a 4-frame tag. `-1` when `e` has no animation, no atlas or no valid tag. Handy to sync effects (footsteps) with the animation. |
 
 The rendered size is `width * scale.x` by `height * scale.y`, so scale lives on
 the transform, not the sprite.
