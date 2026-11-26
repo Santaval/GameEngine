@@ -26,3 +26,4 @@
 #include "ImageBindings.hpp"
 #include "SpriteBindings.hpp"
 #include "TextBindings.hpp"
+#include "TileMapBindings.hpp"

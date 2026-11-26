@@ -161,6 +161,17 @@ void SceneLoader::addSpriteComponent(Entity entity, const sol::table& components
   }
 
   entity.addComponent<SpriteComponent>(assetId, width, height, srcRectX, srcRectY);
+
+  // Opcionales: layer = "ground" | "world" | "above", sort_offset (px desde el
+  // borde superior del frame; -1 = borde inferior) y flip_h
+  auto& added = entity.getComponent<SpriteComponent>();
+  sol::optional<std::string> layerName = sprite["layer"];
+  if (layerName && !parseSpriteLayer(*layerName, added.layer)) {
+    std::cerr << "[SceneLoader] unknown sprite layer '" << *layerName
+      << "' (use ground, world or above); using world" << std::endl;
+  }
+  added.sortOffset = sprite["sort_offset"].get_or(-1);
+  added.flipH = sprite["flip_h"].get_or(false);
 }
 
 void SceneLoader::addCircleColliderComponent(Entity entity, const sol::table& components) {

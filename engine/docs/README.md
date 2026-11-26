@@ -144,7 +144,7 @@ game.
 4. **NetSyncSystem** — owners send their `state` (12.5 Hz, within a message
    budget); non-owners get pulled toward the owner's last known state (see
    [multiplayer-protocol.md](multiplayer-protocol.md)).
-5. **AnimationSystem** — advances spritesheet frames (equal-frame strips or Aseprite JSON atlases with tags).
+5. **AnimationSystem** — advances spritesheet frames (equal-frame strips or Aseprite JSON atlases with tags). The loaded tile map's animated tiles advance right after it.
 6. **GravitySystem** — adds the pull of every attractor to the velocity of
    every affected body (see [gravity.md](gravity.md)).
 7. **MovementSystem** — integrates acceleration into velocity into position.
@@ -157,7 +157,11 @@ game.
 
 Then `Game::render()` draws, back to front:
 
-1. **RenderSystem** — sprites.
+1. World: `draw_image` back layer, then (with a map loaded) ground tile layers,
+   `ground` sprites, `ysort` tile layers mixed by Y with the `world` sprites
+   (**RenderSystem**; creation order when no map and no `set_y_sort`), `above`
+   tile layers and `above` sprites. See
+   [Tile map rendering](lua-api.md#tile-map-rendering).
 2. **PathRenderSystem** — predicted trajectories.
 3. **ColliderRenderSystem** and **BoxColliderRenderSystem** — the hitbox
    overlay (circles, boxes and static walls), skipped entirely when off.
@@ -179,7 +183,7 @@ says "thrust forward", and the engine resolves what forward means.
 | --- | --- | --- |
 | `TransformComponent` | Position (top-left), scale, rotation. | `transform` |
 | `RigidBodyComponent` | Velocity, acceleration, speed limit. | `rigid_body` |
-| `SpriteComponent` | Texture id, frame size, source rect. | `sprite` |
+| `SpriteComponent` | Texture id, frame size, source rect, draw layer (`ground`/`world`/`above`), y-sort offset, horizontal flip. | `sprite` |
 | `AnimationComponent` | Spritesheet playback (strip or Aseprite atlas + tags). | `animation` |
 | `CircleColliderComponent` | Collision circle plus an owner exclusion. | `circle_collider` |
 | `BoxColliderComponent` | Axis-aligned collision box: solid, trigger zone and/or wall-sliding mover. | `box_collider` |
@@ -249,9 +253,17 @@ attribute. Object templates are not supported.
 `load_tmx_colliders(path, opts?)` turns the solid tiles and the `collision`
 object layer of a map into static walls; see [collision.md](collision.md).
 
+`load_tile_map(path, opts?)` draws the tile layers (culled to the camera,
+y-sorted with entities, `above` layers, animated tiles, roof fading); see
+[Tile map rendering](lua-api.md#tile-map-rendering). Each of the three loaders
+parses the file again, so call them once per scene.
+
 ---
 
 ## What is not here yet
 
+- Tile map rendering has no chunk baking (layers are drawn cell by cell), image
+  layers, tileset `tileoffset`, parallax, tinting, or diagonal flips on
+  non-square tiles.
 - No entity lifetime — a projectile that never hits anything lives forever.
 - Only one scene, hardcoded in `Game::setup()`; there is no scene switching.

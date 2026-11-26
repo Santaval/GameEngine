@@ -194,6 +194,17 @@ sprite = {
 `src_rect` picks a frame out of a spritesheet. On-screen size is
 `width * scale.x` by `height * scale.y`.
 
+Optional keys that matter with a [tile map](lua-api.md#tile-map-rendering):
+
+```lua
+sprite = {
+  ...
+  layer       = "world",  -- "ground" | "world" (default) | "above"; unknown: warning, stays "world"
+  sort_offset = -1,       -- y-sort feet, px from the frame top (* scale.y); -1 = bottom of the frame
+  flip_h      = false,    -- mirror horizontally
+}
+```
+
 > The existing scene file has a `rotation = 0` key inside its `sprite` tables.
 > The loader does not read it — rotation lives on the `transform`. It is a
 > leftover, and copying it into a new entity does nothing.

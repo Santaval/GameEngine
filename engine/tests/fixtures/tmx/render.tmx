@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.10" tiledversion="1.10.2" orientation="orthogonal" renderorder="right-down" width="8" height="6" tilewidth="16" tileheight="16" infinite="0" nextlayerid="8" nextobjectid="4">
+ <tileset firstgid="1" name="ground" tilewidth="16" tileheight="16" tilecount="8" columns="4">
+  <image source="ground.png" width="64" height="32"/>
+  <tile id="1">
+   <animation>
+    <frame tileid="1" duration="100"/>
+    <frame tileid="2" duration="200"/>
+   </animation>
+  </tile>
+ </tileset>
+ <tileset firstgid="9" name="tall" tilewidth="16" tileheight="32" tilecount="2" columns="2">
+  <image source="tall.png" width="32" height="32"/>
+  <tile id="1">
+   <properties>
+    <property name="sort_offset" type="int" value="-4"/>
+   </properties>
+  </tile>
+ </tileset>
+ <layer id="1" name="ground" width="8" height="6">
+  <data encoding="csv">
+1,1,1,1,1,1,1,2,
+1,1,1,1,1,1,1,1,
+1,1,1,1,1,1,1,1,
+1,1,1,1,1,1,1,1,
+1,1,1,1,1,1,1,1,
+1,1,1,1,1,1,1,1
+</data>
+ </layer>
+ <layer id="2" name="trees" width="8" height="6">
+  <properties>
+   <property name="ysort" type="bool" value="true"/>
+  </properties>
+  <data encoding="csv">
+2147483657,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,
+0,0,0,9,0,0,0,0,
+0,0,0,0,0,0,0,0,
+0,0,0,0,0,10,0,0,
+0,0,0,0,0,0,0,0
+</data>
+ </layer>
+ <group id="3" name="casa_mama" offsetx="8" opacity="0.5">
+  <properties>
+   <property name="above" type="bool" value="true"/>
+   <property name="roof_of" value="casa_mama"/>
+  </properties>
+  <layer id="4" name="roof" width="8" height="6">
+   <data encoding="csv">
+0,0,0,0,0,0,0,0,
+0,3,3,0,0,0,0,0,
+0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0
+</data>
+  </layer>
+ </group>
+ <objectgroup id="5" name="props">
+  <properties>
+   <property name="ysort" type="bool" value="true"/>
+  </properties>
+  <object id="1" gid="9" x="64" y="80" width="16" height="32"/>
+ </objectgroup>
+ <objectgroup id="6" name="collision">
+  <object id="2" x="0" y="0" width="16" height="16"/>
+ </objectgroup>
+</map>

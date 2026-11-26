@@ -12,6 +12,8 @@
 #include "../Network/NetworkScripting.hpp"
 #include "../Util/Culling.hpp"
 #include "../Util/GamePath.hpp"
+#include "../Map/TmxLoader.hpp"
+#include "../Map/TileMap.hpp"
 #include "../Components/TransformComponent.hpp"
 #include "../Components/SpriteComponent.hpp"
 #include "../Components/RigidBodyComponent.hpp"
@@ -35,6 +37,7 @@
 #include "../Systems/TextRenderSystem.hpp"
 #include "../Systems/PathRenderSystem.hpp"
 #include "../Systems/ColliderRenderSystem.hpp"
+#include "../Systems/TileMapRenderSystem.hpp"
 
 Game::Game() {
     this->assetManager = std::make_unique<AssetManager>();
@@ -49,6 +52,7 @@ Game::Game() {
 }
 
 Game::~Game() {
+    this->tileMap.reset();
     this->networkScripting.reset();
     this->netClient.reset();
     this->networkRegistry.reset();
@@ -354,6 +358,9 @@ void Game::loadScene(const std::string& requestedScene) {
     // La geometria estatica y los pares de trigger tambien son de la escena
     this->staticWorld.clear();
     this->registry->getSystem<CollisionSystem>().resetTriggers();
+    // El tile map y el orden por Y tambien son de la escena
+    this->tileMap.reset();
+    this->ySort = false;
 
     // Los modulos cacheados por require guardan estado en sus locals
     // (cooldowns, menus abiertos...): se descargan para empezar limpio
@@ -377,6 +384,35 @@ void Game::loadScene(const std::string& requestedScene) {
         this->controllerManager, this->registry, this->renderer);
 }
 
+bool Game::loadTileMap(const std::string& path, double x, double y, std::string& error) {
+    tmx::Result parsed = tmx::loadFile(resolveGamePath(this->gameRoot, path));
+    if (!parsed.ok) {
+        error = parsed.error;
+        return false;
+    }
+    tilemap::BuildOptions options;
+    options.x = x;
+    options.y = y;
+    tilemap::BuildResult built = tilemap::build(parsed.map, options);
+    if (!built.ok) {
+        error = built.error;
+        return false;
+    }
+    for (const std::string& warning : built.warnings) {
+        std::cout << "[TileMap] " << warning << std::endl;
+    }
+
+    auto system = std::make_unique<TileMapRenderSystem>(std::move(built.map));
+    system->loadTextures(this->renderer, *this->assetManager);
+    // La segunda llamada reemplaza al mapa anterior
+    this->tileMap = std::move(system);
+    this->ySort = true;
+    return true;
+}
+
+void Game::unloadTileMap() {
+    this->tileMap.reset();
+}
 
 // Escala entera y letterbox segun el tamaño de salida actual del renderer
 void Game::updateLayout() {
@@ -517,7 +553,22 @@ void Game::render() {
     // Imagenes de la capa "back" (fondos, nubes): bajo las entidades
     this->drawSprites(0);
 
-    this->registry->getSystem<RenderSystem>().update(this->renderer, this->assetManager, this->camera);
+    // Orden del mundo: suelo (tiles y sprites "ground"), entidades y tiles altos
+    // (por Y si hay mapa o set_y_sort; si no, en orden de insercion) y por ultimo
+    // lo que va por encima. Sin tile map y con ySort apagado el resultado es el de siempre
+    RenderSystem& renderSystem = this->registry->getSystem<RenderSystem>();
+    renderSystem.collect(this->assetManager, this->camera);
+    if (this->tileMap) this->tileMap->drawPass(this->renderer, this->camera, tilemap::Pass::Ground);
+    renderSystem.drawLayer(this->renderer, SpriteLayer::Ground);
+    if (this->ySort) {
+        renderSystem.drawSorted(this->renderer, this->camera, this->tileMap.get());
+    } else {
+        if (this->tileMap) this->tileMap->drawPass(this->renderer, this->camera, tilemap::Pass::YSort);
+        renderSystem.drawLayer(this->renderer, SpriteLayer::World);
+    }
+    if (this->tileMap) this->tileMap->drawPass(this->renderer, this->camera, tilemap::Pass::Above);
+    renderSystem.drawLayer(this->renderer, SpriteLayer::Above);
+    // Gancho: la iluminacion iria aqui (antes de las imagenes "front" y del HUD)
 
     // La trayectoria va encima de los sprites pero debajo del HUD de texto
     this->registry->getSystem<PathRenderSystem>().update(this->renderer, this->camera, this->deltaTime);
@@ -598,6 +649,7 @@ void Game::update() {
         this->netClient->send(std::move(msg));
     }
     this->registry->getSystem<AnimationSystem>().update(deltaTime);
+    if (this->tileMap) this->tileMap->advance(deltaTime);
     // La gravedad suma a la velocidad antes de integrar el movimiento
     this->registry->getSystem<GravitySystem>().update(deltaTime);
     this->registry->getSystem<MovementSystem>().update(deltaTime);
@@ -630,6 +682,7 @@ void Game::destroy() {
 
     // Las texturas y las fuentes tienen que morir antes que el renderer y antes de TTF_Quit
     this->registry->getSystem<TextRenderSystem>().clearCache();
+    this->tileMap.reset();
     this->assetManager->clearAll();
 
     SDL_DestroyRenderer(this->renderer);

@@ -91,6 +91,7 @@ class ScriptSystem : public System {
     registerNetworkBindings(lua);
     registerCullingBindings(lua);
     registerMapBindings(lua);
+    registerTileMapBindings(lua);
     registerPhysicsBindings(lua);
   }
 };

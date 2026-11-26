@@ -24,6 +24,7 @@ class NetworkRegistry;
 class NetworkScripting;
 class DamageSync;
 class WorldSync;
+class TileMapRenderSystem;
 
 const int FPS = 30;
 const int MILISECS_PER_FRAMES = 1000 / FPS;
@@ -67,6 +68,14 @@ class Game {
         // Paredes y tiles solidos del nivel (no son entidades). Se vacia al
         // cargar una escena; lo llenan los scripts (add_static_box, load_tmx_colliders)
         physics::StaticWorld staticWorld;
+
+        // Tile map cargado con load_tile_map (no son entidades). Se descarta al
+        // cambiar de escena. Solo se declara aqui: el tipo completo vive en
+        // Systems/TileMapRenderSystem.hpp (Game.cpp y TileMapBindings.hpp)
+        std::unique_ptr<TileMapRenderSystem> tileMap;
+        // Ordenar por Y los sprites World y los tiles altos; se activa solo con
+        // un mapa cargado o con set_y_sort(true)
+        bool ySort = false;
 
         std::unique_ptr<SceneLoader> sceneLoader;
 
@@ -161,6 +170,13 @@ class Game {
      Registry* getRegistry() const { return registry.get(); }
      sol::state& getLua() { return lua; }
      physics::StaticWorld& getStaticWorld() { return staticWorld; }
+     // Carga un .tmx para dibujarlo en (x, y) del mundo y reemplaza el anterior.
+     // false con el motivo en error si falla (el mapa anterior se conserva)
+     bool loadTileMap(const std::string& path, double x, double y, std::string& error);
+     void unloadTileMap();
+     TileMapRenderSystem* getTileMap() const { return tileMap.get(); }
+     void setYSort(bool value) { ySort = value; }
+     bool isYSort() const { return ySort; }
      SDL_Rect& getCamera() { return camera; }
      TextBuffer& getTextBuffer() { return textBuffer; }
      RectBuffer& getRectBuffer() { return rectBuffer; }

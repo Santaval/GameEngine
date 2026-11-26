@@ -26,6 +26,23 @@ inline void addSprite(Entity e, std::string assetId, int width, int height, int 
   e.addComponent<SpriteComponent>(assetId, width, height, srcRectX, srcRectY);
 }
 
+// Capa de dibujado del sprite: "ground", "world" o "above". false si el nombre no existe
+inline bool setSpriteLayer(Entity e, std::string layer) {
+  if (!e.hasComponent<SpriteComponent>()) return false;
+  return parseSpriteLayer(layer, e.getComponent<SpriteComponent>().layer);
+}
+
+// Y de los pies para ordenar, en px desde el borde superior del frame (-1 = borde inferior)
+inline void setSpriteSortOffset(Entity e, int px) {
+  if (!e.hasComponent<SpriteComponent>()) return;
+  e.getComponent<SpriteComponent>().sortOffset = px < 0 ? -1 : px;
+}
+
+inline void setSpriteFlip(Entity e, bool flipH) {
+  if (!e.hasComponent<SpriteComponent>()) return;
+  e.getComponent<SpriteComponent>().flipH = flipH;
+}
+
 inline void addAnimation(Entity e, int numFrames, int frameSpeedRate, bool isLoop) {
   e.addComponent<AnimationComponent>(numFrames, frameSpeedRate, isLoop);
 }
@@ -87,6 +104,9 @@ inline void registerSpriteBindings(sol::state& lua) {
   lua.set_function("set_sprite", setSprite);
   lua.set_function("set_sprite_frame", setSpriteFrame);
   lua.set_function("add_sprite", addSprite);
+  lua.set_function("set_sprite_layer", setSpriteLayer);
+  lua.set_function("set_sprite_sort_offset", setSpriteSortOffset);
+  lua.set_function("set_sprite_flip", setSpriteFlip);
   lua.set_function("add_animation", addAnimation);
   lua.set_function("add_animation_atlas", addAnimationAtlas);
   lua.set_function("play_animation", playAnimation);

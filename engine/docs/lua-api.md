@@ -32,6 +32,7 @@ implemented one domain per file under [`src/Binding/`](../src/Binding/).
 - [Scripts & hooks](#scripts--hooks)
 - [Game flow & scenes](#game-flow--scenes)
 - [Tiled maps](#tiled-maps)
+- [Tile map rendering](#tile-map-rendering)
 - [Network](#network)
 - [Reading a component you don't have](#reading-a-component-you-dont-have)
 
@@ -152,6 +153,9 @@ See [gravity.md](gravity.md) for the model.
 | `add_animation(e, num_frames, frame_speed_rate, is_loop)` | — | `frame_speed_rate` is frames per second. |
 | `add_animation_atlas(e, atlas_id, tag [, loop])` | — | Animates with an Aseprite/pixelfx atlas (the sprite's `atlas` in the scene, by its `assetId`). `loop` defaults to `true`. Unknown atlas or tag: warning, nothing changes. |
 | `play_animation(e, tag [, loop])` | — | Switches to `tag` and restarts from its first frame, applying it right away. Calling it with the tag already looping is a no-op, so it is safe to call every frame from a script. Unknown tag, no animation or no atlas: warning, no-op. |
+| `set_sprite_layer(e, name)` | bool | Draw pass relative to a [tile map](#tile-map-rendering): `"ground"` (right after the ground tiles), `"world"` (default, y-sorted with tall tiles) or `"above"` (after the `above` layers). Returns `false` for an unknown name or an entity without a sprite. |
+| `set_sprite_sort_offset(e, px)` | — | Where the sprite's "feet" are for y-sorting: `px` from the top of the current frame, multiplied by `scale.y`. `-1` (default) means the bottom edge of the frame. |
+| `set_sprite_flip(e, flip_h)` | — | Mirrors the sprite horizontally (no vertical flip). |
 | `animation_finished(e)` | bool | `true` once a `loop = false` atlas animation has played to its end. `false` while it plays, when it loops or when `e` has no animation. |
 
 The rendered size is `width * scale.x` by `height * scale.y`, so scale lives on
@@ -511,6 +515,86 @@ rect = {x, y, w, h}, properties`, plus `gid, flip_h, flip_v` for tile objects an
 `point`, `polygon`, `polyline`, `text` or `tile`. `type` is the Tiled 1.9+ `class`,
 falling back to the older `type` attribute. Tile objects have `y` at their bottom
 edge in Tiled; `rect` is already corrected to the top-left.
+
+Every call to `load_tmx`, `load_tmx_colliders` and `load_tile_map` parses the file
+again, so call them once (on scene start), not every frame.
+
+---
+
+## Tile map rendering
+
+Draws the tile layers of a Tiled map under, between and over the entities. Tile
+layers are culled to the camera, entities are y-sorted with tall tiles (a player
+walks behind a tree trunk and in front of it), `above` layers (roofs, treetops)
+go on top, animated tiles play on their own and layers can be faded from Lua.
+Orthogonal, finite maps only. Tiles are not entities.
+
+| Function | Returns | Notes |
+| --- | --- | --- |
+| `load_tile_map(path [, opts])` | `true` or `nil, message` | `opts = { x =, y = }` places the map in the world (default 0, 0). Path rules as in `load_tmx`. A second call replaces the first map. Loading a map turns y-sorting on. The map is dropped when a scene is (re)loaded. |
+| `unload_tile_map()` | — | Removes the map. |
+| `get_tile_map_size()` | `w_px, h_px` | `0, 0` when no map is loaded. |
+| `get_tile_layers()` | array | One entry per drawable layer: `{ name, pass, visible, alpha, opacity, roof_of, properties }`. `pass` is `"ground"`, `"ysort"` or `"above"`. |
+| `set_layer_alpha(name, a)` | count | `a` is 0-255 (clamped). Matches a layer by its name **or by the name of any group that contains it**, so naming a group fades every layer inside. Returns how many layers changed. |
+| `get_layer_alpha(name)` | `a` or `nil` | Alpha of the first matching layer. |
+| `set_layer_visible(name, v)` | count | Same matching as `set_layer_alpha`. |
+| `set_roof_alpha(roof_of, a)` | count | Sets the alpha of every layer whose `roof_of` property equals `roof_of`. |
+| `set_y_sort(on)` | — | Forces y-sorting of `world` sprites on or off. It is on whenever a map is loaded; use it to y-sort sprites without a map. |
+
+The drawn alpha of a layer is `opacity * alpha / 255`, where `opacity` is the one
+set in Tiled (multiplied through parent groups) and `alpha` is the one Lua drives.
+
+### Layer properties
+
+Set these as custom properties on a layer or on a group (children without the
+property inherit it from their group; offsets add up and opacities multiply):
+
+| Property | Meaning |
+| --- | --- |
+| `above` (bool) | The layer is drawn after the entities (treetops, roofs). Wins over `ysort`. |
+| `ysort` (bool) | The layer's tiles (or tile objects, for an object layer) are sorted by Y together with the `world` sprites. |
+| `roof_of` (string) | Tag used by `set_roof_alpha` to fade the roof of a building. |
+
+A tile layer with neither property is plain ground, drawn in file order under the
+entities. An object layer is only drawn when it is `ysort` or `above` (only its
+tile objects); any other object layer is just data for `load_tmx`. Image layers
+are skipped with a warning.
+
+On tilesets, a tile may carry an int property `sort_offset`: it is added to the
+Y used to sort that tile (a negative value lets the player pass in front of the
+trunk's foot earlier). Tiles taller than the grid are aligned to the bottom of
+their cell.
+
+### Draw order
+
+1. `draw_image` with layer `back`.
+2. Ground tile layers, then sprites with layer `ground`.
+3. `ysort` tile layers and `world` sprites, sorted by Y (ties: tile first, then
+   creation order). Without a map and without `set_y_sort(true)`, `world`
+   sprites keep their creation order, as before.
+4. `above` tile layers, then sprites with layer `above`.
+5. Trajectory, collider debug, `draw_image` with layer `front`, HUD.
+
+A tile sorts by the bottom edge of its cell plus `sort_offset`; a sprite sorts by
+the bottom edge of its current frame (or `set_sprite_sort_offset`).
+
+### Fading a roof
+
+```lua
+-- house.tmx: group "casa_mama" with above = true and roof_of = "casa_mama"
+local roof_target = 255
+local roof_alpha = 255
+
+function on_trigger_enter(other) roof_target = 0 end
+function on_trigger_exit(other) roof_target = 255 end
+
+function update()
+  local step = 600 * get_delta_time()
+  if roof_alpha < roof_target then roof_alpha = math.min(roof_target, roof_alpha + step)
+  elseif roof_alpha > roof_target then roof_alpha = math.max(roof_target, roof_alpha - step) end
+  set_roof_alpha("casa_mama", math.floor(roof_alpha))
+end
+```
 
 ---
 

@@ -34,6 +34,12 @@ const std::string& textureId, const std::string& filePath) {
   if (this->textures.count(textureId)) return;
 
   SDL_Surface* surface = IMG_Load(filePath.c_str());
+  // Sin imagen no se guarda un nullptr: asi un id fallido se vuelve a intentar
+  // y getTexture lo informa como no encontrado
+  if (surface == nullptr) {
+    std::cout << "[AssetManager] Error loading texture " << filePath << ": " << IMG_GetError() << std::endl;
+    return;
+  }
   SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
   SDL_FreeSurface(surface);
 
