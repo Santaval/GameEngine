@@ -1,12 +1,6 @@
-engine
 luatest
-libs
+/engine/libs
 .vscode
 graphify-out
-tests/network_registry_test
-tests/lua_json_test
-tests/net_sync_test
-tests/damage_sync_test
-tests/world_sync_test
-tests/impact_damage_test
-tests/tmx_loader_test
+/engine/tests/*_test
+engine-bin
