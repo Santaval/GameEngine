@@ -108,6 +108,10 @@ const AudioManager::Voice* AudioManager::findVoice(int handle) const {
   return &voice;
 }
 
+AudioManager::Voice* AudioManager::findVoice(int handle) {
+  return const_cast<Voice*>(static_cast<const AudioManager*>(this)->findVoice(handle));
+}
+
 void AudioManager::update() {
   if (!this->available) return;
 
@@ -136,9 +140,7 @@ void AudioManager::stopAll() {
   this->releaseUnusedStreams();
 }
 
-int AudioManager::playSound(const std::string& soundId, double volume, bool loop) {
-  if (!this->available) return 0;
-
+int AudioManager::startVoice(const std::string& soundId, double volume, bool loop) {
   SoundAsset* sound = this->assets.getSound(soundId);
   if (!sound) return 0;
 
@@ -165,9 +167,141 @@ int AudioManager::playSound(const std::string& soundId, double volume, bool loop
   voice.channel = channel;
   voice.soundId = soundId;
   voice.loop = loop;
+  voice.baseVolume = volume;
   this->voices[handle] = voice;
   this->channelOwner[channel] = handle;
   return handle;
+}
+
+int AudioManager::playSound(const std::string& soundId, double volume, bool loop) {
+  if (!this->available) return 0;
+
+  return this->startVoice(soundId, volume, loop);
+}
+
+int AudioManager::playSoundAt(const std::string& soundId, double volume, bool loop, float x, float y,
+    const spatial::SpatialParams& params, int followEntity) {
+  if (!this->available) return 0;
+
+  // Arranca en silencio: applySpatial fija el volumen real antes del siguiente buffer
+  int handle = this->startVoice(soundId, 0.0, loop);
+  if (handle == 0) return 0;
+
+  Voice& voice = this->voices[handle];
+  voice.baseVolume = volume;
+  voice.spatial = true;
+  voice.sp.x = x;
+  voice.sp.y = y;
+  voice.sp.params = params;
+  voice.sp.followEntity = followEntity;
+  // Primer valor sin suavizar: la voz no sube desde cero
+  this->applySpatial(voice, 0.0f, true);
+  return handle;
+}
+
+void AudioManager::applySpatial(Voice& voice, float dt, bool snap) {
+  Spatial& sp = voice.sp;
+
+  float dx = sp.x - this->listenerX;
+  float dy = sp.y - this->listenerY;
+  float dist = std::sqrt(dx * dx + dy * dy);
+
+  // El override solo miente en el volumen: el paneo conserva la direccion real
+  float volDist = sp.overrideDist >= 0.0f ? sp.overrideDist : dist;
+  float targetGain = spatial::spatialGain(volDist, sp.params);
+  float targetPan = spatial::spatialPan(dx, dist, sp.params);
+
+  if (snap || !sp.init) {
+    sp.gain = targetGain;
+    sp.pan = targetPan;
+    sp.init = true;
+  } else {
+    // Constante de tiempo de 0.08 s; dt acotado para que un tiron no sea un salto
+    float alpha = spatial::smoothAlpha(std::min(dt, 0.1f), 0.08f);
+    sp.gain += (targetGain - sp.gain) * alpha;
+    sp.pan += (targetPan - sp.pan) * alpha;
+  }
+
+  int vol = toMixVolume(voice.baseVolume * sp.gain);
+  if (vol != sp.lastVol) {
+    Mix_Volume(voice.channel, vol);
+    sp.lastVol = vol;
+  }
+
+  int left = 255;
+  int right = 255;
+  spatial::panToGains(sp.pan, left, right);
+  if (left != sp.lastL || right != sp.lastR) {
+    Mix_SetPanning(voice.channel, static_cast<Uint8>(left), static_cast<Uint8>(right));
+    sp.lastL = left;
+    sp.lastR = right;
+  }
+}
+
+void AudioManager::setEmitterPosition(int handle, float x, float y) {
+  if (!this->available) return;
+
+  Voice* voice = this->findVoice(handle);
+  if (!voice || !voice->spatial) return;
+
+  voice->sp.x = x;
+  voice->sp.y = y;
+  voice->sp.followEntity = -1;
+}
+
+void AudioManager::setEmitterDistanceOverride(int handle, float dist) {
+  if (!this->available) return;
+
+  Voice* voice = this->findVoice(handle);
+  if (!voice || !voice->spatial) return;
+
+  voice->sp.overrideDist = dist < 0.0f ? -1.0f : dist;
+}
+
+void AudioManager::setListener(float x, float y) {
+  this->listenerX = x;
+  this->listenerY = y;
+}
+
+void AudioManager::updateSpatial(float lx, float ly, double dt,
+    const std::function<bool(int entityId, float& x, float& y)>& resolveFollow) {
+  if (!this->available) return;
+
+  this->listenerX = lx;
+  this->listenerY = ly;
+
+  for (auto& entry : this->voices) {
+    Voice& voice = entry.second;
+    if (!voice.spatial) continue;
+    // Voz terminada que update() aun no descarto: su canal puede ser de otra voz
+    if (voice.channel < 0 || voice.channel >= MAX_CHANNELS) continue;
+    if (this->channelOwner[voice.channel] != entry.first) continue;
+
+    if (voice.sp.followEntity >= 0 && resolveFollow) {
+      float x = voice.sp.x;
+      float y = voice.sp.y;
+      if (resolveFollow(voice.sp.followEntity, x, y)) {
+        voice.sp.x = x;
+        voice.sp.y = y;
+      }
+    }
+
+    this->applySpatial(voice, static_cast<float>(dt), false);
+  }
+}
+
+void AudioManager::stopEmittersFollowing(int entityId) {
+  if (!this->available) return;
+
+  for (auto& entry : this->voices) {
+    const Voice& voice = entry.second;
+    if (!voice.spatial || voice.sp.followEntity != entityId) continue;
+    if (voice.channel < 0 || voice.channel >= MAX_CHANNELS) continue;
+    if (this->channelOwner[voice.channel] != entry.first) continue;
+
+    // update() descarta la voz en el siguiente frame
+    Mix_HaltChannel(voice.channel);
+  }
 }
 
 void AudioManager::stopSound(int handle, int fadeMs) {
@@ -183,10 +317,12 @@ void AudioManager::stopSound(int handle, int fadeMs) {
 void AudioManager::setSoundVolume(int handle, double volume) {
   if (!this->available) return;
 
-  const Voice* voice = this->findVoice(handle);
+  Voice* voice = this->findVoice(handle);
   if (!voice) return;
 
-  Mix_Volume(voice->channel, toMixVolume(volume));
+  // En una voz espacial solo cambia la base: updateSpatial aplica base * ganancia
+  voice->baseVolume = volume;
+  if (!voice->spatial) Mix_Volume(voice->channel, toMixVolume(volume));
 }
 
 bool AudioManager::isPlaying(int handle) const {

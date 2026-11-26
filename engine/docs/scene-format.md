@@ -387,6 +387,26 @@ Adds a `CullComponent` (a tag with no data). While an active area is set
 movement, collision, render and collider-overlay systems whenever its
 `transform.position` is outside that area. See [aval-cup.md](../../games/aval/docs/aval-cup.md).
 
+### `sound_emitter`
+
+```lua
+sound_emitter = {
+  sound        = "fountain",   -- required: a sound id from `sounds`
+  min_distance = 64,           -- default 64: full volume inside this radius
+  max_distance = 400,          -- default 400; `radius` is an alias
+  rolloff      = "linear",     -- "linear" (default) or "inverse"
+  volume       = 1,            -- default 1
+  loop         = true,         -- default true
+  offset       = { x = 0, y = 0 },  -- default { 0, 0 }, from the entity center
+}
+```
+
+Adds a `SoundEmitterComponent`. The sound starts the first frame the entity is
+active and follows the entity, with volume by distance and pan by horizontal
+offset relative to the listener. It stops when the entity dies. The entity
+needs a `transform`; its center is the position plus half the sprite size
+(scaled) when it has a sprite. See [Spatial audio](lua-api.md#spatial-audio).
+
 ### `equipment`
 
 ```lua

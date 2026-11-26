@@ -38,6 +38,7 @@
 #include "../Systems/PathRenderSystem.hpp"
 #include "../Systems/ColliderRenderSystem.hpp"
 #include "../Systems/TileMapRenderSystem.hpp"
+#include "../Systems/SpatialAudioSystem.hpp"
 
 Game::Game() {
     this->assetManager = std::make_unique<AssetManager>();
@@ -231,10 +232,13 @@ void Game::setup() {
     this->registry->addSystem<PathRenderSystem>();
     this->registry->addSystem<ColliderRenderSystem>();
     this->registry->addSystem<BoxColliderRenderSystem>();
+    this->registry->addSystem<SpatialAudioSystem>();
 
     // Una entidad muerta se borra de los pares de trigger sin generar Exit
     this->registry->onEntityKilled([this](Entity entity) {
         this->registry->getSystem<CollisionSystem>().forgetEntity(entity.getId());
+        // Sus emisores de sonido callan con ella
+        this->audioManager->stopEmittersFollowing(entity.getId());
     });
 
     this->lua.open_libraries(sol::lib::base, sol::lib::math, sol::lib::string, sol::lib::package);
@@ -355,6 +359,8 @@ void Game::loadScene(const std::string& requestedScene) {
     }
     // Las voces y la musica son de la escena que se descarga (los assets se conservan por id)
     this->audioManager->stopAll();
+    // El oyente fijado con set_listener era una entidad de la escena que se descarga
+    this->listenerEntity = -1;
     this->textBuffer.clear();
     this->rectBuffer.clear();
     this->spriteBuffer.clear();
@@ -666,6 +672,62 @@ void Game::update() {
     this->registry->getSystem<BoxColliderSystem>().resolveMovers(deltaTime, this->staticWorld);
     this->registry->getSystem<CollisionSystem>().update(this->eventManager,
         this->registry->getSystem<BoxColliderSystem>().getEntities());
+    // Al final: el oyente y los emisores ya estan en su posicion de este frame
+    this->updateSpatialAudio(deltaTime);
+}
+
+void Game::updateSpatialAudio(double dt) {
+    // Entity guarda el puntero al registry; un id suelto hay que completarlo
+    auto entityFromId = [this](int id) {
+        Entity entity(id);
+        entity.registry = this->registry.get();
+        return entity;
+    };
+
+    // Oyente: set_listener -> player_entity de Lua -> centro de la camara
+    float listenerX = this->camera.x + this->camera.w / 2.0f;
+    float listenerY = this->camera.y + this->camera.h / 2.0f;
+    bool found = false;
+
+    if (this->listenerEntity >= 0) {
+        Entity entity = entityFromId(this->listenerEntity);
+        if (this->registry->hasComponent<TransformComponent>(entity)) {
+            glm::vec2 center = SpatialAudioSystem::entityCenter(entity);
+            listenerX = center.x;
+            listenerY = center.y;
+            found = true;
+        }
+    }
+
+    if (!found) {
+        sol::object player = this->lua["player_entity"];
+        if (player.is<Entity>()) {
+            Entity entity = player.as<Entity>();
+            if (this->registry->hasComponent<TransformComponent>(entity)) {
+                glm::vec2 center = SpatialAudioSystem::entityCenter(entity);
+                listenerX = center.x;
+                listenerY = center.y;
+            }
+        }
+    }
+
+    // El oyente se fija antes de arrancar voces nuevas para que no suenen un frame con el viejo
+    this->audioManager->setListener(listenerX, listenerY);
+    this->registry->getSystem<SpatialAudioSystem>().update(*this->audioManager);
+
+    this->audioManager->updateSpatial(listenerX, listenerY, dt,
+        [&](int entityId, float& x, float& y) {
+            Entity entity = entityFromId(entityId);
+            if (!this->registry->hasComponent<TransformComponent>(entity)) return false;
+            glm::vec2 center = SpatialAudioSystem::entityCenter(entity);
+            // Un SoundEmitterComponent puede desplazar la fuente respecto al centro
+            if (this->registry->hasComponent<SoundEmitterComponent>(entity)) {
+                center += entity.getComponent<SoundEmitterComponent>().offset;
+            }
+            x = center.x;
+            y = center.y;
+            return true;
+        });
 }
 
 

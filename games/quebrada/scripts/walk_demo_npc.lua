@@ -21,7 +21,43 @@ local function patrol(entity, dt)
   return 0, 0, false
 end
 
-update = require("walker").make_update({
+local walk_update = require("walker").make_update({
   walk_speed = 40,
   input = patrol,
 })
+
+-- La Llorona (issue #63): un emisor sonoro pegado al NPC. Volumen por distancia y
+-- paneo segun donde este respecto al jugador (el oyente es player_entity).
+-- Tecla 1: "mentira de distancia" ("si se oye lejos, esta cerca"): el volumen usa
+-- la distancia invertida, pero el paneo sigue la direccion real.
+local MAX_DIST = 220
+local voice = nil
+local lie = false
+local was_down = false
+
+update = function()
+  local entity = this
+  walk_update()
+
+  if not voice or not is_playing(voice) then
+    voice = play_sound_at("llorona", 0, 0, {
+      loop = true, min_dist = 24, max_dist = MAX_DIST, follow = entity,
+    })
+  end
+
+  local down = is_action_activated("lie")
+  if down and not was_down then
+    lie = not lie
+    print("[llorona] distance lie: " .. tostring(lie))
+  end
+  was_down = down
+
+  if lie and player_entity then
+    local nx, ny = get_position(entity)
+    local px, py = get_position(player_entity)
+    local d = math.sqrt((nx - px) ^ 2 + (ny - py) ^ 2)
+    set_emitter_distance_override(voice, math.max(0, MAX_DIST - d))
+  else
+    set_emitter_distance_override(voice, nil)
+  end
+end

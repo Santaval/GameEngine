@@ -1,5 +1,7 @@
 -- Demo del walker (issue #61): movimiento top-down, 4 direcciones, camara y NPC.
 -- WASD o flechas para andar, Shift para correr, 0 vuelve al demo de efectos.
+-- El NPC que patrulla es la Llorona (audio espacial, issue #63): acercate y oye el
+-- paneo; 1 activa/desactiva la mentira de distancia.
 -- Una tecla por nombre de accion: WASD y flechas son nombres distintos.
 -- Pensado para 480x270 logico (pixel_perfect). Teclas SDL: Right 1073741903,
 -- Left 1073741904, Down 1073741905, Up 1073741906, LShift 1073742049, RShift 1073742053.
@@ -23,6 +25,11 @@ scene = {
         { assetId = "hero", filePath = "sprites/hero.png", atlas = "sprites/hero.json" },
     },
     fonts = {},
+    sounds = {
+        [0] =
+        -- La Llorona (issue #63): el NPC la emite con volumen y paneo por distancia
+        { assetId = "llorona", filePath = "sounds/llorona.mp3", stream = true },
+    },
     keys = {
         [0] =
         { name = "walk_up", key = 119 },    -- w
@@ -36,6 +43,7 @@ scene = {
         { name = "run", key = 1073742049 },
         { name = "run_alt", key = 1073742053 },
         { name = "back", key = 48 },        -- 0
+        { name = "lie", key = 49 },         -- 1: mentira de distancia de la Llorona
     },
     entities = {
         [0] =

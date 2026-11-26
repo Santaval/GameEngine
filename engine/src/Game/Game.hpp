@@ -82,6 +82,10 @@ class Game {
 
         std::unique_ptr<SceneLoader> sceneLoader;
 
+        // Entidad que oye el audio espacial (set_listener); -1 = automatico
+        // (player_entity de Lua o, si no hay, el centro de la camara)
+        int listenerEntity = -1;
+
         // Multijugador: vacio = modo offline (no se conecta nada)
         std::unique_ptr<NetClient> netClient;
         // Identidad de red de las entidades (netId <-> Entity)
@@ -144,6 +148,8 @@ class Game {
         void drawLetterbox();
         void updateLayout();
         void update();
+        // Ultimo paso de update(): fija el oyente y mueve las voces espaciales
+        void updateSpatialAudio(double dt);
         void setup();
         void loadScene(const std::string& requestedScene);
     
@@ -171,6 +177,7 @@ class Game {
      void quit() { isRunning = false; }
      double getDeltaTime() const { return deltaTime; }
      AudioManager* getAudio() const { return audioManager.get(); }
+     void setListener(int entityId) { listenerEntity = entityId; }
      Registry* getRegistry() const { return registry.get(); }
      sol::state& getLua() { return lua; }
      physics::StaticWorld& getStaticWorld() { return staticWorld; }

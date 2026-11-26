@@ -20,6 +20,7 @@
 #include "../Components/InventoryComponent.hpp"
 #include "../Components/LootComponent.hpp"
 #include "../Components/CullComponent.hpp"
+#include "../Components/SoundEmitterComponent.hpp"
 #include "../Animation/AtlasRegistry.hpp"
 
 
@@ -379,6 +380,33 @@ void SceneLoader::addCullComponent(Entity entity, const sol::table& components) 
   entity.addComponent<CullComponent>();
 }
 
+void SceneLoader::addSoundEmitterComponent(Entity entity, const sol::table& components) {
+  sol::optional<sol::table> hasEmitter = components["sound_emitter"];
+  if (hasEmitter == sol::nullopt) return;
+
+  sol::table emitter = *hasEmitter;
+  std::string sound = emitter["sound"].get_or(std::string());
+  if (sound.empty()) {
+    std::cout << "[SceneLoader] sound_emitter without 'sound', ignored" << std::endl;
+    return;
+  }
+
+  float minDist = emitter["min_distance"].get_or(64.0f);
+  // radius es un alias de max_distance
+  float maxDist = emitter["max_distance"].get_or(emitter["radius"].get_or(400.0f));
+  float volume = emitter["volume"].get_or(1.0f);
+  bool loop = emitter["loop"].get_or(true);
+  glm::vec2 offset = getVec2(emitter, "offset", glm::vec2(0.0, 0.0));
+
+  spatial::Rolloff rolloff = spatial::Rolloff::Linear;
+  std::string rolloffName = emitter["rolloff"].get_or(std::string("linear"));
+  if (!spatial::parseRolloff(rolloffName, rolloff)) {
+    std::cout << "[SceneLoader] sound_emitter: unknown rolloff '" << rolloffName << "', using linear" << std::endl;
+  }
+
+  entity.addComponent<SoundEmitterComponent>(sound, minDist, maxDist, rolloff, volume, loop, offset);
+}
+
 void SceneLoader::addEquipmentComponent(Entity entity, const sol::table& components) {
   sol::optional<sol::table> hasEquipment = components["equipment"];
   if (hasEquipment == sol::nullopt) return;
@@ -501,6 +529,7 @@ Entity SceneLoader::buildEntity(sol::state& lua, const sol::table& entityDef, Re
     addEquipmentComponent(newEntity, components);
     addInventoryComponent(newEntity, components);
     addLootComponent(newEntity, components);
+    addSoundEmitterComponent(newEntity, components);
     addScriptComponent(lua, newEntity, components);
   }
 

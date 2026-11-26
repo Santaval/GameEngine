@@ -25,7 +25,8 @@ top-left).
 | --- | --- | --- | --- | --- |
 | Door | rect | `door` | `doors` | `target_map` (string; empty/absent = same map, `"@return"` = the map we came from), `target_spawn` (spawn name, or `"@return"`), `locked` (see below), `locked_line` (default "Está cerrado."), `prompt` (default "E: entrar"), `exit_spawn` (spawn name in the **outer** map where the player re-emerges after leaving the interior entered through this door) |
 | Spawn | point (`<point/>`) | `spawn` | `spawns` | `name`; optional string `facing` (`up`/`down`/`left`/`right`) |
-| Zone | rect | `zone` | `zones` | `zone` (id), `title` (toast text), optional `ambience` (stored only, no audio yet), optional `save` (bool, informational) |
+| Zone | rect | `zone` | `zones` | `zone` (id), `title` (toast text), optional `ambience` (stored only; ambience is not played from the zone, use an emitter object instead), optional `save` (bool, informational) |
+| Emitter | rect or point | `emitter` | `emitters` | `sound` (required), `radius` / `max_distance`, `min_distance`, `volume`, `loop` (default true), `rolloff`; started by `emitters_from_map(map)`, see [Spatial audio](../../../engine/docs/lua-api.md#spatial-audio) |
 | Wall | rect | any | `collision` | read by `load_tmx_colliders` |
 
 Rules:

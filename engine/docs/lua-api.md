@@ -28,6 +28,7 @@ implemented one domain per file under [`src/Binding/`](../src/Binding/).
 - [Text & HUD](#text--hud)
 - [Camera](#camera)
 - [Audio](#audio)
+  - [Spatial audio](#spatial-audio)
 - [Input](#input)
 - [Trajectory path](#trajectory-path)
 - [Scripts & hooks](#scripts--hooks)
@@ -422,6 +423,70 @@ Loading a scene stops every sound and the music. The loaded audio assets are
 kept and reused by id, like textures. Sounds declared with `stream = true` are
 decoded on their first `play_sound` and freed when no voice is using them
 (see the scene format); the decode may cause a short hitch on that first play.
+
+### Spatial audio
+
+A spatial sound (an *emitter*) sits at a world position. Its volume follows the
+distance to the *listener* and its pan follows the horizontal offset, so a
+sound to the left of the listener comes out of the left speaker. An emitter is
+a normal voice: `play_sound_at` returns the same kind of handle as `play_sound`,
+and `stop_sound`, `set_sound_volume` and `is_playing` work on it unchanged
+(`set_sound_volume` changes the base volume; the final volume is base times the
+distance gain).
+
+| Function | Returns | Notes |
+| --- | --- | --- |
+| `play_sound_at(id, x, y, opts?)` | handle | `opts = { volume = 1, loop = false, min_dist = 64, max_dist = 400, rolloff = "linear", pan_width = 0, follow = entity }`. Positions are world coordinates (the same ones as `get_position`). With `follow`, `x, y` is only the starting point: the emitter then tracks the center of that entity and stops when it dies. |
+| `set_listener(entity)` | — | Chooses which entity hears the audio. `nil` goes back to the automatic listener. |
+| `set_emitter_position(handle, x, y)` | — | Moves the emitter and stops it following an entity. |
+| `set_emitter_distance_override(handle, d)` | — | Uses `d` instead of the real distance for the volume (the "distance lie"). `nil` removes it. The pan keeps the real direction. |
+| `emitters_from_map(map, opts?)` | list of handles | Starts one emitter per object of class `opts.class` (default `"emitter"`) in a map from `load_tmx`. See below. |
+
+The listener is, in order: the entity given to `set_listener` (if it is alive
+and has a transform), the Lua global `player_entity` (if it is an entity), or
+the center of the camera. Loading a scene resets the listener.
+
+**Distance curves.** Inside `min_dist` the sound plays at full volume and
+beyond `max_dist` it is silent.
+
+- `"linear"`: the gain falls in a straight line from `1` at `min_dist` to `0`
+  at `max_dist`.
+- `"inverse"`: the gain is `min_dist / distance`, with a fade over the last
+  quarter before `max_dist` so it reaches `0`.
+
+**Pan.** The pan goes from `-1` (left) to `1` (right) and saturates at a
+horizontal offset of `pan_width` pixels (`0` means half of `max_dist`). It
+fades out when the listener is on top of the emitter. Left and right use an
+equal-power law.
+
+Volume and pan are smoothed (about 80 ms), so crossing an emitter does not
+click. A sound beyond `max_dist` keeps playing at volume `0`, so a looping
+sound keeps its phase while you are away.
+
+```lua
+-- a radio that follows an entity
+local radio = play_sound_at("radio", 0, 0, {
+  loop = true, min_dist = 48, max_dist = 320, follow = this,
+})
+
+-- a voice that always sounds close, wherever it is
+local voice = play_sound_at("llorona", 900, 400, { loop = true, max_dist = 600 })
+set_emitter_distance_override(voice, 80)   -- later: set_emitter_distance_override(voice, nil)
+```
+
+**Emitters placed in Tiled.** `emitters_from_map(map)` reads the objects of
+class `emitter`. The position is the center of the object rectangle (the point
+itself for a point object), in the same coordinates as the rest of the map.
+
+| Property | Notes |
+| --- | --- |
+| `sound` | Sound id (required; objects without it are skipped with a warning). |
+| `radius` / `max_distance` | Distance at which the sound is silent (default 400). `max_distance` wins when both exist. |
+| `min_distance` | Full-volume radius (default 64). |
+| `volume`, `loop`, `rolloff` | Same as in `play_sound_at`. `loop` defaults to `true`. |
+
+An emitter can also be attached to an entity from the scene with the
+[`sound_emitter`](scene-format.md#sound_emitter) component.
 
 ---
 

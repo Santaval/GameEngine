@@ -160,6 +160,10 @@ game.
    broadphase. Overlaps emit a collision event (circle-vs-circle, circle-vs-box,
    box-vs-box), and overlaps with a trigger zone emit enter / stay / exit
    events instead. **DamageSystem** reacts to collision events immediately.
+10. **Spatial audio** — picks the listener (`set_listener`, `player_entity` or
+   the camera center), starts the voices of new `sound_emitter` entities and
+   updates the volume and pan of every spatial voice (see
+   [Spatial audio](lua-api.md#spatial-audio)).
 
 Then `Game::render()` draws, back to front:
 
@@ -200,6 +204,7 @@ says "thrust forward", and the engine resolves what forward means.
 | `InventoryComponent` | Named item quantities plus an optional total capacity. | `inventory` |
 | `TextComponent` | A label pinned to the entity. | `text` |
 | `PathComponent` | Trajectory prediction toggle. | `path` |
+| `SoundEmitterComponent` | Spatial sound attached to the entity: volume by distance, pan by horizontal offset. | `sound_emitter` |
 | `NetworkComponent` | Network identity (`netId`) and owner (`ownerId`); set via `NetworkRegistry`. | none yet |
 | `ScriptComponent` | `update`, `on_damage`, `on_death`, `on_collision`, `on_trigger_enter/stay/exit`. | `script` |
 
