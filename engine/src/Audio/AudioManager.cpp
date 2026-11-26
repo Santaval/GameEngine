@@ -1,0 +1,255 @@
+#include "AudioManager.hpp"
+#include <algorithm>
+#include <atomic>
+#include <cmath>
+#include <iostream>
+#include <set>
+
+namespace {
+  // Frames mezclados por canal. Los escribe el hilo de audio y los lee el principal
+  std::atomic<long long> playedFrames[AudioManager::MAX_CHANNELS];
+  // Bytes por frame del formato abierto (canales * bytes por muestra)
+  std::atomic<int> bytesPerFrame{4};
+
+  // Efecto "passthrough": no toca el audio, solo cuenta cuantos frames pasaron por el canal
+  void positionEffect(int channel, void* /*stream*/, int len, void* /*udata*/) {
+    if (channel < 0 || channel >= AudioManager::MAX_CHANNELS) return;
+    int bpf = bytesPerFrame.load();
+    if (bpf <= 0) return;
+    playedFrames[channel].fetch_add(len / bpf);
+  }
+
+  int toMixVolume(double volume) {
+    return static_cast<int>(std::clamp(volume, 0.0, 1.0) * MIX_MAX_VOLUME);
+  }
+}
+
+AudioManager::AudioManager(AssetManager& assetManager) : assets(assetManager) {}
+
+AudioManager::~AudioManager() {
+  this->shutdown();
+}
+
+bool AudioManager::init() {
+  int wanted = MIX_INIT_OGG | MIX_INIT_MP3;
+  int got = Mix_Init(wanted);
+  if ((got & wanted) != wanted) {
+    std::cout << "[Audio] Warning: missing decoder support (OGG/MP3): " << Mix_GetError() << std::endl;
+  }
+
+  // 48000 Hz con buffer de 1024 muestras (~21 ms): la posicion queda dentro de +-50 ms
+  if (Mix_OpenAudio(48000, MIX_DEFAULT_FORMAT, 2, 1024) != 0) {
+    std::cout << "[Audio] Error opening audio device, audio disabled: " << Mix_GetError() << std::endl;
+    Mix_Quit();
+    return false;
+  }
+
+  Mix_AllocateChannels(MAX_CHANNELS);
+
+  int freq = 0;
+  int channels = 0;
+  Uint16 format = 0;
+  if (Mix_QuerySpec(&freq, &format, &channels) == 0) {
+    std::cout << "[Audio] Error querying audio spec: " << Mix_GetError() << std::endl;
+    Mix_CloseAudio();
+    Mix_Quit();
+    return false;
+  }
+  this->sampleRate = freq;
+  bytesPerFrame.store(channels * ((format & 0xFF) / 8));
+
+  this->available = true;
+  std::cout << "[Audio] Audio init: " << freq << " Hz, " << channels << " channels" << std::endl;
+  return true;
+}
+
+void AudioManager::shutdown() {
+  if (!this->available) return;
+
+  this->stopAll();
+  this->available = false;
+  Mix_CloseAudio();
+  Mix_Quit();
+}
+
+Mix_Chunk* AudioManager::ensureChunk(SoundAsset& sound) {
+  if (sound.chunk) return sound.chunk;
+
+  sound.chunk = Mix_LoadWAV(sound.path.c_str());
+  if (!sound.chunk) {
+    std::cout << "[Audio] Error decoding sound " << sound.path << ": " << Mix_GetError() << std::endl;
+    return nullptr;
+  }
+  sound.duration = AssetManager::chunkDuration(sound.chunk);
+  return sound.chunk;
+}
+
+void AudioManager::releaseUnusedStreams() {
+  std::set<std::string> inUse;
+  for (const auto& voice : this->voices) {
+    inUse.insert(voice.second.soundId);
+  }
+
+  for (auto& entry : this->assets.allSounds()) {
+    SoundAsset& sound = entry.second;
+    if (sound.stream && sound.chunk && inUse.count(entry.first) == 0) {
+      Mix_FreeChunk(sound.chunk);
+      sound.chunk = nullptr;
+    }
+  }
+}
+
+const AudioManager::Voice* AudioManager::findVoice(int handle) const {
+  auto it = this->voices.find(handle);
+  if (it == this->voices.end()) return nullptr;
+  const Voice& voice = it->second;
+  if (voice.channel < 0 || voice.channel >= MAX_CHANNELS) return nullptr;
+  if (this->channelOwner[voice.channel] != handle) return nullptr;
+  return &voice;
+}
+
+void AudioManager::update() {
+  if (!this->available) return;
+
+  bool finished = false;
+  for (auto it = this->voices.begin(); it != this->voices.end();) {
+    int channel = it->second.channel;
+    if (!Mix_Playing(channel)) {
+      if (this->channelOwner[channel] == it->first) this->channelOwner[channel] = 0;
+      it = this->voices.erase(it);
+      finished = true;
+    } else {
+      ++it;
+    }
+  }
+
+  if (finished) this->releaseUnusedStreams();
+}
+
+void AudioManager::stopAll() {
+  if (!this->available) return;
+
+  Mix_HaltChannel(-1);
+  Mix_HaltMusic();
+  this->voices.clear();
+  std::fill(std::begin(this->channelOwner), std::end(this->channelOwner), 0);
+  this->releaseUnusedStreams();
+}
+
+int AudioManager::playSound(const std::string& soundId, double volume, bool loop) {
+  if (!this->available) return 0;
+
+  SoundAsset* sound = this->assets.getSound(soundId);
+  if (!sound) return 0;
+
+  Mix_Chunk* chunk = this->ensureChunk(*sound);
+  if (!chunk) return 0;
+
+  int channel = Mix_PlayChannel(-1, chunk, loop ? -1 : 0);
+  if (channel < 0 || channel >= MAX_CHANNELS) {
+    std::cout << "[Audio] No free channel for sound " << soundId << std::endl;
+    return 0;
+  }
+
+  // El canal estaba ocupado por una voz ya terminada que update() aun no descarto
+  int previous = this->channelOwner[channel];
+  if (previous != 0) this->voices.erase(previous);
+
+  Mix_UnregisterAllEffects(channel);
+  playedFrames[channel].store(0);
+  Mix_RegisterEffect(channel, positionEffect, nullptr, nullptr);
+  Mix_Volume(channel, toMixVolume(volume));
+
+  int handle = this->nextHandle++;
+  Voice voice;
+  voice.channel = channel;
+  voice.soundId = soundId;
+  voice.loop = loop;
+  this->voices[handle] = voice;
+  this->channelOwner[channel] = handle;
+  return handle;
+}
+
+void AudioManager::stopSound(int handle, int fadeMs) {
+  if (!this->available) return;
+
+  const Voice* voice = this->findVoice(handle);
+  if (!voice) return;
+
+  if (fadeMs > 0) Mix_FadeOutChannel(voice->channel, fadeMs);
+  else Mix_HaltChannel(voice->channel);
+}
+
+void AudioManager::setSoundVolume(int handle, double volume) {
+  if (!this->available) return;
+
+  const Voice* voice = this->findVoice(handle);
+  if (!voice) return;
+
+  Mix_Volume(voice->channel, toMixVolume(volume));
+}
+
+bool AudioManager::isPlaying(int handle) const {
+  if (!this->available) return false;
+
+  const Voice* voice = this->findVoice(handle);
+  return voice != nullptr && Mix_Playing(voice->channel) != 0;
+}
+
+double AudioManager::soundPosition(int handle) const {
+  if (!this->available || this->sampleRate <= 0) return -1.0;
+
+  const Voice* voice = this->findVoice(handle);
+  if (!voice || !Mix_Playing(voice->channel)) return -1.0;
+
+  double seconds = static_cast<double>(playedFrames[voice->channel].load()) / this->sampleRate;
+
+  auto sound = this->assets.allSounds().find(voice->soundId);
+  if (sound != this->assets.allSounds().end() && sound->second.duration > 0.0) {
+    double duration = sound->second.duration;
+    // En bucle la posicion vuelve a 0; sin bucle el ultimo buffer puede pasarse
+    seconds = voice->loop ? std::fmod(seconds, duration) : std::min(seconds, duration);
+  }
+  return seconds;
+}
+
+double AudioManager::soundDuration(const std::string& soundId) {
+  if (!this->available) return -1.0;
+
+  SoundAsset* sound = this->assets.getSound(soundId);
+  if (!sound) return -1.0;
+
+  // Los sonidos stream no conocen su duracion hasta decodificarlos la primera vez
+  if (sound->duration <= 0.0) this->ensureChunk(*sound);
+  if (!sound->chunk && sound->duration <= 0.0) return -1.0;
+
+  double duration = sound->duration;
+  // Un stream sin ninguna voz activa no tiene por que quedarse en memoria
+  this->releaseUnusedStreams();
+  return duration;
+}
+
+void AudioManager::playMusic(const std::string& musicId, int fadeMs, bool loop, double volume) {
+  if (!this->available) return;
+
+  Mix_Music* music = this->assets.getMusic(musicId);
+  if (!music) return;
+
+  // Solo hay un slot de musica: se corta la anterior antes de empezar
+  Mix_HaltMusic();
+  Mix_VolumeMusic(toMixVolume(volume));
+
+  int result = fadeMs > 0
+    ? Mix_FadeInMusic(music, loop ? -1 : 1, fadeMs)
+    : Mix_PlayMusic(music, loop ? -1 : 1);
+  if (result != 0) {
+    std::cout << "[Audio] Error playing music " << musicId << ": " << Mix_GetError() << std::endl;
+  }
+}
+
+void AudioManager::stopMusic(int fadeMs) {
+  if (!this->available) return;
+
+  if (fadeMs > 0) Mix_FadeOutMusic(fadeMs);
+  else Mix_HaltMusic();
+}

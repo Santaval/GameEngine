@@ -31,7 +31,7 @@ make clean-deps   # forces IXWebSocket to be rebuilt
 make lua-info     # prints which Lua pkg-config/headers were detected
 ```
 
-Needs `libsdl2-dev`, `libsdl2-image-dev`, `libsdl2-ttf-dev`, `zlib1g-dev`, `libssl-dev` and a
+Needs `libsdl2-dev`, `libsdl2-image-dev`, `libsdl2-ttf-dev`, `libsdl2-mixer-dev`, `zlib1g-dev`, `libssl-dev` and a
 Lua dev package (`liblua5.3-dev` or 5.4). GLM, sol2 and the Lua headers are
 vendored in `engine/libs/` (not tracked by git; if you had `./libs` before the split, `mv libs engine/libs`). The Makefile reads `LUA_VERSION_NUM` from whichever
 `lua.h` the compiler actually resolves and passes it to sol2 as
@@ -41,6 +41,12 @@ picked up. IXWebSocket and nlohmann/json are not committed:
 `scripts/fetch-deps.sh` downloads pinned versions into `engine/libs/` (needs `curl`),
 and IXWebSocket is compiled once, with TLS via OpenSSL, into
 `engine/libs/IXWebSocket/libixwebsocket-tls.a`.
+
+On macOS install the SDL libraries with `brew install sdl2 sdl2_image sdl2_ttf sdl2_mixer`.
+Audio uses SDL_mixer and expects OGG and MP3 decoders; if the installed
+SDL2_mixer lacks one, the engine prints a warning at startup and files in that
+format fail to load. If no audio device can be opened the engine still starts
+and all audio calls become no-ops.
 
 Multiplayer is opt-in: `./engine/engine --server ws://host:7777` (or the `GAME_SERVER`
 environment variable). Use `wss://` for servers behind HTTPS, e.g.

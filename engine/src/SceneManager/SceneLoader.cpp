@@ -86,6 +86,46 @@ void SceneLoader::loadFonts(const sol::table& fonts, std::unique_ptr<AssetManage
   }
 }
 
+// stream es opcional (false por defecto): true difiere la decodificacion al primer play_sound
+void SceneLoader::loadSounds(const sol::table& sounds, std::unique_ptr<AssetManager>& assetManager) {
+  int index = 0;
+
+  while(true) {
+    sol::optional<sol::table> hasSound = sounds[index];
+
+    if(hasSound == sol::nullopt) break;
+
+    sol::table sound = sounds[index];
+
+    std::string soundId = sound["assetId"];
+    std::string filePath = resolveGamePath(this->gameRoot, sound["filePath"].get<std::string>());
+    bool stream = sound.get_or("stream", false);
+
+    assetManager->addSound(soundId, filePath, stream);
+    index++;
+
+  }
+}
+
+void SceneLoader::loadMusic(const sol::table& music, std::unique_ptr<AssetManager>& assetManager) {
+  int index = 0;
+
+  while(true) {
+    sol::optional<sol::table> hasTrack = music[index];
+
+    if(hasTrack == sol::nullopt) break;
+
+    sol::table track = music[index];
+
+    std::string musicId = track["assetId"];
+    std::string filePath = resolveGamePath(this->gameRoot, track["filePath"].get<std::string>());
+
+    assetManager->addMusic(musicId, filePath);
+    index++;
+
+  }
+}
+
 void SceneLoader::loadKeys(const sol::table& keys, std::unique_ptr<ControllerManager>& controllerManager) {
   int index = 0;
 
@@ -501,6 +541,16 @@ void SceneLoader::load(const std::string& scenePath, sol::state& lua,  std::uniq
     sol::optional<sol::table> fonts = scene["fonts"];
     if (fonts != sol::nullopt) {
       this->loadFonts(*fonts, assetManager);
+    }
+
+    sol::optional<sol::table> sounds = scene["sounds"];
+    if (sounds != sol::nullopt) {
+      this->loadSounds(*sounds, assetManager);
+    }
+
+    sol::optional<sol::table> music = scene["music"];
+    if (music != sol::nullopt) {
+      this->loadMusic(*music, assetManager);
     }
 
     sol::table keys = scene["keys"];

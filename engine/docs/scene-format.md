@@ -96,6 +96,37 @@ A missing or invalid JSON is reported on stderr and the atlas is not registered.
 **Size is baked in at load time** — one `fontId` per size, even for the same
 font file.
 
+## `sounds`
+
+Optional. Sound effects and voice recordings, played with `play_sound` (see
+[Audio](lua-api.md#audio)).
+
+```lua
+{ assetId = "shot",  filePath = "sounds/shot.ogg" }
+{ assetId = "intro", filePath = "sounds/intro-voice.mp3", stream = true }
+```
+
+OGG and MP3 are supported (depending on the installed SDL2_mixer). `stream` is
+optional and defaults to `false`: the file is fully decoded when the scene
+loads. With `stream = true` the file is only registered at load and decoded on
+the first `play_sound`, then freed when nothing is playing it, which keeps long
+recordings out of memory until needed. It is a lazy decode, not true streaming:
+a 3-minute stereo recording needs roughly 34 MB while it plays, and the first
+play can hitch while it decodes. A file that fails to load is reported on
+stdout and not registered.
+
+## `music`
+
+Optional. Background music tracks, played with `play_music`. Only one track
+plays at a time.
+
+```lua
+{ assetId = "last_signal", filePath = "sounds/last-signal.mp3" }
+```
+
+Both tables are 0-indexed like `fonts`, and their assets are kept by id across
+scene loads.
+
 ## `keys`
 
 Maps a name to an SDL keycode. Scripts then ask for the name, never the code.

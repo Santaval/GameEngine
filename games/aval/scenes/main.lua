@@ -9,6 +9,11 @@ scene = {
     {fontId="title", filePath="@common/fonts/DejaVuSansMono.ttf", fontSize=56},
   },
 
+  music = {
+    [0] =
+    {assetId = "last_signal", filePath = "sounds/last-signal.mp3"},
+  },
+
   keys = {
     [0] =
     {name = "confirm", key = 13},

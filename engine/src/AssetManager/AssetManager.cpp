@@ -25,6 +25,18 @@ void AssetManager::clearAll() {
 
   this->atlases.clear();
   atlasRegistry().clear();
+
+  // Los canales y la musica ya tienen que estar detenidos (AudioManager::stopAll):
+  // liberar un chunk que suena rompe el hilo de audio
+  for (auto& sound : this->sounds) {
+    if (sound.second.chunk) Mix_FreeChunk(sound.second.chunk);
+  }
+  this->sounds.clear();
+
+  for (auto& track : this->music) {
+    Mix_FreeMusic(track.second);
+  }
+  this->music.clear();
 }
 
 void AssetManager::addTexture(SDL_Renderer* renderer,
@@ -110,4 +122,74 @@ std::shared_ptr<const aseprite::Atlas> AssetManager::getAtlas(const std::string&
   }
 
   return atlas->second;
+}
+
+
+double AssetManager::chunkDuration(Mix_Chunk* chunk) {
+  int freq = 0;
+  int channels = 0;
+  Uint16 format = 0;
+  if (!chunk || Mix_QuerySpec(&freq, &format, &channels) == 0) return 0.0;
+
+  int frameBytes = channels * ((format & 0xFF) / 8);
+  if (frameBytes <= 0 || freq <= 0) return 0.0;
+  return static_cast<double>(chunk->alen) / (static_cast<double>(frameBytes) * freq);
+}
+
+void AssetManager::addSound(const std::string& soundId,
+const std::string& filePath, bool stream) {
+  if (this->sounds.count(soundId)) return;
+
+  SoundAsset sound;
+  sound.path = filePath;
+  sound.stream = stream;
+
+  // stream = true: solo se registra la ruta, el chunk se decodifica al primer play
+  if (!stream) {
+    sound.chunk = Mix_LoadWAV(filePath.c_str());
+    if (!sound.chunk) {
+      std::cout << "[AssetManager] Error loading sound " << filePath
+        << ": " << Mix_GetError() << std::endl;
+      return;
+    }
+    sound.duration = chunkDuration(sound.chunk);
+  }
+
+  this->sounds.emplace(soundId, sound);
+}
+
+SoundAsset* AssetManager::getSound(const std::string& soundId) {
+  auto sound = this->sounds.find(soundId);
+
+  if (sound == this->sounds.end()) {
+    std::cout << "[AssetManager] Sound not found: " << soundId << std::endl;
+    return nullptr;
+  }
+
+  return &sound->second;
+}
+
+void AssetManager::addMusic(const std::string& musicId, const std::string& filePath) {
+  if (this->music.count(musicId)) return;
+
+  Mix_Music* track = Mix_LoadMUS(filePath.c_str());
+
+  if (!track) {
+    std::cout << "[AssetManager] Error loading music " << filePath
+      << ": " << Mix_GetError() << std::endl;
+    return;
+  }
+
+  this->music.emplace(musicId, track);
+}
+
+Mix_Music* AssetManager::getMusic(const std::string& musicId) {
+  auto track = this->music.find(musicId);
+
+  if (track == this->music.end()) {
+    std::cout << "[AssetManager] Music not found: " << musicId << std::endl;
+    return nullptr;
+  }
+
+  return track->second;
 }

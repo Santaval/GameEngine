@@ -41,6 +41,7 @@
 
 Game::Game() {
     this->assetManager = std::make_unique<AssetManager>();
+    this->audioManager = std::make_unique<AudioManager>(*this->assetManager);
     this->eventManager = std::make_unique<EventManager>();
     this->controllerManager = std::make_unique<ControllerManager>();
     this->registry = std::make_unique<Registry>(); 
@@ -56,6 +57,7 @@ Game::~Game() {
     this->networkScripting.reset();
     this->netClient.reset();
     this->networkRegistry.reset();
+    this->audioManager.reset();
     this->assetManager.reset();
     this->controllerManager.reset();
     this->eventManager.reset();
@@ -145,6 +147,9 @@ void Game::init() {
         std::cout << "[Game] Error initializing SDL TTF" << std::endl;
         return;
     }
+
+    // Sin dispositivo de audio el motor sigue: las llamadas de audio quedan en no-op
+    this->audioManager->init();
 
     SDL_DisplayMode displayMode;
     SDL_GetCurrentDisplayMode(0, &displayMode);
@@ -348,6 +353,8 @@ void Game::loadScene(const std::string& requestedScene) {
     if (this->networkScripting) {
         this->networkScripting->clearHandlers();
     }
+    // Las voces y la musica son de la escena que se descarga (los assets se conservan por id)
+    this->audioManager->stopAll();
     this->textBuffer.clear();
     this->rectBuffer.clear();
     this->spriteBuffer.clear();
@@ -625,6 +632,7 @@ void Game::update() {
     this->milisecsPreviousFrame = SDL_GetTicks();
 
     // Red: los handlers corren aqui, en el hilo principal, antes de todo lo demas
+    this->audioManager->update();
     this->netClient->poll();
     this->networkRegistry->setLocalPlayerId(this->netClient->getMyPlayerId());
 
@@ -683,7 +691,11 @@ void Game::destroy() {
     // Las texturas y las fuentes tienen que morir antes que el renderer y antes de TTF_Quit
     this->registry->getSystem<TextRenderSystem>().clearCache();
     this->tileMap.reset();
+    // Los canales se detienen antes de liberar los chunks; el mezclador se cierra
+    // despues, para que Mix_FreeMusic aun tenga sus decodificadores cargados
+    this->audioManager->stopAll();
     this->assetManager->clearAll();
+    this->audioManager->shutdown();
 
     SDL_DestroyRenderer(this->renderer);
     SDL_DestroyWindow(this->window);

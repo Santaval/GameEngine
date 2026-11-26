@@ -21,8 +21,8 @@ CFLAGS = $(WARN_FLAGS)
 PKG_CONFIG_EXISTS := $(shell command -v pkg-config 2> /dev/null)
 
 ifneq ($(PKG_CONFIG_EXISTS),)
-    SDL_CFLAGS := $(shell pkg-config --cflags sdl2 sdl2_image sdl2_ttf 2>/dev/null)
-    SDL_LIBS   := $(shell pkg-config --libs sdl2 sdl2_image sdl2_ttf 2>/dev/null)
+    SDL_CFLAGS := $(shell pkg-config --cflags sdl2 sdl2_image sdl2_ttf sdl2_mixer 2>/dev/null)
+    SDL_LIBS   := $(shell pkg-config --libs sdl2 sdl2_image sdl2_ttf sdl2_mixer 2>/dev/null)
 endif
 
 ifeq ($(SDL_CFLAGS),)
@@ -30,7 +30,7 @@ ifeq ($(SDL_CFLAGS),)
 endif
 
 ifeq ($(SDL_LIBS),)
-    SDL_LIBS := -lSDL2 -lSDL2_image -lSDL2_ttf
+    SDL_LIBS := -lSDL2 -lSDL2_image -lSDL2_ttf -lSDL2_mixer
 endif
 
 # Detect Lua via pkg-config (cada paquete por separado: si uno no existe, pkg-config falla con todos)
@@ -106,6 +106,7 @@ SRC = src/*.cpp \
       src/Game/*.cpp \
       src/ECS/*.cpp \
       src/AssetManager/*.cpp \
+      src/Audio/*.cpp \
       src/ControllerManager/*.cpp \
       src/SceneManager/*.cpp \
       src/Network/*.cpp \

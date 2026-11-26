@@ -27,6 +27,7 @@ implemented one domain per file under [`src/Binding/`](../src/Binding/).
 - [Loot](#loot)
 - [Text & HUD](#text--hud)
 - [Camera](#camera)
+- [Audio](#audio)
 - [Input](#input)
 - [Trajectory path](#trajectory-path)
 - [Scripts & hooks](#scripts--hooks)
@@ -379,6 +380,51 @@ center_camera_on(x, y)
 
 ---
 
+## Audio
+
+Sounds and music are declared in the scene's [`sounds`](scene-format.md#sounds)
+and [`music`](scene-format.md#music) tables and played by id. Volumes are floats
+from `0` (silent) to `1` (full). Up to 48 sounds can play at once; beyond that
+`play_sound` returns `0`.
+
+| Function | Returns | Notes |
+| --- | --- | --- |
+| `play_sound(id, opts?)` | handle | `opts = { volume = 1, loop = false }`. Returns an integer handle, or `0` if the sound does not exist or no channel is free. |
+| `stop_sound(handle, fade_ms?)` | — | Stops the sound, optionally fading out over `fade_ms`. Unknown or finished handles are ignored. |
+| `set_sound_volume(handle, v)` | — | Changes the volume of a playing sound. |
+| `is_playing(handle)` | boolean | `false` once the sound ended or was stopped. |
+| `sound_position(handle)` | seconds or `nil` | Playback position, accurate to about 50 ms. Wraps back to `0` on looping sounds. `nil` if the handle is no longer playing. |
+| `sound_duration(id)` | seconds or `nil` | Length of the sound. `nil` if the id is unknown. |
+| `play_music(id, fade_ms?, opts?)` | — | `opts = { loop = true, volume = 1 }`. Only one music track plays at a time: starting another replaces it. |
+| `stop_music(fade_ms?)` | — | Stops the music, optionally fading out. |
+
+`sound_position` is meant for syncing subtitles to a voice recording:
+
+```lua
+local lines = {
+  { at = 0.0, text = "Do you copy?" },
+  { at = 2.5, text = "We lost the signal." },
+}
+local voice = play_sound("intro_voice")
+
+function update()
+  local t = sound_position(voice)
+  if not t then return end
+  local current
+  for _, line in ipairs(lines) do
+    if t >= line.at then current = line.text end
+  end
+  if current then draw_text(40, 400, current, "default", 255, 255, 255) end
+end
+```
+
+Loading a scene stops every sound and the music. The loaded audio assets are
+kept and reused by id, like textures. Sounds declared with `stream = true` are
+decoded on their first `play_sound` and freed when no voice is using them
+(see the scene format); the decode may cause a short hitch on that first play.
+
+---
+
 ## Input
 
 | Function | Returns | Notes |
@@ -470,8 +516,9 @@ that exist — defining none is fine.
 Loading a scene is a full reset: every entity is destroyed, entity ids start at
 0 again, the camera goes back to `(0, 0)`, the `player_entity` / `game_over`
 globals are cleared, and every module loaded with `require` is unloaded so its
-module-level locals (cooldowns, open menus...) start fresh. Textures and fonts
-already loaded are kept and reused by id.
+module-level locals (cooldowns, open menus...) start fresh. Textures, fonts and
+audio assets already loaded are kept and reused by id, but every playing sound
+and the music are stopped.
 
 **Lua globals survive `load_scene`** (only `player_entity` and `game_over` are
 cleared), while modules are unloaded and re-run on the next `require`. Keep state

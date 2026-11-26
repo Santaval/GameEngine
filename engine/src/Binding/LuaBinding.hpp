@@ -5,6 +5,7 @@
 // función register*Bindings(lua) — agregar aquí el include del nuevo
 // archivo alcanza para exponerlo al motor.
 
+#include "AudioBindings.hpp"
 #include "CameraBindings.hpp"
 #include "ColliderBindings.hpp"
 #include "CullingBindings.hpp"

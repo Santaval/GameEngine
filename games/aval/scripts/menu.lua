@@ -15,6 +15,9 @@ local back_pressed = ui.edge("back")
 -- Volver al menu siempre termina la sesion: los demas reciben peer_left
 net_disconnect()
 
+-- Musica del menu; al cargar la partida la escena detiene el audio
+play_music("last_signal", 1500)
+
 local connecting = false
 local connect_timer = 0
 local no_server_timer = 0

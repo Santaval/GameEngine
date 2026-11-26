@@ -10,6 +10,7 @@
 
 #include "../ECS/Registry.hpp"
 #include "../AssetManager/AssetManager.hpp"
+#include "../Audio/AudioManager.hpp"
 #include "../EventManager/EventManager.hpp"
 #include "../ControllerManager/ControllerManager.hpp"
 #include "../SceneManager/SceneLoader.hpp"
@@ -61,6 +62,8 @@ class Game {
         bool showColliders = false;
 
         std::unique_ptr<AssetManager> assetManager;
+        // Declarado despues de assetManager: guarda una referencia a el
+        std::unique_ptr<AudioManager> audioManager;
         std::unique_ptr<EventManager> eventManager;
         std::unique_ptr<Registry> registry;
         sol::state lua;
@@ -167,6 +170,7 @@ class Game {
      SceneLoader* getSceneLoader() const { return sceneLoader.get(); }
      void quit() { isRunning = false; }
      double getDeltaTime() const { return deltaTime; }
+     AudioManager* getAudio() const { return audioManager.get(); }
      Registry* getRegistry() const { return registry.get(); }
      sol::state& getLua() { return lua; }
      physics::StaticWorld& getStaticWorld() { return staticWorld; }
