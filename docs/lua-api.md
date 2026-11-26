@@ -30,6 +30,7 @@ implemented one domain per file under [`src/Binding/`](../src/Binding/).
 - [Trajectory path](#trajectory-path)
 - [Scripts & hooks](#scripts--hooks)
 - [Game flow & scenes](#game-flow--scenes)
+- [Tiled maps](#tiled-maps)
 - [Network](#network)
 - [Reading a component you don't have](#reading-a-component-you-dont-have)
 
@@ -437,6 +438,39 @@ the game-over overlay (ENTER reloads `current_game_scene`, M returns to the
 menu). `scenes/scene_01.lua` is the older single-scene prototype. Shared helpers
 for these screens live in `ui_helpers.lua`. The Aval Cup map is described in
 [aval-cup.md](aval-cup.md).
+
+---
+
+## Tiled maps
+
+| Function | Description |
+| --- | --- |
+| `load_tmx(path)` | Parses a Tiled `.tmx` file (orthogonal, finite maps) and returns a table, or `nil, message` on failure (also logged as `[TmxLoader] ...`). |
+
+Tile data may be CSV, XML, or base64 (uncompressed, zlib or gzip). zstd, infinite
+maps, image-collection tilesets and object templates are not supported. External
+`.tsx` tilesets resolve relative to the `.tmx`; tileset images relative to the tileset.
+
+```lua
+local map, err = load_tmx("./assets/quebrada/maps/town.tmx")
+if not map then print(err) return end
+
+map.width, map.height, map.tilewidth, map.tileheight, map.orientation
+map.properties.name          -- int / float / bool / string keep their Lua type
+map.tilesets[1].firstgid
+map.tilesets[1].tiles[3]     -- per-tile type, properties, animation = {{tileid=, duration=}, ...}
+map.layers[1].data[i]        -- gids, row by row, 1-based; 0 = empty; flip bits stripped
+map.layers[1].flips[i]       -- only flipped cells: { h=, v=, d= }
+for _, o in ipairs(map.objects) do ... end
+```
+
+Each entry of `map.objects` (flat list across all object layers, also reachable as
+`layer.objects`): `id, name, type, layer, shape, x, y, width, height, rotation,
+rect = {x, y, w, h}, properties`, plus `gid, flip_h, flip_v` for tile objects and
+`points` for polygons/polylines (relative to `x, y`). `shape` is `rect`, `ellipse`,
+`point`, `polygon`, `polyline`, `text` or `tile`. `type` is the Tiled 1.9+ `class`,
+falling back to the older `type` attribute. Tile objects have `y` at their bottom
+edge in Tiled; `rect` is already corrected to the top-left.
 
 ---
 

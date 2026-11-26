@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.10" tiledversion="1.10.2" class="town" orientation="orthogonal" renderorder="right-down" width="4" height="3" tilewidth="16" tileheight="16" infinite="0" nextlayerid="5" nextobjectid="7">
+ <properties>
+  <property name="title" value="Test Town"/>
+  <property name="difficulty" type="int" value="3"/>
+ </properties>
+ <tileset firstgid="1" source="tileset.tsx"/>
+ <tileset firstgid="9" name="props" tilewidth="16" tileheight="16" tilecount="4" columns="2">
+  <image source="props.png" width="32" height="32"/>
+ </tileset>
+ <layer id="1" name="ground" width="4" height="3">
+  <data encoding="csv">
+1,2147483650,3,4,
+5,6,0,8,
+9,10,11,12
+</data>
+ </layer>
+ <layer id="2" name="decor_zlib" width="4" height="3">
+  <data encoding="base64" compression="zlib">
+   eJwlxYEKABAQwNBxiOOjfbqV1WsFqHDDN3UNflNLqa2jBxm4AMg=
+  </data>
+ </layer>
+ <layer id="3" name="decor_gzip" width="4" height="3">
+  <data encoding="base64" compression="gzip">
+   H4sIAAAAAAAA/yXFgQoAEBDA0HGI46N9upXVawWocMM3dQ1+U0upraMHvI9YCzAAAAA=
+  </data>
+ </layer>
+ <objectgroup id="4" name="entities">
+  <object id="1" name="player_spawn" class="spawn" x="16" y="16" width="16" height="16">
+   <properties>
+    <property name="label" value="start"/>
+    <property name="slots" type="int" value="4"/>
+    <property name="speed" type="float" value="2.5"/>
+    <property name="active" type="bool" value="true"/>
+    <property name="note">line1
+line2</property>
+   </properties>
+  </object>
+  <object id="2" name="door" type="door" x="32" y="0" width="16" height="32"/>
+  <object id="3" name="marker" x="8" y="40">
+   <point/>
+  </object>
+  <object id="4" name="pond" x="0" y="0" width="24" height="12">
+   <ellipse/>
+  </object>
+  <object id="5" name="roof" x="10" y="10">
+   <polygon points="0,0 16,0 16,16"/>
+  </object>
+  <object id="6" name="crate" gid="2147483657" x="48" y="32" width="16" height="16"/>
+ </objectgroup>
+</map>

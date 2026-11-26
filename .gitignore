@@ -9,3 +9,4 @@ tests/net_sync_test
 tests/damage_sync_test
 tests/world_sync_test
 tests/impact_damage_test
+tests/tmx_loader_test

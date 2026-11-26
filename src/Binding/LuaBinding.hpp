@@ -15,6 +15,7 @@
 #include "InputBindings.hpp"
 #include "InventoryBindings.hpp"
 #include "LootBindings.hpp"
+#include "MapBindings.hpp"
 #include "MovementBindings.hpp"
 #include "NetworkBindings.hpp"
 #include "GravityBindings.hpp"

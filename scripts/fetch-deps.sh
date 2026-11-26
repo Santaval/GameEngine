@@ -7,9 +7,12 @@ cd "$(dirname "$0")/.."
 
 IXWS_VERSION="v11.4.5"
 JSON_VERSION="v3.11.3"
+PUGI_VERSION="v1.14"
 
 IXWS_URL="https://github.com/machinezone/IXWebSocket/archive/refs/tags/${IXWS_VERSION}.tar.gz"
 JSON_URL="https://github.com/nlohmann/json/releases/download/${JSON_VERSION}/json.hpp"
+
+PUGI_BASE="https://raw.githubusercontent.com/zeux/pugixml/${PUGI_VERSION}/src"
 
 mkdir -p libs
 
@@ -35,5 +38,18 @@ else
     echo "[deps] nlohmann/json ya presente"
 fi
 
+# pugixml (parser XML para los mapas TMX de Tiled). Se usa en modo header-only
+# (PUGIXML_HEADER_ONLY solo en src/Map/TmxLoader.cpp), pero pugixml.hpp incluye
+# pugixml.cpp, asi que se bajan los tres archivos.
+if [ ! -f libs/pugixml/pugixml.hpp ] || [ ! -f libs/pugixml/pugixml.cpp ] || [ ! -f libs/pugixml/pugiconfig.hpp ]; then
+    echo "[deps] Descargando pugixml ${PUGI_VERSION}"
+    mkdir -p libs/pugixml
+    for f in pugixml.hpp pugiconfig.hpp pugixml.cpp; do
+        curl -fsSL "${PUGI_BASE}/${f}" -o "libs/pugixml/${f}"
+    done
+else
+    echo "[deps] pugixml ya presente"
+fi
+
 # El Makefile depende de este archivo para saber que las dependencias estan listas
-printf 'IXWebSocket %s\nnlohmann/json %s\n' "$IXWS_VERSION" "$JSON_VERSION" > libs/.deps-stamp
+printf 'IXWebSocket %s\nnlohmann/json %s\npugixml %s\n' "$IXWS_VERSION" "$JSON_VERSION" "$PUGI_VERSION" > libs/.deps-stamp

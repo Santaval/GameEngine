@@ -70,5 +70,6 @@ class ScriptSystem : public System {
     registerGameBindings(lua);
     registerNetworkBindings(lua);
     registerCullingBindings(lua);
+    registerMapBindings(lua);
   }
 };

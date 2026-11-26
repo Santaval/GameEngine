@@ -82,6 +82,9 @@ DEPS_STAMP = libs/.deps-stamp
 IXWS_DIR   = libs/IXWebSocket
 IXWS_LIB   = $(IXWS_DIR)/libixwebsocket-tls.a
 IXWS_OBJ   = $(IXWS_DIR)/build-tls
+# pugixml (TMX). Los clones que ya tenian .deps-stamp no lo tienen: este archivo
+# fuerza a volver a ejecutar el script de dependencias (es idempotente).
+PUGI_HDR   = libs/pugixml/pugixml.hpp
 
 # TLS (wss://) con OpenSSL. Los mismos defines van al motor y a la libreria para
 # que las clases de IXWebSocket tengan el mismo layout en ambos lados.
@@ -105,20 +108,24 @@ SRC = src/*.cpp \
       src/AssetManager/*.cpp \
       src/ControllerManager/*.cpp \
       src/SceneManager/*.cpp \
-      src/Network/*.cpp
+      src/Network/*.cpp \
+      src/Map/*.cpp
 
 # Interprete de Lua independiente para tests/map_determinism.lua (opcional)
 LUA_BIN := $(firstword $(shell command -v lua5.3 lua5.4 lua 2>/dev/null))
 
 .PHONY: build run run-quebrada test clean clean-deps deps lua-info
 
-build: $(DEPS_STAMP) $(IXWS_LIB)
+build: $(DEPS_STAMP) $(PUGI_HDR) $(IXWS_LIB)
 	$(CC) $(CFLAGS) $(STD) $(INC_PATH) $(SRC) $(LFLAGS) -o engine
 
 deps:
 	./scripts/fetch-deps.sh
 
 $(DEPS_STAMP):
+	./scripts/fetch-deps.sh
+
+$(PUGI_HDR):
 	./scripts/fetch-deps.sh
 
 # IXWebSocket se compila una sola vez (con TLS via OpenSSL). El wildcard se evalua
@@ -137,8 +144,8 @@ run:
 run-quebrada:
 	./engine --game quebrada
 
-# Tests unitarios: NetworkRegistry, NetSyncSystem, DamageSync, WorldSync e ImpactDamage (solo ECS, sin SDL ni red), LuaJson (solo sol + nlohmann) y, si hay un interprete de Lua, el determinismo del mapa
-test: $(DEPS_STAMP)
+# Tests unitarios: NetworkRegistry, NetSyncSystem, DamageSync, WorldSync e ImpactDamage (solo ECS, sin SDL ni red), LuaJson (solo sol + nlohmann), TmxLoader (pugixml + zlib + sol) y, si hay un interprete de Lua, el determinismo del mapa
+test: $(DEPS_STAMP) $(PUGI_HDR)
 	$(CC) $(CFLAGS) $(STD) $(INC_PATH) -I./src tests/NetworkRegistryTest.cpp src/ECS/*.cpp src/Network/NetworkRegistry.cpp -o tests/network_registry_test
 	./tests/network_registry_test
 	$(CC) $(CFLAGS) $(STD) $(INC_PATH) tests/NetSyncTest.cpp src/ECS/*.cpp src/Network/NetworkRegistry.cpp -o tests/net_sync_test
@@ -151,6 +158,8 @@ test: $(DEPS_STAMP)
 	./tests/lua_json_test
 	$(CC) $(CFLAGS) $(STD) $(INC_PATH) tests/ImpactDamageTest.cpp -o tests/impact_damage_test
 	./tests/impact_damage_test
+	$(CC) $(CFLAGS) $(STD) $(INC_PATH) tests/TmxLoaderTest.cpp src/Map/TmxLoader.cpp $(LUA_LIBS) -lz -o tests/tmx_loader_test
+	./tests/tmx_loader_test
 ifneq ($(LUA_BIN),)
 	$(LUA_BIN) tests/map_determinism.lua
 else
@@ -158,7 +167,7 @@ else
 endif
 
 clean:
-	rm -f engine tests/network_registry_test tests/net_sync_test tests/damage_sync_test tests/world_sync_test tests/lua_json_test tests/impact_damage_test
+	rm -f engine tests/network_registry_test tests/net_sync_test tests/damage_sync_test tests/world_sync_test tests/lua_json_test tests/impact_damage_test tests/tmx_loader_test
 
 clean-deps:
 	rm -rf $(IXWS_OBJ) $(IXWS_LIB) $(IXWS_DIR)/build $(IXWS_DIR)/libixwebsocket.a

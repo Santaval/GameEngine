@@ -171,6 +171,38 @@ the start of the next frame. Until then it still shows up in collision checks.
 
 ---
 
+## Loading Tiled maps
+
+`load_tmx(path)` reads a Tiled `.tmx` file (orthogonal, finite maps only) and
+returns a plain Lua table, or `nil, message` on failure (the error is also
+logged as `[TmxLoader] ...`). Tile data may be CSV, XML, or base64 with no
+compression, zlib or gzip; zstd and infinite maps are rejected. External `.tsx`
+tilesets are resolved relative to the `.tmx`, and image paths relative to the
+tileset.
+
+```lua
+local map, err = load_tmx("assets/maps/town.tmx")
+if not map then error(err) end
+
+map.width, map.height, map.tilewidth, map.tileheight
+map.properties.title                 -- int/float/bool/string keep their Lua type
+map.tilesets[1].firstgid
+map.tilesets[1].tiles[3].type        -- per-tile class/type, properties, animation
+map.layers[1].data[i]                -- gids (1-based, row by row), flip flags stripped
+map.layers[1].flips[i]               -- only flipped cells: { h=, v=, d= }
+map.objects                          -- every object, flattened across object layers
+-- object: id, name, type (class), layer, shape, x, y, width, height, rotation,
+--         rect = {x, y, w, h} (top-left; tile objects are corrected from
+--         Tiled's bottom-left), gid/flip_h/flip_v (tile objects), points, properties
+```
+
+Object `shape` is one of `rect`, `ellipse`, `point`, `polygon`, `polyline`,
+`text` or `tile`. Polygon and polyline `points` are relative to the object's
+`x`, `y`. `type` is the Tiled 1.9+ `class`, falling back to the older `type`
+attribute. Object templates are not supported.
+
+---
+
 ## What is not here yet
 
 - No entity lifetime — a projectile that never hits anything lives forever.
