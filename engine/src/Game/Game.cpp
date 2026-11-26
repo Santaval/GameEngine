@@ -480,7 +480,7 @@ void Game::update() {
             deltaTime, *this->networkRegistry, this->netClient->isOnline())) {
         this->netClient->send(std::move(msg));
     }
-    this->registry->getSystem<AnimationSystem>().update();
+    this->registry->getSystem<AnimationSystem>().update(deltaTime);
     // La gravedad suma a la velocidad antes de integrar el movimiento
     this->registry->getSystem<GravitySystem>().update(deltaTime);
     this->registry->getSystem<MovementSystem>().update(deltaTime);

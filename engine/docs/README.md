@@ -113,7 +113,7 @@ game.
 4. **NetSyncSystem** — owners send their `state` (12.5 Hz, within a message
    budget); non-owners get pulled toward the owner's last known state (see
    [multiplayer-protocol.md](multiplayer-protocol.md)).
-5. **AnimationSystem** — advances spritesheet frames.
+5. **AnimationSystem** — advances spritesheet frames (equal-frame strips or Aseprite JSON atlases with tags).
 6. **GravitySystem** — adds the pull of every attractor to the velocity of
    every affected body (see [gravity.md](gravity.md)).
 7. **MovementSystem** — integrates acceleration into velocity into position.
@@ -149,7 +149,7 @@ says "thrust forward", and the engine resolves what forward means.
 | `TransformComponent` | Position (top-left), scale, rotation. | `transform` |
 | `RigidBodyComponent` | Velocity, acceleration, speed limit. | `rigid_body` |
 | `SpriteComponent` | Texture id, frame size, source rect. | `sprite` |
-| `AnimationComponent` | Spritesheet playback. | `animation` |
+| `AnimationComponent` | Spritesheet playback (strip or Aseprite atlas + tags). | `animation` |
 | `CircleColliderComponent` | Collision circle plus an owner exclusion. | `circle_collider` |
 | `BoxColliderComponent` | Axis-aligned collision box: solid, trigger zone and/or wall-sliding mover. | `box_collider` |
 | `HealthComponent` | Hit points and invulnerability window. | `health` |

@@ -20,6 +20,7 @@
 #include "../Components/InventoryComponent.hpp"
 #include "../Components/LootComponent.hpp"
 #include "../Components/CullComponent.hpp"
+#include "../Animation/AtlasRegistry.hpp"
 
 
 namespace {
@@ -54,6 +55,12 @@ void SceneLoader::loadSprites(SDL_Renderer* renderer, const sol::table& sprites,
     std::string filePath = resolveGamePath(this->gameRoot, sprite["filePath"].get<std::string>());
 
     assetManager->addTexture(renderer, assetId, filePath);
+
+    // Atlas Aseprite opcional, registrado bajo el mismo assetId
+    sol::optional<std::string> atlasPath = sprite["atlas"];
+    if (atlasPath != sol::nullopt) {
+      assetManager->addAtlas(assetId, resolveGamePath(this->gameRoot, *atlasPath));
+    }
     index++;
 
   }
@@ -198,6 +205,35 @@ void SceneLoader::addAnimationComponent(Entity entity, const sol::table& compone
   if (hasAnimation == sol::nullopt) return;
 
   sol::table animation = *hasAnimation;
+
+  // Forma con atlas Aseprite: animation = { atlas = "id", tag = "idle", loop = true }
+  sol::optional<std::string> atlasId = animation["atlas"];
+  if (atlasId != sol::nullopt) {
+    auto found = atlasRegistry().find(*atlasId);
+    if (found == atlasRegistry().end()) {
+      std::cerr << "[SceneLoader] Animation atlas not found: " << *atlasId
+        << " (se usa animacion por defecto)" << std::endl;
+      entity.addComponent<AnimationComponent>();
+      return;
+    }
+
+    entity.addComponent<AnimationComponent>();
+    auto& component = entity.getComponent<AnimationComponent>();
+    component.atlas = found->second;
+
+    std::string tag = animation["tag"].get_or(std::string());
+    // Sin tag: el primero del atlas
+    if (tag.empty()) tag = component.atlas->tags.front().name;
+    bool loop = animation["loop"].get_or(true);
+
+    if (!component.play(tag, loop)) {
+      std::cerr << "[SceneLoader] Tag '" << tag << "' not found in atlas " << *atlasId
+        << " (se usa el primero)" << std::endl;
+      component.play(component.atlas->tags.front().name, loop);
+    }
+    return;
+  }
+
   int numFrames = animation["numFrames"].get_or(1);
   int frameSpeedRate = animation["frameSpeedRate"].get_or(1);
   bool isLoop = animation["isLoop"].get_or(true);

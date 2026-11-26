@@ -2,6 +2,8 @@
 #include <iostream>
 #include <SDL2/SDL_image.h>
 
+#include "../Animation/AtlasRegistry.hpp"
+
 AssetManager::AssetManager() {
   std::cout << "[AssetManager] Asser manager init" << std::endl;
 }
@@ -20,6 +22,9 @@ void AssetManager::clearAll() {
     TTF_CloseFont(font.second);
   }
   this->fonts.clear();
+
+  this->atlases.clear();
+  atlasRegistry().clear();
 }
 
 void AssetManager::addTexture(SDL_Renderer* renderer,
@@ -73,4 +78,30 @@ TTF_Font* AssetManager::getFont(const std::string& fontId) {
   }
 
   return font->second;
+}
+
+void AssetManager::addAtlas(const std::string& assetId, const std::string& jsonPath) {
+  if (this->atlases.count(assetId)) return;
+
+  aseprite::Result result = aseprite::loadFile(jsonPath);
+  if (!result.ok) {
+    std::cerr << "[AssetManager] Error loading atlas " << assetId << ": "
+      << result.error << std::endl;
+    return;
+  }
+
+  auto atlas = std::make_shared<const aseprite::Atlas>(std::move(result.atlas));
+  this->atlases.emplace(assetId, atlas);
+  atlasRegistry()[assetId] = atlas;
+}
+
+std::shared_ptr<const aseprite::Atlas> AssetManager::getAtlas(const std::string& assetId) {
+  auto atlas = this->atlases.find(assetId);
+
+  if (atlas == this->atlases.end()) {
+    std::cout << "[AssetManager] Atlas not found: " << assetId << std::endl;
+    return nullptr;
+  }
+
+  return atlas->second;
 }

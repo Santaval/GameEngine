@@ -76,6 +76,16 @@ Textures, loaded once and referenced everywhere by `assetId`.
 
 Paths follow the [asset path rules](#asset-paths): relative to the game root.
 
+A sprite can also carry an Aseprite/pixelfx JSON next to its PNG. It is
+registered under the same `assetId` and used by the
+[atlas form of `animation`](#animation):
+
+```lua
+{ assetId = "hero", filePath = "sprites/hero.png", atlas = "sprites/hero.json" }
+```
+
+A missing or invalid JSON is reported on stderr and the atlas is not registered.
+
 ## `fonts`
 
 ```lua
@@ -203,6 +213,39 @@ newer ones.
 
 **An animation overwrites `src_rect.x` every frame**, so it cannot be combined
 with a hand-picked spritesheet frame.
+
+#### Atlas form (Aseprite JSON)
+
+For sheets exported from Aseprite or pixelfx: frames may differ in size and
+duration, and animations are selected by **tag**.
+
+```lua
+animation = {
+  atlas = "hero",    -- assetId of a sprite that declares `atlas = ...`
+  tag   = "idle",    -- default: the first tag of the atlas
+  loop  = true,      -- default true
+}
+```
+
+While an atlas animation plays, every frame the system writes the **whole**
+`src_rect` (x, y, w, h) and the sprite's `width`/`height` from the JSON, so the
+entity's `sprite` width/height only matter before the first update. Frame
+durations come from the JSON (`duration`, ms; `<= 0` falls back to 100). Without
+`frameTags`, the atlas has one implicit tag named `""` covering all frames. Tag
+directions: `forward`, `reverse`, `pingpong` (endpoints are not repeated:
+0,1,2,1,0,...) and `pingpong_reverse`. With `loop = false` the animation stops
+on the last frame (a pingpong ends back on the first one) and
+`animation_finished(e)` becomes true. An unknown `atlas` falls back to a default
+animation; an unknown `tag` falls back to the first tag, both with a warning.
+
+Legacy keys (`numFrames`, `frameSpeedRate`, `isLoop`) keep working when `atlas`
+is absent.
+
+**Aseprite export recipe.** File > Export Sprite Sheet: in *Output* tick *JSON
+Data* (hash or array are both read) and *Tags*, in *Sprite* leave *Trim* **off**
+(trimmed frames would be drawn at their cropped size and shift the sprite).
+Walk cycles: one tag per direction (`walk_down`, `walk_left`, ...) and the script
+calls `play_animation(e, "walk_" .. dir)`.
 
 ### `circle_collider`
 

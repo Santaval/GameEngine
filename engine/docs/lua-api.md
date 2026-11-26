@@ -150,6 +150,9 @@ See [gravity.md](gravity.md) for the model.
 | `set_sprite(e, asset_id)` | — | Swaps the texture, keeps the frame geometry. |
 | `set_sprite_frame(e, src_x, src_y)` | — | Moves the source rect inside the sheet (px). For hand-animated sprites without an `animation` component. |
 | `add_animation(e, num_frames, frame_speed_rate, is_loop)` | — | `frame_speed_rate` is frames per second. |
+| `add_animation_atlas(e, atlas_id, tag [, loop])` | — | Animates with an Aseprite/pixelfx atlas (the sprite's `atlas` in the scene, by its `assetId`). `loop` defaults to `true`. Unknown atlas or tag: warning, nothing changes. |
+| `play_animation(e, tag [, loop])` | — | Switches to `tag` and restarts from its first frame, applying it right away. Calling it with the tag already looping is a no-op, so it is safe to call every frame from a script. Unknown tag, no animation or no atlas: warning, no-op. |
+| `animation_finished(e)` | bool | `true` once a `loop = false` atlas animation has played to its end. `false` while it plays, when it loops or when `e` has no animation. |
 
 The rendered size is `width * scale.x` by `height * scale.y`, so scale lives on
 the transform, not the sprite.
@@ -158,6 +161,10 @@ the transform, not the sprite.
 > every frame as `current_frame * width`. If you picked a specific frame of a
 > spritesheet via `add_sprite`'s `src_x`, do **not** also add an animation — the
 > two fight and the animation wins.
+
+An atlas animation also overwrites the sprite's `width`/`height` and the whole
+`src_rect` with the frame's rectangle from the JSON; export without trim. See
+[scene-format.md](scene-format.md#animation) for the scene form.
 
 Rotation is applied by SDL around the **centre of the destination rectangle**.
 That pivot is `position + (width / 2) * scale`, which is also where the collider
