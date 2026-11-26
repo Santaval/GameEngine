@@ -4,6 +4,7 @@
 #include <SDL2/SDL_ttf.h>
 #include <memory>
 #include <set>
+#include <vector>
 #include <string>
 #include <sol/sol.hpp>
 
@@ -79,6 +80,19 @@ class Game {
         // escena para que los require vuelvan a ejecutarse desde cero.
         std::set<std::string> builtinModules;
 
+        // Juego elegido al arrancar (--game / GAME). Vacio = juego por defecto,
+        // cuya raiz es assets/ (layout actual). Con nombre: assets/<nombre>/
+        std::string gameName;
+        std::string gameRoot = "./assets";
+        // Opcional, de <raiz>/game.lua; 0 / vacio = valores por defecto
+        std::string windowTitle = "Engine";
+        int configWidth = 0;
+        int configHeight = 0;
+
+        void loadGameConfig();
+        std::string buildPackagePath() const;
+        std::string entryScenePath() const;
+
     public:
         std::unique_ptr<ControllerManager> controllerManager;
 
@@ -101,6 +115,11 @@ class Game {
      void run();
      void destroy();
      void requestScene(const std::string& scenePath) { pendingScene = scenePath; }
+     // Debe llamarse antes de init(). Devuelve false si el nombre es invalido
+     // o assets/<nombre>/ no existe (el motivo se escribe en error).
+     bool setGame(const std::string& name, std::string& error);
+     const std::string& getGameName() const { return gameName; }
+     const std::string& getGameRoot() const { return gameRoot; }
      void setServerUrl(const std::string& url) { serverUrl = url; }
      const std::string& getServerUrl() const { return serverUrl; }
      bool connectToServer();

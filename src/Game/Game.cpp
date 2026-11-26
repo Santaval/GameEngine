@@ -1,5 +1,8 @@
 #include "Game.hpp"
 
+#include <algorithm>
+#include <cctype>
+#include <filesystem>
 #include <iostream>
 
 #include "../Network/NetClient.hpp"
@@ -52,7 +55,73 @@ Game::~Game() {
     std::cout << "[Game] Game destroy" << std::endl;
 }
 
+bool Game::setGame(const std::string& name, std::string& error) {
+    if (name.empty()) {
+        this->gameName.clear();
+        this->gameRoot = "./assets";
+        return true;
+    }
+    for (char c : name) {
+        if (!std::isalnum(static_cast<unsigned char>(c)) && c != '_' && c != '-') {
+            error = "invalid game name '" + name + "' (use letters, digits, '_' or '-')";
+            return false;
+        }
+    }
+    const std::string root = "./assets/" + name;
+    if (!std::filesystem::is_directory(root)) {
+        error = "game '" + name + "' not found: " + root + " does not exist";
+        return false;
+    }
+    this->gameName = name;
+    this->gameRoot = root;
+    return true;
+}
+
+// <raiz>/game.lua es opcional: return { title=, width=, height= }
+void Game::loadGameConfig() {
+    const std::string path = this->gameRoot + "/game.lua";
+    if (this->gameName.empty() || !std::filesystem::is_regular_file(path)) {
+        return;
+    }
+    sol::state cfgLua;
+    cfgLua.open_libraries(sol::lib::base);
+    sol::protected_function_result result = cfgLua.safe_script_file(path, sol::script_pass_on_error);
+    if (!result.valid() || result.get_type() != sol::type::table) {
+        std::cout << "[Game] " << path << " must return a table; using defaults" << std::endl;
+        return;
+    }
+    sol::table cfg = result;
+    this->windowTitle = cfg.get_or<std::string>("title", this->windowTitle);
+    this->configWidth = cfg.get_or("width", 0);
+    this->configHeight = cfg.get_or("height", 0);
+}
+
+std::string Game::buildPackagePath() const {
+    const std::string scripts = this->gameRoot + "/scripts";
+    std::string path = scripts + "/?.lua;";
+    if (this->gameName.empty()) {
+        path += scripts + "/player/?.lua;";
+    } else {
+        std::vector<std::string> dirs;
+        std::error_code ec;
+        for (const auto& entry : std::filesystem::directory_iterator(scripts, ec)) {
+            if (entry.is_directory()) dirs.push_back(entry.path().filename().string());
+        }
+        std::sort(dirs.begin(), dirs.end());
+        for (const auto& d : dirs) path += scripts + "/" + d + "/?.lua;";
+    }
+    path += "./assets/common/scripts/?.lua;";
+    return path;
+}
+
+std::string Game::entryScenePath() const {
+    return this->gameName.empty() ? "./assets/scripts/scenes/menu.lua"
+                                  : this->gameRoot + "/scenes/main.lua";
+}
+
 void Game::init() {
+    this->loadGameConfig();
+
     if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
         std::cout << "[Game] Error initializing SDL" << std::endl;
         return;
@@ -66,18 +135,19 @@ void Game::init() {
     SDL_DisplayMode displayMode;
     SDL_GetCurrentDisplayMode(0, &displayMode);
 
-    this->windowWidth = displayMode.w;
-    this->windowHeight = displayMode.h;
+    const bool customSize = this->configWidth > 0 && this->configHeight > 0;
+    this->windowWidth = customSize ? this->configWidth : displayMode.w;
+    this->windowHeight = customSize ? this->configHeight : displayMode.h;
 
     this->camera = { 0, 0, this->windowWidth, this->windowHeight };
 
     window = SDL_CreateWindow(
-        "Engine",
+        this->windowTitle.c_str(),
         SDL_WINDOWPOS_CENTERED,
         SDL_WINDOWPOS_CENTERED,
         this->windowWidth,
         this->windowHeight,
-        SDL_WINDOW_SHOWN | SDL_WINDOW_FULLSCREEN_DESKTOP
+        customSize ? SDL_WINDOW_SHOWN : (SDL_WINDOW_SHOWN | SDL_WINDOW_FULLSCREEN_DESKTOP)
     );
 
     if (!this->window) {
@@ -109,11 +179,12 @@ void Game::setup() {
     this->registry->addSystem<ColliderRenderSystem>();
 
     this->lua.open_libraries(sol::lib::base, sol::lib::math, sol::lib::string, sol::lib::package);
-    this->lua["package"]["path"] = "./assets/scripts/?.lua;./assets/scripts/player/?.lua;" +
+    this->lua["package"]["path"] = this->buildPackagePath() +
         this->lua["package"]["path"].get<std::string>();
     this->registry->getSystem<ScriptSystem>().createLuaBiding(this->lua);
     this->networkScripting = std::make_unique<NetworkScripting>(*this->netClient,
-        *this->networkRegistry, *this->registry, this->lua, *this->sceneLoader);
+        *this->networkRegistry, *this->registry, this->lua, *this->sceneLoader,
+        this->gameRoot + "/scripts/prefabs/");
 
     // Correccion de deriva: los "state" de los duenos llegan por poll()
     this->netClient->subscribe("state", [this](const nlohmann::json& msg) {
@@ -183,7 +254,7 @@ void Game::setup() {
         this->builtinModules.insert(entry.first.as<std::string>());
     }
 
-    this->loadScene("./assets/scripts/scenes/menu.lua");
+    this->loadScene(this->entryScenePath());
 }
 
 // La conexion solo la inicia el menu (opcion Multiplayer), nunca el arranque

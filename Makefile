@@ -54,7 +54,9 @@ endif
 # acaba usando el 5.3 vendorizado en ./libs/lua/), y al equivocarse sol2 compila
 # su codigo de 5.4 -- lua_newuserdatauv, LUA_GCGEN, LUA_GCINC -- contra 5.3.
 LUA_INC := $(LUA_CFLAGS) -I./libs/lua/
-LUA_VERSION_NUM := $(shell echo '#include <lua.h>' | $(CC) $(LUA_INC) -E -dM -x c++ - 2>/dev/null | sed -n 's/^#define LUA_VERSION_NUM[ \t]*//p')
+# GNU Make 3.81 (el de macOS) toma un '#' dentro de $(shell ...) como comentario.
+HASH := \#
+LUA_VERSION_NUM := $(shell echo '$(HASH)include <lua.h>' | $(CC) $(LUA_INC) -E -dM -x c++ - 2>/dev/null | sed -n 's/^$(HASH)define LUA_VERSION_NUM[[:space:]]*//p')
 
 ifeq ($(LUA_VERSION_NUM),)
     $(warning No se encontro lua.h con $(LUA_INC) -- instala un paquete de desarrollo de Lua (Debian/Ubuntu: liblua5.4-dev o liblua5.3-dev). Se asume 5.4.)
@@ -108,7 +110,7 @@ SRC = src/*.cpp \
 # Interprete de Lua independiente para tests/map_determinism.lua (opcional)
 LUA_BIN := $(firstword $(shell command -v lua5.3 lua5.4 lua 2>/dev/null))
 
-.PHONY: build run test clean clean-deps deps lua-info
+.PHONY: build run run-quebrada test clean clean-deps deps lua-info
 
 build: $(DEPS_STAMP) $(IXWS_LIB)
 	$(CC) $(CFLAGS) $(STD) $(INC_PATH) $(SRC) $(LFLAGS) -o engine
@@ -131,6 +133,9 @@ $(IXWS_LIB): $(DEPS_STAMP)
 
 run:
 	./engine
+
+run-quebrada:
+	./engine --game quebrada
 
 # Tests unitarios: NetworkRegistry, NetSyncSystem, DamageSync, WorldSync e ImpactDamage (solo ECS, sin SDL ni red), LuaJson (solo sol + nlohmann) y, si hay un interprete de Lua, el determinismo del mapa
 test: $(DEPS_STAMP)

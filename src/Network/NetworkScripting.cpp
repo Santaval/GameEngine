@@ -14,7 +14,6 @@
 using json = nlohmann::json;
 
 namespace {
-  const char* PREFAB_DIR = "./assets/scripts/prefabs/";
 
   // Tipos del protocolo: sus handlers reciben el mensaje completo
   const std::set<std::string> PROTOCOL_TYPES = {
@@ -52,9 +51,10 @@ namespace {
 }
 
 NetworkScripting::NetworkScripting(NetClient& netClient, NetworkRegistry& netRegistry,
-                                   Registry& registry, sol::state& lua, SceneLoader& sceneLoader)
+                                   Registry& registry, sol::state& lua, SceneLoader& sceneLoader,
+                                   const std::string& prefabDir)
   : netClient(netClient), netRegistry(netRegistry), registry(registry), lua(lua),
-    sceneLoader(sceneLoader) {
+    sceneLoader(sceneLoader), prefabDir(prefabDir) {
   // Mensajes custom: el handler de Lua recibe (data, from)
   this->netClient.subscribe("custom", [this](const json& msg) {
     if (!msg.contains("type") || !msg["type"].is_string()) {
@@ -142,7 +142,7 @@ std::optional<Entity> NetworkScripting::buildFromPrefab(const std::string& scrip
     std::cout << "[Net] invalid prefab path '" << script << "'" << std::endl;
     return std::nullopt;
   }
-  const std::string path = std::string(PREFAB_DIR) + script;
+  const std::string path = this->prefabDir + script;
 
   // addScriptComponent redefine los globals de scripts; "this" se conserva para
   // que el update() que nos llamo siga viendo su propia entidad

@@ -24,7 +24,29 @@ int main(int argc, char* argv[]) {
         }
     }
 
+    // Juego a cargar: --game <nombre>, --game=<nombre> o GAME.
+    // Sin ninguno corre el juego por defecto (assets/ tal cual).
+    std::string gameName;
+    for (int i = 1; i < argc; i++) {
+        if (std::strcmp(argv[i], "--game") == 0 && i + 1 < argc) {
+            gameName = argv[++i];
+        } else if (std::strncmp(argv[i], "--game=", 7) == 0) {
+            gameName = argv[i] + 7;
+        }
+    }
+    if (gameName.empty()) {
+        const char* env = std::getenv("GAME");
+        if (env) {
+            gameName = env;
+        }
+    }
+
     Game& game = Game::getInstance();
+    std::string gameError;
+    if (!game.setGame(gameName, gameError)) {
+        std::cerr << "[Game] " << gameError << std::endl;
+        return 1;
+    }
     game.setServerUrl(serverUrl);
     game.init();
     game.run();

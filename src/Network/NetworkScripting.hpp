@@ -25,6 +25,7 @@ class NetworkScripting {
     Registry& registry;
     sol::state& lua;
     SceneLoader& sceneLoader;
+    std::string prefabDir;
 
     std::map<std::string, std::vector<sol::protected_function>> luaHandlers;
     // Tipos del protocolo a los que ya nos suscribimos en NetClient
@@ -41,7 +42,8 @@ class NetworkScripting {
 
   public:
     NetworkScripting(NetClient& netClient, NetworkRegistry& netRegistry, Registry& registry,
-                     sol::state& lua, SceneLoader& sceneLoader);
+                     sol::state& lua, SceneLoader& sceneLoader,
+                     const std::string& prefabDir = "./assets/scripts/prefabs/");
 
     // Registra un handler de Lua: fn(data, from)
     void on(const std::string& type, const sol::protected_function& fn);

@@ -45,6 +45,36 @@ environment variable). Use `wss://` for servers behind HTTPS, e.g.
 `./engine --server wss://<app>.up.railway.app`. Without it the engine runs offline and prints nothing
 from the network layer. See [multiplayer-protocol.md](multiplayer-protocol.md).
 
+### Choosing the game
+
+The engine hosts more than one game. Pick one at boot with `--game <name>`
+(or `--game=<name>`, or the `GAME` environment variable; the flag wins).
+Without it the default game, Space Battle Royale, starts exactly as before.
+`make run-quebrada` is a shortcut for `./engine --game quebrada`.
+
+| Game | Root | Entry scene |
+|------|------|-------------|
+| default (no flag) | `assets/` | `assets/scripts/scenes/menu.lua` |
+| `--game <name>` | `assets/<name>/` | `assets/<name>/scenes/main.lua` |
+
+A named game has its own folders: `scripts/`, `scenes/`, `sprites/`, `sounds/`,
+`maps/`, plus an optional `game.lua`. `require` searches, in order,
+`<root>/scripts/?.lua`, each direct subfolder of `<root>/scripts/`
+(`scripts/*/?.lua`), then the shared `assets/common/scripts/` (helpers used by
+every game, e.g. `ui_helpers.lua`). The default game keeps its current layout
+(`assets/scripts/` and `assets/scripts/player/`) and also sees `assets/common/scripts/`.
+Prefabs spawned over the network are read from `<root>/scripts/prefabs/`.
+
+`assets/<name>/game.lua` is optional and sets the window:
+
+```lua
+return { title = "Quebrada", width = 1280, height = 720 }
+```
+
+With `width` and `height` the window is windowed at that size; without them it
+is fullscreen at desktop size, titled `Engine`. An unknown or invalid game name
+(`--game nope`, `--game ../x`) exits with an error.
+
 Paths in scene files are relative to the working directory, so run the binary
 from the repository root.
 
