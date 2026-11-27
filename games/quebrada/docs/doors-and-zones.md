@@ -19,7 +19,9 @@ Modules:
 
 ## Tiled conventions
 
-Use object layers only; tile layers are not needed. Spawn points mark the
+Object layers are enough (`town.tmx` has no tile layers), but tile layers are now allowed too: with
+`tile_map = true` the controller draws them and `solid` tiles collide (see [tileset.md](tileset.md)). A tile
+`surface` wins over `surface` rects (see [audio.md](audio.md#surfaces)). Spawn points mark the
 **center of the player's foot box** (the controller converts it to the sprite
 top-left).
 

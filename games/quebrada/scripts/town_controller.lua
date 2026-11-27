@@ -21,6 +21,8 @@
 --   flags unlock.*; las compuertas (class "gate", capa "gates") devuelven al jugador a su ultima
 --   posicion libre mientras esten cerradas. Docs: games/quebrada/docs/leads.md
 --   Consecuencias (#70): consequences.lua (dia, comentarios), docs/consequences.md
+--   tile_map  true = ademas dibuja las capas de tiles del TMX (tileset del pueblo, issue #55,
+--   docs/tileset.md); los tiles solid tambien colisionan. town.tmx no lo usa (solo objetos).
 local logic = require("door_logic")
 local ws = require("world_state")
 local fade = require("fade")
@@ -56,6 +58,7 @@ M.DEFAULTS = {
   toast_time = 2.0,
   line_time = 2.0,
   lead_time = 5.0,
+  tile_map = false, -- true = dibujar las capas de tiles del TMX con load_tile_map (issue #55)
 }
 
 local FONT = "default"
@@ -259,6 +262,10 @@ function M.make_update(cfg)
       if what == "foco" then foco.recharge(); line.text, line.left = "Foco cargado", c.line_time end
     end
     footsteps.set_source(surfaces.build(m))
+    if c.tile_map then
+      local ok, terr = load_tile_map(c.map)
+      if not ok then print("[town] tile map: " .. tostring(terr)) end
+    end
     local n, cerr = load_tmx_colliders(c.map)
     if not n then print("[town] colliders: " .. tostring(cerr)) end
     -- Llegada con fundido: el primer frame ya es negro (sin destello)

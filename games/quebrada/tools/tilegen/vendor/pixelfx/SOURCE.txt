@@ -1,0 +1,4 @@
+Vendored files from https://github.com/patch-gg/pixelfx
+Commit: 5294518ce7c72e48b6100a744596e0acf57f2826
+License: MIT (LICENSE in this folder)
+Used: math.mjs (hash, rand, Rng, rng) only.

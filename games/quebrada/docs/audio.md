@@ -67,7 +67,8 @@ every frame, `ambience.tick(dt)` every frame, and `ambience.set_time(...)` on ke
 The surface under the foot box center is found in this order. The first hit wins:
 
 1. Tile layers with a `surface` tile property (the top-most layer that has a tile
-   there). The town map has none yet; this is for tilesets such as #55.
+   there). `maps/tiles_demo.tmx` uses the town tileset (#55, see [tileset.md](tileset.md)); `town.tmx`
+   has none. Only `ground` tiles carry a `surface`, so treetops never change the sound.
 2. Objects of class `surface` (rect, property `surface`) in an object layer named
    `surfaces`. With overlapping rects the smallest one wins (`door_logic.find_zone`).
 3. The map property `surface` (default for the whole map). `house_mama.tmx` uses
