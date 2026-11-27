@@ -12,6 +12,7 @@
 --   box      caja de pies {x,y,w,h} dentro del sprite (por defecto 3,8,10,8)
 --   grid     paso de la rejilla de suelo en px (32)
 --   debug_flag  flag que alterna la tecla F ("house.chayo.open")
+--   debug_overlay  true = F3 abre el overlay de flags y misiones (tecla "debug_overlay" en la escena)
 --   back_scene  escena a la que vuelve la tecla 0 ("scenes/main.lua"); nil = sin salida
 local logic = require("door_logic")
 local ws = require("world_state")
@@ -21,6 +22,8 @@ local footsteps = require("footsteps")
 local amb = require("ambience")
 local interaction = require("interaction")
 local dialogue = require("dialogue")
+local missions = require("missions")
+local mlogic = require("missions_logic")
 
 local M = {}
 
@@ -29,6 +32,7 @@ M.DEFAULTS = {
   scenes = {},
   grid = 32,
   debug_flag = "house.chayo.open",
+  debug_overlay = true,
   back_scene = "scenes/main.lua",
   default_prompt = "E: entrar",
   default_locked_line = "Está cerrado.",
@@ -70,6 +74,8 @@ function M.make_update(cfg)
   local toast = { text = nil, left = 0 }  -- aviso de zona (arriba)
   local line = { text = nil, left = 0 }   -- frase de puerta cerrada / depuracion (abajo)
   local saved_input = nil
+  local ov = { open = false, sel = 1, rows = {} } -- overlay de depuracion (F3)
+  local ovk = {}                                  -- estado previo de teclas del overlay
 
   -- ---- input del jugador ----
   local function lock_input()
@@ -85,6 +91,76 @@ function M.make_update(cfg)
 
   local function interact_down()
     return is_action_activated("interact") or is_action_activated("interact_alt")
+  end
+
+  -- ---- overlay de depuracion (F3) ----
+  local function held(a, b)
+    return is_action_activated(a) or (b ~= nil and is_action_activated(b)) or false
+  end
+
+  -- Flanco por clave; se llama todos los frames para no arrastrar estados viejos
+  local function edge(k, down)
+    local p = down and not ovk[k]
+    ovk[k] = down
+    return p
+  end
+
+  local function update_overlay(dlg_open)
+    if not c.debug_overlay then return end
+    local f3 = edge("f3", held("debug_overlay"))
+    local up = edge("up", held("walk_up", "walk_up_alt"))
+    local dn = edge("dn", held("walk_down", "walk_down_alt"))
+    local lf = edge("lf", held("walk_left", "walk_left_alt"))
+    local rt = edge("rt", held("walk_right", "walk_right_alt"))
+    local ok = edge("ok", interact_down())
+    if f3 then
+      if ov.open then
+        ov.open = false
+        unlock_input()
+      elseif placed and not transition and not dlg_open and fade.alpha() == 0 then
+        ov.open = true
+        ov.sel = 1
+        lock_input()
+      end
+      return
+    end
+    if not ov.open then return end
+
+    ov.rows = mlogic.build_rows(missions.ids(), missions.state, ws.flags)
+    local n = #ov.rows
+    if up then ov.sel = ov.sel - 1 end
+    if dn then ov.sel = ov.sel + 1 end
+    if ov.sel > n then ov.sel = n end
+    if ov.sel < 1 then ov.sel = 1 end
+    local r = ov.rows[ov.sel]
+    if not r then return end
+    local dir = (lf and -1) or ((rt or ok) and 1) or 0
+    if dir == 0 then return end
+    if r.kind == "mission" then
+      missions.jump(r.id, mlogic.cycle_state(missions.state(r.id), dir))
+    else
+      ws.set(r.name, mlogic.step_value(ws.get(r.name), dir))
+    end
+  end
+
+  local function draw_overlay()
+    if not ov.open or fade.alpha() > 0 then return end
+    local sw, sh = get_screen_size()
+    local lh = get_line_height(FONT)
+    if not lh or lh <= 0 then lh = 12 end
+    local x, y, w, h = 8, 8, sw - 16, sh - 16
+    draw_rect(x, y, w, h, 10, 10, 20, 235, true)
+    draw_rect(x, y, w, h, 235, 225, 200, 255, false)
+    draw_text(x + 6, y + 4, "DEBUG F3 | Arriba/Abajo: mover  Izq/Der: cambiar  E: siguiente", FONT, 255, 220, 80, 255)
+    local rows = ov.rows
+    local top = y + 4 + lh + 4
+    local visible = math.floor((y + h - 4 - top) / lh)
+    local first = mlogic.window_start(ov.sel, #rows, visible)
+    for i = first, math.min(#rows, first + visible - 1) do
+      local ty = top + (i - first) * lh
+      if i == ov.sel then draw_rect(x + 3, ty, w - 6, lh, 70, 55, 110, 255, true) end
+      draw_text(x + 8, ty, rows[i].text, FONT, 255, 255, 255, 255)
+    end
   end
 
   -- ---- colocar al jugador ----
@@ -287,6 +363,7 @@ function M.make_update(cfg)
       end
       if transition then door = nil end
       if dlg_open then door = nil end
+      if ov.open then door = nil end
 
       -- Zona: aviso solo al cambiar (no al volver a entrar en la misma)
       local z = logic.find_zone(idx.zones, fcx, fcy)
@@ -319,7 +396,7 @@ function M.make_update(cfg)
       end
 
       -- Interactuables (NPCs/objetos): nunca a la vez que una puerta ni en transicion
-      local suppress = dlg_open or transition or ignore_until_clear or door_raw ~= nil or fade.alpha() > 0
+      local suppress = dlg_open or transition or ignore_until_clear or door_raw ~= nil or fade.alpha() > 0 or ov.open
       local ihint = interaction.update(dt, {
         x = fcx, y = fcy, facing = player_walker:get_facing(), suppress = suppress,
       })
@@ -327,7 +404,7 @@ function M.make_update(cfg)
 
       -- Depuracion: F alterna el flag (la puerta cambia al frame siguiente)
       local fdown = is_action_activated("debug_toggle")
-      if fdown and not was_debug and c.debug_flag then
+      if fdown and not was_debug and c.debug_flag and not ov.open then
         local v = not ws.has(c.debug_flag)
         ws.set(c.debug_flag, v)
         line.text = c.debug_flag .. " = " .. tostring(v)
@@ -345,9 +422,12 @@ function M.make_update(cfg)
       amb.tick(dt)
     end
 
+    -- F3: overlay de depuracion (tambien captura teclas mientras esta abierto)
+    update_overlay(dlg_open)
+
     -- Tecla 0: volver a la escena principal (flanco; no durante una transicion)
     local bdown = is_action_activated("back")
-    if bdown and not was_back and c.back_scene and not transition and not dlg_open then
+    if bdown and not was_back and c.back_scene and not transition and not dlg_open and not ov.open then
       load_scene(c.back_scene)
     end
     was_back = bdown
@@ -357,7 +437,7 @@ function M.make_update(cfg)
 
     -- Textos: solo con la pantalla despejada (los rects HUD se pintan bajo el
     -- texto y el fundido quedaria tapado por el)
-    if fade.alpha() == 0 and not dialogue.is_open() then
+    if fade.alpha() == 0 and not dialogue.is_open() and not ov.open then
       if toast.left > 0 then
         toast.left = toast.left - dt
         draw_centered(toast.text, 12)
@@ -369,6 +449,8 @@ function M.make_update(cfg)
         draw_centered(prompt, 226)
       end
     end
+
+    draw_overlay()
 
     fade.draw() -- siempre el ultimo
   end

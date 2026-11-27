@@ -10,7 +10,8 @@ Modules:
 | File | Role |
 | --- | --- |
 | `scripts/door_logic.lua` | Pure logic (conditions, rects, spawns, facing, fade state machine). Tested without the engine: `games/quebrada/tests/door_logic.lua`. |
-| `scripts/world_state.lua` | Minimal flag store plus transition context, compatible with the flags planned in #51. |
+| `scripts/world_state.lua` | Flag store plus transition context. Also `add(name, n)`, `snapshot()` and `restore(t)` (save hooks, see Persistence model). |
+| `scripts/missions_logic.lua`, `scripts/missions.lua`, `scripts/mission_defs.lua` | Mission state machine on top of the flags: pure logic, engine glue and data. See [missions.md](missions.md). |
 | `scripts/fade.lua` | Black fade drawn with `draw_rect`. |
 | `scripts/town_controller.lua` | Per-scene controller: loads the TMX, places the player, handles prompts, zones and transitions. |
 | `scripts/town_player.lua`, `scripts/house_player.lua` | Player scripts: the walker from #61 plus the `player_entity` / `player_walker` globals. |
@@ -88,6 +89,12 @@ registered with `world_state.on_change` are closures of the scene that created
 them; call `world_state.clear_listeners()` at the start of each scene (the
 controller does).
 
+`world_state.snapshot()` returns a pure copy of the persistable flags (booleans,
+numbers and strings; the transient `dialogue.open` and `libreta.open` flags and the
+transition context are excluded). `world_state.restore(t)` replaces them, going
+through `set` so listeners are notified. These are the hooks a save system uses;
+no file is written yet.
+
 ## Demo
 
 In the main scene press `6` to open the demo (`scenes/town_demo.lua`).
@@ -98,6 +105,7 @@ In the main scene press `6` to open the demo (`scenes/town_demo.lua`).
 | `E` / `Enter` | Interact with the door under your feet |
 | `F` | Toggle the flag `house.chayo.open` (debug) |
 | `N` | Toggle day / night (ambience, see [audio.md](audio.md)) |
+| `F3` | Debug overlay of flags and missions (see [missions.md](missions.md)) |
 | `0` | Back to the main scene |
 
 - Mama's door (`maps/house_mama.tmx`): enter, leave through the bottom door and

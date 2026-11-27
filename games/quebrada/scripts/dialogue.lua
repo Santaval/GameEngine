@@ -1,8 +1,12 @@
--- Caja de dialogo (issue #50). Docs: games/quebrada/docs/dialogue.md
+-- Caja de dialogo (issue #50, #51). Docs: games/quebrada/docs/dialogue.md
 --   local h = dialogue.start(script, { on_choice = fn(idx, line, opt), on_end = fn(results) })
+-- Lineas y opciones aceptan `when` (se evalua al llegar); la linea acepta mission_offer y
+-- las opciones set_flag, mission_accept, mission_reject y call. start() devuelve nil si
+-- todas las lineas quedan filtradas por `when`.
 local logic = require("dialogue_logic")
 local ws = require("world_state")
 local interaction = require("interaction")
+local missions = require("missions")
 
 local M = {}
 M.FONT = "dialogue"
@@ -123,16 +127,22 @@ end
 
 local function next_line(h)
   stop_voice(h)
-  h.i = h.i + 1
-  if h.i > #h.queue then finish(h); return end
+  -- Salta las lineas cuyo `when` es falso (se evalua al llegar a cada una)
+  repeat
+    h.i = h.i + 1
+    if h.i > #h.queue then finish(h); return end
+  until missions.check(h.queue[h.i].when)
   local line = h.queue[h.i]
   h.line = line
+  -- La oferta se hace al EMPEZAR la linea (las lineas con choices no emiten "done")
+  if line.mission_offer then missions.offer(line.mission_offer) end
   local L = layout()
   local lines = logic.wrap(line.text or "", L.w - 2 * M.PAD, measure)
   local pages = logic.paginate(lines, M.MAX_LINES)
   h.choices = {}
   for _, c in ipairs(line.choices or {}) do
-    h.choices[#h.choices + 1] = (type(c) == "string") and { text = c } or c
+    local o = (type(c) == "string") and { text = c } or c
+    if missions.check(o.when) then h.choices[#h.choices + 1] = o end
   end
   h.st = logic.new(pages, #h.choices, M.CPS)
   if line.voice and M.play_voices then
@@ -164,6 +174,7 @@ function M.start(script, opts)
   ws.set("dialogue.open", true)
   lock_input(h)
   next_line(h)
+  if cur ~= h then return nil end -- todas las lineas filtradas por when: ya termino
   return h
 end
 
@@ -190,6 +201,14 @@ end
 
 function M.register_script(name, script) M.scripts[name] = script end
 
+-- Efectos de una opcion elegida (ademas de on_choice y next)
+local function apply_option(opt)
+  if opt.set_flag then ws.set(opt.set_flag, true) end
+  if opt.mission_accept then missions.accept(opt.mission_accept) end
+  if opt.mission_reject then missions.reject(opt.mission_reject) end
+  if opt.call then safe(opt.call, opt) end
+end
+
 function M.update(dt)
   if not cur then return end
   local h = cur
@@ -209,7 +228,7 @@ function M.update(dt)
     h.results[#h.results + 1] = idx
     safe(h.line.on_choice, idx, opt)
     safe(h.opts.on_choice, idx, h.line, opt)
-    if opt.set_flag then ws.set(opt.set_flag, true) end
+    apply_option(opt)
     if opt.next then splice(h, opt.next) end
     next_line(h)
   end

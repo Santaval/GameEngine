@@ -1,4 +1,4 @@
-# Dialogue box (issue #50)
+# Dialogue box (issues #50, #51)
 
 A box at the bottom of the screen with a speaker tab, word-wrapped typewriter
 text, pages and optional choices. Code: `scripts/dialogue.lua` (glue and
@@ -16,15 +16,35 @@ Each value is a list of lines:
 | `text` | The line. `\n` forces a paragraph break. |
 | `voice` | Reserved. Sound id played on the `voice` bus when the line starts and stopped when it ends. It does not drive timing yet. An unknown id logs one engine line. |
 | `set_flag` | World flag set to `true` when the line is finished. |
-| `choices` | Shown after the last page of the line. Each entry is a string or `{ text, set_flag?, next? }`. |
+| `choices` | Shown after the last page of the line. Each entry is a string or `{ text, set_flag?, next?, when?, mission_accept?, mission_reject?, call? }`. |
+| `when` | Condition: a function, or a string such as `"a,!b"` over world flags. If false, the line is skipped. |
+| `mission_offer` | Mission id offered (state `none` to `offered`) when the line starts. Lines with `choices` never emit "done", so the offer cannot wait for the end of the line. It is idempotent. |
 
 For a choice table, `set_flag` is set when the option is chosen, and `next` is a
 script (list of lines) spliced in right after the current line.
 
+Choice fields beyond those: `when` hides the option when false, `mission_accept` /
+`mission_reject` call `missions.accept` / `missions.reject` with that id, and `call`
+is a function `fn(opt)` run when the option is chosen. Order on choosing: `on_choice`
+callbacks, then the option effects (`set_flag`, missions, `call`), then `next` is
+spliced, then the next line is selected.
+
+## Conditions (`when`)
+
+- `when` is evaluated lazily, each time the dialogue arrives at a line or builds its
+  choices, never when the script is loaded. Spliced lines (`next`) are tested the same way.
+- Because choices are filtered, the indices passed to `on_choice` and stored in
+  `results` refer to the filtered list.
+- A `when` function that errors logs a message and counts as false. An empty string
+  is false too (omit the field instead).
+- Reaction-lines-after-choice pattern: put the reactions after the choice line, each
+  with a `when` on the mission state. After the choice changes the state, the matching
+  line plays next and the others are skipped. See `scripts/dialogues.lua`.
+
 ## API
 
 - `dialogue.start(script, opts?)`: starts a dialogue and returns its handle, or
-  `nil` if one is already open or the script is empty. `opts.on_choice(idx, line, opt)`
+  `nil` if one is already open or the script is empty or every line is filtered out by `when`. In the filtered case the dialogue ends inside `start`, so `on_end` has already run (with an empty results list) before `nil` is returned. `opts.on_choice(idx, line, opt)`
   runs when a choice is confirmed. `opts.on_end(results)` runs at the end, with
   the list of chosen indices. A line may also carry its own `on_choice(idx, opt)`.
 - `dialogue.is_open()`: true while a dialogue is running.
