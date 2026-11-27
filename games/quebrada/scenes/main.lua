@@ -3,7 +3,7 @@
 -- Laid out for a 480x270 logical size (pixel_perfect); fine at 1280x720 too.
 -- Keys 1-4 restart each effect from its first frame. Key 5 opens the top-down
 -- walker demo (#61), key 6 the doors/interiors/zones demo (#62); key 0 there
--- comes back here. Key 7 continues the saved game (#52). Key 8 opens the tileset demo (#55).
+-- comes back here. Key 7 continues the saved game (#52). Key 8 opens the tileset demo (#55), key 9 the buildings demo (#71).
 local hello = require("hello")
 local ui = require("ui_helpers")
 
@@ -36,6 +36,7 @@ scene = {
         { name = "towndemo", key = 54 }, -- 6
         { name = "continue", key = 55 }, -- 7
         { name = "tilesdemo", key = 56 }, -- 8
+        { name = "buildingsdemo", key = 57 }, -- 9
     },
     entities = {
         [0] =
@@ -62,6 +63,13 @@ scene = {
             components = {
                 transform = { position = { x = 0, y = 0 } },
                 script = { path = "scripts/tiles_demo_launch.lua" },
+            },
+        },
+        {
+            -- Press 9: load the buildings demo (#71)
+            components = {
+                transform = { position = { x = 0, y = 0 } },
+                script = { path = "scripts/buildings_demo_launch.lua" },
             },
         },
         {

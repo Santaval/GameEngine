@@ -27,6 +27,12 @@ Night darkness with light circles, built on the engine's
   (bottom left) shows the charge and hides when it is full and off. Logic: `scripts/foco_logic.lua`;
   controller: `scripts/foco.lua`.
 
+## Lit windows (issue #71)
+
+Buildings that use `tilesets/buildings.png` get their window glow in two parts: `light` objects with
+`only = "dusk,night"` (the usual pool of light, above) and a `windows_lit` tile layer whose alpha
+`scripts/roofs.lua` ramps to 255 at dusk / night and to 0 by day. See [buildings.md](buildings.md).
+
 ## Manual checklist
 
 - At night a row of posts lights the street; one flickers and one is broken.

@@ -23,6 +23,10 @@
 --   Consecuencias (#70): consequences.lua (dia, comentarios), docs/consequences.md
 --   tile_map  true = ademas dibuja las capas de tiles del TMX (tileset del pueblo, issue #55,
 --   docs/tileset.md); los tiles solid tambien colisionan. town.tmx no lo usa (solo objetos).
+--   roofs  techos que se desvanecen y ventanas encendidas (issue #71, scripts/roofs.lua,
+--   docs/buildings.md). nil = sigue a tile_map; false = apagado.
+--   world_debug  true (por defecto) = dibuja la rejilla, los rects de colision y las puertas
+--   encima del mapa; las escenas con tiles de edificios lo ponen en false.
 local logic = require("door_logic")
 local ws = require("world_state")
 local fade = require("fade")
@@ -43,6 +47,7 @@ local tod = require("time_of_day")
 local foco = require("foco")
 local tools = require("tools")
 local libreta_ui = require("libreta_ui")
+local roofs = require("roofs")
 
 local M = {}
 
@@ -59,6 +64,8 @@ M.DEFAULTS = {
   line_time = 2.0,
   lead_time = 5.0,
   tile_map = false, -- true = dibujar las capas de tiles del TMX con load_tile_map (issue #55)
+  roofs = nil,      -- nil = sigue a tile_map; techos que se desvanecen + ventanas encendidas (issue #71)
+  world_debug = true, -- false = sin rejilla / colisiones / puertas dibujadas (issue #71)
 }
 
 local FONT = "default"
@@ -266,6 +273,8 @@ function M.make_update(cfg)
       local ok, terr = load_tile_map(c.map)
       if not ok then print("[town] tile map: " .. tostring(terr)) end
     end
+    if c.roofs == nil then c.roofs = c.tile_map end
+    if c.roofs then roofs.init(m) end
     local n, cerr = load_tmx_colliders(c.map)
     if not n then print("[town] colliders: " .. tostring(cerr)) end
     -- Llegada con fundido: el primer frame ya es negro (sin destello)
@@ -382,21 +391,23 @@ function M.make_update(cfg)
   local function draw_world()
     local mw = map.width * map.tilewidth
     local mh = map.height * map.tileheight
-    for x = 0, mw, c.grid do draw_rect_world(x, 0, 1, mh, 90, 90, 100, 90, true) end
-    for y = 0, mh, c.grid do draw_rect_world(0, y, mw, 1, 90, 90, 100, 90, true) end
-    draw_rect_world(0, 0, mw, mh, 255, 255, 255, 255, false)
-    for _, o in ipairs(map.objects) do
-      if o.layer == "collision" and o.shape == "rect" and tod.visible(o.properties) then
-        local r = o.rect
-        draw_rect_world(r.x, r.y, r.w, r.h, 120, 90, 60, 255, true)
+    if c.world_debug then
+      for x = 0, mw, c.grid do draw_rect_world(x, 0, 1, mh, 90, 90, 100, 90, true) end
+      for y = 0, mh, c.grid do draw_rect_world(0, y, mw, 1, 90, 90, 100, 90, true) end
+      draw_rect_world(0, 0, mw, mh, 255, 255, 255, 255, false)
+      for _, o in ipairs(map.objects) do
+        if o.layer == "collision" and o.shape == "rect" and tod.visible(o.properties) then
+          local r = o.rect
+          draw_rect_world(r.x, r.y, r.w, r.h, 120, 90, 60, 255, true)
+        end
       end
-    end
-    for _, d in ipairs(visible_only(idx.doors)) do
-      local r = d.rect
-      if logic.is_locked(d, ws.has) then
-        draw_rect_world(r.x, r.y, r.w, r.h, 200, 60, 60, 160, true)
-      else
-        draw_rect_world(r.x, r.y, r.w, r.h, 80, 200, 90, 160, true)
+      for _, d in ipairs(visible_only(idx.doors)) do
+        local r = d.rect
+        if logic.is_locked(d, ws.has) then
+          draw_rect_world(r.x, r.y, r.w, r.h, 200, 60, 60, 160, true)
+        else
+          draw_rect_world(r.x, r.y, r.w, r.h, 80, 200, 90, 160, true)
+        end
       end
     end
     for _, g in ipairs(visible_only(lidx.gates)) do
@@ -428,10 +439,12 @@ function M.make_update(cfg)
 
     local prompt = nil
     if not placed then
+      if c.roofs then roofs.update(dt, nil) end
       placed = try_place()
     else
       local px, py = get_position(player_entity)
       local foot = logic.foot_box(px, py, c.box)
+      if c.roofs then roofs.update(dt, foot) end
       local fcx, fcy = foot.x + foot.w / 2, foot.y + foot.h / 2
       local door = logic.find_door(visible_only(idx.doors), foot)
       local door_raw = door

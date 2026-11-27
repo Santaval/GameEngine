@@ -24,3 +24,13 @@ Nothing else from pixelfx is used (no effects, fonts or other assets).
 Shapes and colours were chosen with the photos and sketch of the real town in
 `games/quebrada/docs/reference/` (croquis, camino de las carretas, cafetal, rio, monte, clinica, escuela).
 Those are references only; no pixel of them is in the tileset.
+
+## Buildings sheet (issue #71)
+
+`tilesets/buildings.png` / `buildings.tsx` (church, mama's house, three filler houses, the interior of mama's
+house, window glow cells and two coloured hedges) are original procedural art drawn by
+`games/quebrada/tools/tilegen/catalog_buildings.mjs` and `building_draw.mjs`. No third party pixels. The licence
+is the same TO-BE-CHOSEN placeholder as above.
+
+The church follows the photo `games/quebrada/docs/reference/iglesia/iglesia-frente.jpg` (shapes and colours only).
+Mama's house is based on a written description, not on a committed photo.

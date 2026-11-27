@@ -228,6 +228,7 @@ and update `tilesets/CREDITS.md`.
 ## Limits and notes
 
 - Canopy as `above` assumes the 16x16 hero; taller sprites may need the lower canopy cells in `ysort`.
-- Buildings and roofs are out of scope (they will come with `roof_of` layers). A later tileset needs its
-  own `firstgid`; `tests/tileset_check.lua` already reads `firstgid` from the map and masks flip flags.
+- Buildings and roofs live in a second sheet, `tilesets/buildings.png`: see [buildings.md](buildings.md).
+  Maps that use it declare it after the town tileset with `firstgid` 145 (town has 144 tiles);
+  `tests/tileset_check.lua` only validates `town.tsx` and `tiles_demo.tmx`, `tests/buildings_check.lua` the rest.
 - Palette is mid-tone on purpose so the lighting layer's darkening stays readable.
