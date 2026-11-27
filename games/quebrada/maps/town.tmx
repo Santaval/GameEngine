@@ -3,9 +3,11 @@
      Los puntos de spawn marcan el CENTRO de la caja de pies del jugador.
      Capa "surfaces" (issue #65): rects class="surface" con la propiedad surface (lastre, zacate, madera, concreto) para los pasos.
      Capa "gates" (issue #69): rects class="gate" con `locked` (como las puertas) y `locked_line`; cerrados devuelven al jugador.
-     Propiedad `lead` ("house.<id>" | "zone.<id>") en door/gate/marker: marcador sutil mientras la pista este sin visitar. -->
+     Propiedad `lead` ("house.<id>" | "zone.<id>") en door/gate/marker: marcador sutil mientras la pista este sin visitar.
+     Capa interactables (#70): la vecina aparece (enabled) el dia siguiente al resultado de chequelo; `figure` = figura provisional. -->
 
-<map version="1.10" tiledversion="1.10.2" orientation="orthogonal" renderorder="right-down" width="40" height="30" tilewidth="16" tileheight="16" infinite="0" nextlayerid="7" nextobjectid="42">
+
+<map version="1.10" tiledversion="1.10.2" orientation="orthogonal" renderorder="right-down" width="40" height="30" tilewidth="16" tileheight="16" infinite="0" nextlayerid="8" nextobjectid="43">
  <objectgroup id="1" name="collision">
   <object id="1" name="wall_top" x="-16" y="-16" width="672" height="16"/>
   <object id="2" name="wall_bottom" x="-16" y="480" width="672" height="16"/>
@@ -21,6 +23,8 @@
     <property name="target_map" value="maps/house_mama.tmx"/>
     <property name="target_spawn" value="inside_door"/>
     <property name="exit_spawn" value="exit_mama"/>
+    <property name="locked" value="mission.chequelo.failed,!mission.chequelo.next_day"/>
+    <property name="locked_line" value="Mamá cerró con llave: hoy no quiere ver a nadie. Mañana será otro día."/>
     <property name="prompt" value="E: entrar"/>
    </properties>
   </object>
@@ -38,7 +42,7 @@
   <object id="12" name="door_shed" class="door" x="496" y="364" width="32" height="12">
    <properties>
     <property name="target_spawn" value="shed_out"/>
-    <property name="locked" value="!unlock.zone.quebrada"/>
+    <property name="locked" value="!unlock.zone.quebrada,!mission.chequelo.done"/>
     <property name="locked_line" value="El fondo da a la quebrada. A esta hora no se mete uno."/>
     <property name="lead" value="zone.quebrada"/>
     <property name="prompt" value="E: pasar al fondo"/>
@@ -118,15 +122,27 @@
  <objectgroup id="6" name="gates">
   <object id="40" name="gate_quebrada_n" class="gate" x="0" y="392" width="160" height="12">
    <properties>
-    <property name="locked" value="!unlock.zone.quebrada"/>
+    <property name="locked" value="!unlock.zone.quebrada,!mission.chequelo.done"/>
     <property name="locked_line" value="Un perro ladra tras la reja. A esta hora no se mete uno a la quebrada."/>
     <property name="lead" value="zone.quebrada"/>
    </properties>
   </object>
   <object id="41" name="gate_quebrada_e" class="gate" x="160" y="404" width="12" height="76">
    <properties>
-    <property name="locked" value="!unlock.zone.quebrada"/>
+    <property name="locked" value="!unlock.zone.quebrada,!mission.chequelo.done"/>
     <property name="locked_line" value="Un perro ladra tras la reja. A esta hora no se mete uno a la quebrada."/>
+   </properties>
+  </object>
+ </objectgroup>
+ <objectgroup id="7" name="interactables">
+  <object id="42" name="vecina" class="interactable" x="232" y="212" width="16" height="16">
+   <properties>
+    <property name="npc" value="vecina"/>
+    <property name="label" value="Hablar"/>
+    <property name="target" value="vecina"/>
+    <property name="line" value="Vecina: Buenas, mijo."/>
+    <property name="enabled" value="mission.chequelo.next_day"/>
+    <property name="figure" value="120,80,160"/>
    </properties>
   </object>
  </objectgroup>

@@ -20,6 +20,7 @@
 --   Pistas de boca en boca y compuertas (issue #69): leads.lua resuelve las leyendas y publica
 --   flags unlock.*; las compuertas (class "gate", capa "gates") devuelven al jugador a su ultima
 --   posicion libre mientras esten cerradas. Docs: games/quebrada/docs/leads.md
+--   Consecuencias (#70): consequences.lua (dia, comentarios), docs/consequences.md
 local logic = require("door_logic")
 local ws = require("world_state")
 local fade = require("fade")
@@ -33,6 +34,7 @@ local mlogic = require("missions_logic")
 local story = require("story")
 local leads = require("leads")
 local llogic = require("leads_logic")
+local consequences = require("consequences")
 
 local M = {}
 
@@ -164,7 +166,7 @@ function M.make_update(cfg)
     local x, y, w, h = 8, 8, sw - 16, sh - 16
     draw_rect(x, y, w, h, 10, 10, 20, 235, true)
     draw_rect(x, y, w, h, 235, 225, 200, 255, false)
-    draw_text(x + 6, y + 4, "DEBUG F3 | Arriba/Abajo: mover  Izq/Der: cambiar  E: siguiente", FONT, 255, 220, 80, 255)
+    draw_text(x + 6, y + 4, "DEBUG F3 (día " .. consequences.day() .. ") | Arriba/Abajo: mover  Izq/Der: cambiar  E: siguiente", FONT, 255, 220, 80, 255)
     local rows = ov.rows
     local top = y + 4 + lh + 4
     local visible = math.floor((y + h - 4 - top) / lh)
@@ -216,6 +218,8 @@ function M.make_update(cfg)
     idx = logic.index_objects(m)
     lidx = llogic.index_map(m.objects)
     leads.validate()
+    consequences.init()
+    consequences.validate()
     interaction.from_map(m)
     footsteps.set_source(surfaces.build(m))
     local n, cerr = load_tmx_colliders(c.map)
@@ -371,8 +375,10 @@ function M.make_update(cfg)
     end
 
     local dlg_open = dialogue.is_open() -- foto del inicio del frame (la E que cierra no abre puertas)
+    consequences.tick()
 
     draw_world()
+    interaction.draw_figures()
     if not ov.open and not story.is_open() then leads.draw_markers(lidx.markers, clock) end
 
     local prompt = nil
@@ -461,8 +467,14 @@ function M.make_update(cfg)
       -- N alterna dia/noche (el ambiente solo lee la hora)
       local tdown = is_action_activated("toggle_time")
       if tdown and not was_time then
-        amb.set_time(amb.get_time() == "day" and "night" or "day")
+        local before = amb.get_time()
+        amb.set_time(before == "day" and "night" or "day")
         print("[ambience] hora: " .. amb.get_time())
+        -- Amanecer tras una noche = dia nuevo (issue #70)
+        if before == "night" then
+          local d = consequences.advance_day()
+          line.text, line.left = "Día " .. d, c.line_time
+        end
       end
       was_time = tdown
       amb.tick(dt)

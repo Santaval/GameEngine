@@ -1,7 +1,7 @@
 -- Demo de puertas, interiores y zonas (issue #62): interior de la casa.
 -- WASD o flechas para andar, Shift corre, E / Enter interactua con la puerta,
 -- F alterna el flag unlock.house.chayo (depuracion), 0 vuelve a la escena principal,
--- N alterna dia / noche (ambiente, issue #65), F3 abre el overlay de flags y misiones (issue #51).
+-- N alterna dia / noche (ambiente, issue #65; al amanecer pasa al dia siguiente, issue #70), F3 abre el overlay de flags y misiones (issue #51).
 -- Mama tiene la historia "El chequelo" (issue #68): E la escucha; Espacio pausa, Retroceso o Q detienen.
 -- Pensado para 480x270 logico (pixel_perfect). Teclas SDL: Right 1073741903,
 -- Left 1073741904, Down 1073741905, Up 1073741906, LShift 1073742049, RShift 1073742053.

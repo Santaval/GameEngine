@@ -85,6 +85,9 @@ function M.from_map(map)
         local rect = o.rect
         if not rect and o.x then rect = { x = o.x, y = o.y, w = 0, h = 0 } end
         local it = { rect = rect, radius = tonumber(p.radius), name = o.name }
+        -- Figura provisional (issue #70): `figure` = "r,g,b"; se dibuja mientras el item este habilitado
+        local fr, fg, fb = logic.parse_color(p.figure)
+        if fr then it.figure = { fr, fg, fb } end
         if kind == "npc" then
           local npc = p.npc
           local sid = (p.story ~= nil and p.story ~= "") and p.story or nil
@@ -120,6 +123,20 @@ function M.from_map(map)
         end
         if rect then M.register(it) end
       end
+    end
+  end
+end
+
+-- Dibuja las figuras provisionales de los NPC con propiedad `figure` (issue #70).
+-- Se llama cada frame desde el controlador; respeta `enabled`.
+function M.draw_figures()
+  for _, it in ipairs(items) do
+    local f = it.figure
+    if f and it.rect and (it.enabled == nil or it.enabled()) then
+      local cx = math.floor(it.rect.x + it.rect.w / 2)
+      local by = math.floor(it.rect.y + it.rect.h)
+      draw_rect_world(cx - 5, by - 14, 10, 14, f[1], f[2], f[3], 255, true) -- cuerpo
+      draw_rect_world(cx - 3, by - 20, 6, 6, 230, 190, 150, 255, true)      -- cabeza
     end
   end
 end

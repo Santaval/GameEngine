@@ -57,4 +57,14 @@ function M.edge(was_down, down)
   return (down and not was_down), down
 end
 
+-- "r,g,b" -> r, g, b (0-255) o nil si el texto no es valido
+function M.parse_color(s)
+  if type(s) ~= "string" then return nil end
+  local r, g, b = s:match("^%s*(%d+)%s*,%s*(%d+)%s*,%s*(%d+)%s*$")
+  if not r then return nil end
+  r, g, b = tonumber(r), tonumber(g), tonumber(b)
+  if r > 255 or g > 255 or b > 255 then return nil end
+  return r, g, b
+end
+
 return M

@@ -3,10 +3,12 @@
 -- Lineas y opciones aceptan `when` (se evalua al llegar); la linea acepta mission_offer y
 -- las opciones set_flag, mission_accept, mission_reject y call. start() devuelve nil si
 -- todas las lineas quedan filtradas por `when`.
+-- Consecuencias (#70): attach() antepone los comentarios de consequences_data.lua al guion del NPC.
 local logic = require("dialogue_logic")
 local ws = require("world_state")
 local interaction = require("interaction")
 local missions = require("missions")
+local consequences = require("consequences")
 
 local M = {}
 M.FONT = "dialogue"
@@ -189,7 +191,8 @@ end
 -- Conecta interaction.on_npc con M.scripts (llamar en cada carga de escena)
 function M.attach()
   interaction.on_npc = function(name, obj)
-    local s = M.scripts[name]
+    -- Comentarios por consecuencias (issue #70) antepuestos al guion base
+    local s = consequences.build_script(name, M.scripts[name])
     if s then
       M.start(s)
     elseif interaction.say then

@@ -114,6 +114,16 @@ Put interactables in an object layer (the examples use `interactables`) with
 | `line` | One-line message (default `...`). |
 | `set_flag` | Flag set to `true` on use (objects). |
 | `enabled` | Condition in the door lock syntax (`a`, `!a`, `a,!b`). Missing means enabled. |
+| `figure` | Placeholder figure (issue #70): `"r,g,b"` (0-255). Drawn by `interaction.draw_figures()` while the item is enabled. Invalid text is ignored. |
+
+## Placeholder figures (issue #70)
+
+`interaction.draw_figures()` draws a simple body and head at the bottom of each rect
+that has a `figure` property. There are no NPC sprites yet, so this is how an NPC
+that appears later is seen. The town controller calls it each frame after `draw_world()`.
+The figure respects `enabled`, so an NPC that appears on a condition (for example
+`mission.chequelo.next_day`) needs only an `interactable` with `enabled` and `figure`.
+The helper that parses the colour is `interaction_logic.parse_color(text)`.
 
 ## Doors take precedence
 

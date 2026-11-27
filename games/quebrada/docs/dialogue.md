@@ -90,6 +90,15 @@ started with `dialogue.start`. The greeting's `on_end` starts the recording.
 The story overlay and the dialogue never show at the same time.
 See [stories.md](stories.md).
 
+## Consequence comments (issue #70)
+
+`dialogue.attach()` builds each NPC's script with `consequences.build_script(npc, base)`:
+the entries of `scripts/consequences_data.lua` whose `who` matches the NPC and whose
+`when` holds are **prepended** to the NPC's base script, in data order. An entry with
+`once = true` is shown once: when its script is built it sets `comment.<id>.seen`.
+Without matching entries the base script is used unchanged (or the `line` property).
+See [consequences.md](consequences.md).
+
 ## Limits
 
 - One dialogue at a time.

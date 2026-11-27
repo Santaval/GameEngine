@@ -152,4 +152,22 @@ end
 
 function M.negate(f) return function() return not f() end end
 
+-- ---- dias (issue #70) ----
+M.DAY_KEY = "day" -- flag numerico: dia actual (empieza en 1)
+-- Estados en los que el jugador ya decidio algo
+M.DECIDED = { accepted = true, rejected = true, night_active = true, done = true, failed = true }
+
+-- Dias transcurridos desde el sello (nil si no hay sello)
+function M.days_since(stamp, now)
+  if type(stamp) ~= "number" then return nil end
+  return (now or 1) - stamp
+end
+
+-- true si la mision ya tiene resultado y estamos en un dia posterior a el
+function M.next_day(state, stamp, now)
+  if not M.DECIDED[state] then return false end
+  local d = M.days_since(stamp, now)
+  return d ~= nil and d >= 1
+end
+
 return M

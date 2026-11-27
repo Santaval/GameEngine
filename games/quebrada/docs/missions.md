@@ -23,6 +23,9 @@ is `none`. Invalid transitions log a message and return `false, err`.
 | `mission.<id>.state` | `none`, `offered`, `accepted`, `rejected`, `night_active`, `done` or `failed`. |
 | `mission.<id>.<state>` | Derived boolean, `true` only for the current state (absent otherwise). Readable from Tiled `locked` / `enabled`, e.g. `mission.chequelo.rejected`. |
 | `mission.<id>.outcome` | Result string passed to `complete(id, outcome)`; cleared when leaving `done`. |
+| `mission.<id>.day` | Day (the `day` flag) when the state last changed. Every state write stamps it, including `jump`. See [consequences.md](consequences.md). |
+| `mission.<id>.next_day` | Derived by `consequences.tick()`: `true` when the mission has a result (`accepted`, `rejected`, `night_active`, `done` or `failed`) and the current day is later than `mission.<id>.day`. Absent otherwise. Readable from Tiled. |
+| `day` | Current day, a number that starts at 1. Not a mission flag: the night-to-day toggle (`N`) advances it. |
 | `chequelo.accepted`, `chequelo.ending` | Content flags written by the hooks in `mission_defs.lua` (`stayed_home`, `failed`, or the outcome). |
 
 ## Hooks
@@ -46,6 +49,11 @@ Helpers return a `function() -> bool` that is evaluated at the moment of use:
 `flag(name)`, `not_flag(name)`, `mission_is(id, ...)`, `mission_accepted(id)`
 (accepted, night_active, done or failed), `mission_rejected(id)`, `mission_failed(id)`,
 `mission_done(id, outcome?)`, and the combinators `all(...)`, `any(...)`, `not_(f)`.
+Day conditions (issue #70): `next_day(id)` (has a result and it is a later day),
+`days_since(id, n?)` (at least `n` days, 1 by default, since the last state change),
+`same_day(id)` (the last state change was today). `flag(name, value?)` without a value
+is "flag set"; with a value it is "flag equals that value", for example
+`flag("chequelo.ending", "stayed_home")`.
 `check(when)` evaluates a `when` value: `nil` is true, a boolean, a function, or a
 string `"a,!b"` over world flags (same syntax as door locks).
 
@@ -66,7 +74,7 @@ always be closed. While open it locks the player input, doors, interactions, `F`
 and `0`, and hides the toast, line and prompt texts.
 
 - Up / Down: move the selection.
-- Mission row: Left / Right / `E` cycle the state (via `jump`, no hooks).
+- Mission row: Left / Right / `E` cycle the state (via `jump`, no hooks). `jump` also stamps `mission.<id>.day` with the current day.
 - Flag row: Right / `E` toggles a boolean or adds 1, Left toggles a boolean or subtracts 1. Strings are read-only.
 
 Nothing calls `start_night`, `complete` or `fail` yet, so use the overlay to reach

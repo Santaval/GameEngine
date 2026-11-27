@@ -3,6 +3,7 @@
 --   mission.<id>.state    "none"|"offered"|"accepted"|"rejected"|"night_active"|"done"|"failed"
 --   mission.<id>.<estado> true solo para el estado actual (legible desde condiciones de Tiled)
 --   mission.<id>.outcome  resultado al completar
+--   mission.<id>.day      dia en que cambio por ultima vez el estado (#70)
 -- Las definiciones (hooks) son datos de mission_defs.lua y se recargan con cada escena.
 local ws = require("world_state")
 local logic = require("missions_logic")
@@ -25,6 +26,7 @@ end
 -- Escribe estado y booleanos derivados; el flag .state va al final para que los
 -- listeners ya vean todo consistente. No ejecuta hooks.
 local function set_state(id, state, outcome)
+  ws.set(logic.key(id, "day"), ws.get(logic.DAY_KEY, 1)) -- dia del ultimo cambio (issue #70)
   for _, s in ipairs(logic.STATES) do
     if s ~= "none" then ws.set(logic.key(id, s), (s == state) or nil) end
   end
@@ -75,7 +77,11 @@ end
 
 -- ---- condiciones como datos: when = mission_done("mona_machete") ----
 -- Todas devuelven function() -> bool, evaluada al momento (nunca cacheada).
-function M.flag(name) return function() return ws.has(name) end end
+-- flag(name): activo. flag(name, valor): el flag vale exactamente ese valor (p. ej. chequelo.ending)
+function M.flag(name, value)
+  if value == nil then return function() return ws.has(name) end end
+  return function() return ws.get(name) == value end
+end
 function M.not_flag(name) return function() return not ws.has(name) end end
 
 -- true si el estado actual es uno de los dados
@@ -99,6 +105,26 @@ function M.mission_done(id, outcome)
     if M.state(id) ~= "done" then return false end
     return outcome == nil or ws.get(logic.key(id, "outcome")) == outcome
   end
+end
+
+-- ---- dias (issue #70) ----
+function M.day() return ws.get(logic.DAY_KEY, 1) end
+local function stamp(id) return ws.get(logic.key(id, "day")) end
+
+-- Ya paso al menos n dias (1 por defecto) desde el ultimo cambio de estado
+function M.days_since(id, n)
+  return function()
+    local d = logic.days_since(stamp(id), M.day())
+    return d ~= nil and d >= (n or 1)
+  end
+end
+-- Resultado ya tomado y es otro dia: "al dia siguiente"
+function M.next_day(id)
+  return function() return logic.next_day(M.state(id), stamp(id), M.day()) end
+end
+-- El ultimo cambio fue hoy
+function M.same_day(id)
+  return function() return logic.days_since(stamp(id), M.day()) == 0 end
 end
 
 M.all, M.any, M.not_ = logic.all, logic.any, logic.negate

@@ -58,6 +58,13 @@ Rules:
   `!unlock.house.chayo` (locked until the flag is set).
 - `a,!b` : comma list = AND.
 - Empty or absent: never locked.
+- Mission flags work the same way (issue #70): the derived flags `mission.<id>.<state>`
+  and `mission.<id>.next_day` can be used. Examples from `maps/town.tmx`:
+  `door_mama` has `locked = mission.chequelo.failed,!mission.chequelo.next_day` (locked
+  the day after a failed mission it opens again on the next day), and `door_shed` and
+  the quebrada gates have `locked = !unlock.zone.quebrada,!mission.chequelo.done`
+  (open through the legend or through the mission). See [consequences.md](consequences.md).
+- Each door or gate has a single `locked_line`; it is shown whatever condition locked it.
 
 Flags are read at the moment they are needed (every frame for the prompt, at
 interaction time for the door), never cached, so a door opens as soon as the flag
@@ -107,7 +114,7 @@ In the main scene press `6` to open the demo (`scenes/town_demo.lua`).
 | WASD / arrows, Shift | Walk, run |
 | `E` / `Enter` | Interact with the door under your feet |
 | `F` | Toggle the flag `unlock.house.chayo` (debug) |
-| `N` | Toggle day / night (ambience, see [audio.md](audio.md)) |
+| `N` | Toggle day / night (ambience, see [audio.md](audio.md)); night to day advances the day counter (see [consequences.md](consequences.md)) |
 | `F3` | Debug overlay of flags and missions (see [missions.md](missions.md)) |
 | `0` | Back to the main scene |
 
