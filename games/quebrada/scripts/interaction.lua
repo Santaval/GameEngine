@@ -114,12 +114,19 @@ function M.from_map(map)
           it.target = p.target
           it.on_interact = function()
             if p.set_flag and p.set_flag ~= "" then ws.set(p.set_flag, true) end
+            if p.sleep and M.on_sleep then M.on_sleep(); return end
             say(p.line or "...")
           end
         end
-        if p.enabled ~= nil and p.enabled ~= "" then
-          local cond = p.enabled
-          it.enabled = function() return door_logic.eval_condition(cond, ws.has) end
+        -- `enabled` (condicion de flags) y `only` (hora del dia, issue #66) se combinan con AND
+        local cond = (p.enabled ~= nil and p.enabled ~= "") and p.enabled or nil
+        local only = (type(p.only) == "string" and p.only ~= "") and p.only or nil
+        if cond or only then
+          it.enabled = function()
+            if only and not require("time_of_day").visible(only) then return false end
+            if cond then return door_logic.eval_condition(cond, ws.has) end
+            return true
+          end
         end
         if rect then M.register(it) end
       end

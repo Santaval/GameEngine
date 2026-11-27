@@ -36,6 +36,7 @@ local leads = require("leads")
 local llogic = require("leads_logic")
 local consequences = require("consequences")
 local lighting = require("lighting")
+local tod = require("time_of_day")
 
 local M = {}
 
@@ -68,6 +69,15 @@ local function draw_centered(text, y)
   local x = math.floor((sw - w) / 2)
   draw_rect(x - 4, y - 2, w + 8, 14, 0, 0, 0, 170, true)
   draw_text(x, y, text, FONT, 255, 255, 255, 255)
+end
+
+-- Objetos de Tiled con `only` (issue #66): solo los visibles en la fase actual
+local function visible_only(list)
+  local out = {}
+  for _, o in ipairs(list) do
+    if tod.visible(o.properties) then out[#out + 1] = o end
+  end
+  return out
 end
 
 function M.make_update(cfg)
@@ -222,7 +232,12 @@ function M.make_update(cfg)
     consequences.init()
     consequences.validate()
     interaction.from_map(m)
-    lighting.init(m)
+    lighting.init()
+    tod.init(m)
+    tod.on_day = function(d) line.text, line.left = "Día " .. d, c.line_time end
+    interaction.on_sleep = function()
+      if not tod.sleep() then line.text, line.left = "Todavía no tengo sueño", c.line_time end
+    end
     footsteps.set_source(surfaces.build(m))
     local n, cerr = load_tmx_colliders(c.map)
     if not n then print("[town] colliders: " .. tostring(cerr)) end
@@ -343,12 +358,12 @@ function M.make_update(cfg)
     for y = 0, mh, c.grid do draw_rect_world(0, y, mw, 1, 90, 90, 100, 90, true) end
     draw_rect_world(0, 0, mw, mh, 255, 255, 255, 255, false)
     for _, o in ipairs(map.objects) do
-      if o.layer == "collision" and o.shape == "rect" then
+      if o.layer == "collision" and o.shape == "rect" and tod.visible(o.properties) then
         local r = o.rect
         draw_rect_world(r.x, r.y, r.w, r.h, 120, 90, 60, 255, true)
       end
     end
-    for _, d in ipairs(idx.doors) do
+    for _, d in ipairs(visible_only(idx.doors)) do
       local r = d.rect
       if logic.is_locked(d, ws.has) then
         draw_rect_world(r.x, r.y, r.w, r.h, 200, 60, 60, 160, true)
@@ -356,7 +371,7 @@ function M.make_update(cfg)
         draw_rect_world(r.x, r.y, r.w, r.h, 80, 200, 90, 160, true)
       end
     end
-    for _, g in ipairs(lidx.gates) do
+    for _, g in ipairs(visible_only(lidx.gates)) do
       if logic.is_locked(g, ws.has) then
         local r = g.rect
         draw_rect_world(r.x, r.y, r.w, r.h, 160, 110, 40, 160, true)
@@ -390,11 +405,11 @@ function M.make_update(cfg)
       local px, py = get_position(player_entity)
       local foot = logic.foot_box(px, py, c.box)
       local fcx, fcy = foot.x + foot.w / 2, foot.y + foot.h / 2
-      local door = logic.find_door(idx.doors, foot)
+      local door = logic.find_door(visible_only(idx.doors), foot)
       local door_raw = door
 
       -- Compuertas cerradas: sin collider conmutable, se devuelve al jugador a su ultima posicion libre
-      local gate = llogic.first_locked_gate(lidx.gates, foot, ws.has)
+      local gate = llogic.first_locked_gate(visible_only(lidx.gates), foot, ws.has)
       if gate then
         if safe and not transition then
           set_position(player_entity, safe.x, safe.y)
@@ -417,6 +432,7 @@ function M.make_update(cfg)
       if dlg_open then door = nil end
       if ov.open then door = nil end
       if story.is_open() then door = nil end
+      if tod.is_busy() then door = nil end
 
       -- Zona: aviso solo al cambiar (no al volver a entrar en la misma)
       local z = logic.find_zone(idx.zones, fcx, fcy)
@@ -450,7 +466,7 @@ function M.make_update(cfg)
       end
 
       -- Interactuables (NPCs/objetos): nunca a la vez que una puerta ni en transicion
-      local suppress = dlg_open or transition or ignore_until_clear or door_raw ~= nil or fade.alpha() > 0 or ov.open or story.is_open()
+      local suppress = dlg_open or transition or ignore_until_clear or door_raw ~= nil or fade.alpha() > 0 or ov.open or story.is_open() or tod.is_busy()
       local ihint = interaction.update(dt, {
         x = fcx, y = fcy, facing = player_walker:get_facing(), suppress = suppress,
       })
@@ -466,28 +482,23 @@ function M.make_update(cfg)
       end
       was_debug = fdown
 
-      -- N alterna dia/noche (el ambiente solo lee la hora)
+      -- N alterna dia/noche por time_of_day (el mismo camino que la cama y las misiones)
       local tdown = is_action_activated("toggle_time")
-      if tdown and not was_time then
-        local before = amb.get_time()
-        amb.set_time(before == "day" and "night" or "day")
-        print("[ambience] hora: " .. amb.get_time())
-        -- Amanecer tras una noche = dia nuevo (issue #70)
-        if before == "night" then
-          local d = consequences.advance_day()
-          line.text, line.left = "Día " .. d, c.line_time
-        end
+      if tdown and not was_time and not tod.is_busy() then
+        tod.toggle()
+        print("[time_of_day] hora: " .. tod.get())
       end
       was_time = tdown
       amb.tick(dt)
       -- Pistas: no se evaluan con pantalla ocupada (no se pierden, esperan)
-      local hidden = dlg_open or transition or ov.open or story.is_open() or fade.alpha() > 0
-      story.tick(dt, { x = fcx, y = fcy, zone = ws.ctx().zone, time = amb.get_time(), map = c.map, hidden = hidden })
+      local hidden = dlg_open or transition or ov.open or story.is_open() or fade.alpha() > 0 or tod.is_busy()
+      story.tick(dt, { x = fcx, y = fcy, zone = ws.ctx().zone, time = amb.get_time(), phase = tod.get(), map = c.map, hidden = hidden })
       leads.tick({ hidden = hidden })
     end
 
     -- Iluminacion: ambiente segun la hora y linterna del jugador
     lighting.tick()
+    tod.tick(dt)
 
     -- F3: overlay de depuracion (tambien captura teclas mientras esta abierto)
     update_overlay(dlg_open)
@@ -522,7 +533,8 @@ function M.make_update(cfg)
 
     draw_overlay()
 
-    fade.draw() -- siempre el ultimo
+    fade.draw() -- siempre el ultimo del fundido de puertas
+    tod.draw()  -- tarjeta de titulo de la hora (encima de todo)
   end
 end
 

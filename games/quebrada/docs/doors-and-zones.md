@@ -124,3 +124,8 @@ In the main scene press `6` to open the demo (`scenes/town_demo.lua`).
 - The quebrada gates and the shed door stay locked until Chayo's lead resolves, which happens the first time you enter her house.
 - The shed door teleports inside the same map (`shed_out`).
 - Zones: "Barrio Alto" (north) and "La Plaza" (south) show a toast when crossed.
+
+## `only` (issue #66)
+
+`door` and `gate` objects accept `only = "day" | "night" | "dusk,night"...`: outside those
+phases the object does not exist (no prompt, no blocking). See `time-of-day.md`.

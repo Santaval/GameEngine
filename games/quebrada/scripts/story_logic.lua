@@ -94,7 +94,7 @@ end
 function M.clue_matches(c, ctx)
   if c.map and c.map ~= ctx.map then return false end
   if c.zone and c.zone ~= ctx.zone then return false end
-  if c.time and c.time ~= ctx.time then return false end
+  if c.time and c.time ~= ctx.time and c.time ~= ctx.phase then return false end
   if c.near then
     if ctx.x == nil or ctx.y == nil then return false end
     local dx, dy = ctx.x - c.near.x, ctx.y - c.near.y

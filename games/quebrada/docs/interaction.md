@@ -152,3 +152,10 @@ Automated tests are not used for this feature. Check in the game after building:
    no interactable fires until the player leaves the door area. Nothing fires
    during fades.
 5. Leave and re-enter the house: no duplicate entries and no duplicate prompts.
+
+## Time of day: `only` and `sleep` (issue #66)
+
+- `only = "night"` (or `"day"`, `"dusk,night"`) on an `interactable` enables it only in
+  those phases; it is ANDed with `enabled`. See `time-of-day.md`.
+- `sleep = true` on an `interact = "object"` makes the interaction call
+  `interaction.on_sleep()` (the controller wires it to `time_of_day.sleep()`).

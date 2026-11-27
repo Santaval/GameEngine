@@ -4,10 +4,11 @@
      Capa "surfaces" (issue #65): rects class="surface" con la propiedad surface (lastre, zacate, madera, concreto) para los pasos.
      Capa "gates" (issue #69): rects class="gate" con `locked` (como las puertas) y `locked_line`; cerrados devuelven al jugador.
      Propiedad `lead` ("house.<id>" | "zone.<id>") en door/gate/marker: marcador sutil mientras la pista este sin visitar.
+     Hora del dia (#66): `only` ("day", "night", "dusk,night"...) en cualquier objeto lo muestra solo en esas fases; capa "lights": postes y ventanas.
      Capa interactables (#70): la vecina aparece (enabled) el dia siguiente al resultado de chequelo; `figure` = figura provisional. -->
 
 
-<map version="1.10" tiledversion="1.10.2" orientation="orthogonal" renderorder="right-down" width="40" height="30" tilewidth="16" tileheight="16" infinite="0" nextlayerid="8" nextobjectid="43">
+<map version="1.10" tiledversion="1.10.2" orientation="orthogonal" renderorder="right-down" width="40" height="30" tilewidth="16" tileheight="16" infinite="0" nextlayerid="9" nextobjectid="53">
  <objectgroup id="1" name="collision">
   <object id="1" name="wall_top" x="-16" y="-16" width="672" height="16"/>
   <object id="2" name="wall_bottom" x="-16" y="480" width="672" height="16"/>
@@ -120,6 +121,13 @@
   </object>
  </objectgroup>
  <objectgroup id="6" name="gates">
+  <object id="50" name="gate_camino_chequelo" class="gate" x="624" y="200" width="12" height="100">
+   <properties>
+    <property name="only" value="day"/>
+    <property name="locked" value="time.day"/>
+    <property name="locked_line" value="El camino de las carretas esta cerrado de dia. Solo se abre de noche."/>
+   </properties>
+  </object>
   <object id="40" name="gate_quebrada_n" class="gate" x="0" y="392" width="160" height="12">
    <properties>
     <property name="locked" value="!unlock.zone.quebrada,!mission.chequelo.done"/>
@@ -143,6 +151,80 @@
     <property name="line" value="Vecina: Buenas, mijo."/>
     <property name="enabled" value="mission.chequelo.next_day"/>
     <property name="figure" value="120,80,160"/>
+   </properties>
+  </object>
+  <object id="48" name="don_lencho" class="interactable" x="280" y="300" width="16" height="16">
+   <properties>
+    <property name="npc" value="don_lencho"/>
+    <property name="label" value="Hablar"/>
+    <property name="target" value="Ño Lencho"/>
+    <property name="line" value="Ño Lencho: Buenas, mijo. Aquí, descansando el caballo."/>
+    <property name="only" value="day"/>
+    <property name="figure" value="170,120,60"/>
+   </properties>
+  </object>
+  <object id="49" name="sereno" class="interactable" x="360" y="300" width="16" height="16">
+   <properties>
+    <property name="npc" value="sereno"/>
+    <property name="label" value="Hablar"/>
+    <property name="target" value="alguien"/>
+    <property name="line" value="Una silueta junto al poste. No dice nada."/>
+    <property name="only" value="night"/>
+    <property name="figure" value="60,60,90"/>
+   </properties>
+  </object>
+ </objectgroup>
+ <objectgroup id="8" name="lights">
+  <object id="43" name="poste_plaza_1" class="light" x="250" y="250" width="8" height="8">
+   <properties>
+    <property name="radius" type="int" value="70"/>
+    <property name="r" type="int" value="255"/>
+    <property name="g" type="int" value="220"/>
+    <property name="b" type="int" value="150"/>
+    <property name="intensity" type="float" value="0.9"/>
+    <property name="only" value="dusk,night"/>
+   </properties>
+  </object>
+  <object id="44" name="poste_plaza_2" class="light" x="420" y="250" width="8" height="8">
+   <properties>
+    <property name="radius" type="int" value="70"/>
+    <property name="r" type="int" value="255"/>
+    <property name="g" type="int" value="220"/>
+    <property name="b" type="int" value="150"/>
+    <property name="intensity" type="float" value="0.9"/>
+    <property name="only" value="dusk,night"/>
+   </properties>
+  </object>
+  <object id="45" name="poste_calle" class="light" x="200" y="330" width="8" height="8">
+   <properties>
+    <property name="radius" type="int" value="60"/>
+    <property name="r" type="int" value="255"/>
+    <property name="g" type="int" value="220"/>
+    <property name="b" type="int" value="150"/>
+    <property name="intensity" type="float" value="0.8"/>
+    <property name="only" value="dusk,night"/>
+   </properties>
+  </object>
+  <object id="46" name="ventana_mama" class="light" x="150" y="140" width="12" height="12">
+   <properties>
+    <property name="radius" type="int" value="36"/>
+    <property name="r" type="int" value="255"/>
+    <property name="g" type="int" value="190"/>
+    <property name="b" type="int" value="100"/>
+    <property name="intensity" type="float" value="0.8"/>
+    <property name="flicker" type="float" value="0.1"/>
+    <property name="only" value="dusk,night"/>
+   </properties>
+  </object>
+  <object id="47" name="ventana_chayo" class="light" x="406" y="140" width="12" height="12">
+   <properties>
+    <property name="radius" type="int" value="36"/>
+    <property name="r" type="int" value="255"/>
+    <property name="g" type="int" value="190"/>
+    <property name="b" type="int" value="100"/>
+    <property name="intensity" type="float" value="0.8"/>
+    <property name="flicker" type="float" value="0.1"/>
+    <property name="only" value="dusk,night"/>
    </properties>
   </object>
  </objectgroup>

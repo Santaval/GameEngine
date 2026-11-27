@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Interior de la casa (issue #62): solo capas de objetos, sin tileset. 12x9 tiles de 16 px = 192x144. -->
-<map version="1.10" tiledversion="1.10.2" orientation="orthogonal" renderorder="right-down" width="12" height="9" tilewidth="16" tileheight="16" infinite="0" nextlayerid="6" nextobjectid="22">
+<map version="1.10" tiledversion="1.10.2" orientation="orthogonal" renderorder="right-down" width="12" height="9" tilewidth="16" tileheight="16" infinite="0" nextlayerid="6" nextobjectid="23">
  <properties>
   <property name="surface" value="madera"/>
  </properties>
@@ -52,6 +52,14 @@
     <property name="interact" value="object"/>
     <property name="label" value="Escuchar la radio"/>
     <property name="line" value="Solo estática."/>
+   </properties>
+  </object>
+  <object id="22" name="cama" class="interactable" x="144" y="24" width="24" height="32">
+   <properties>
+    <property name="interact" value="object"/>
+    <property name="label" value="Dormir"/>
+    <property name="sleep" type="bool" value="true"/>
+    <property name="line" value="Todavía no tengo sueño."/>
    </properties>
   </object>
  </objectgroup>
