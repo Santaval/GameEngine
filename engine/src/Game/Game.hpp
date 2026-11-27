@@ -201,6 +201,7 @@ class Game {
      bool isYSort() const { return ySort; }
      SDL_Rect& getCamera() { return camera; }
      TextBuffer& getTextBuffer() { return textBuffer; }
+     AssetManager* getAssetManager() { return assetManager.get(); }
      RectBuffer& getRectBuffer() { return rectBuffer; }
      SpriteBuffer& getSpriteBuffer() { return spriteBuffer; }
      int getWindowWidth() const { return windowWidth; }

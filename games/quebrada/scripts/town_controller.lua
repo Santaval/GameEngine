@@ -20,6 +20,7 @@ local surfaces = require("surface_logic")
 local footsteps = require("footsteps")
 local amb = require("ambience")
 local interaction = require("interaction")
+local dialogue = require("dialogue")
 
 local M = {}
 
@@ -108,6 +109,8 @@ function M.make_update(cfg)
       print("[doors] flag " .. name .. ": " .. tostring(old) .. " -> " .. tostring(new))
     end)
     interaction.clear()
+    dialogue.reset()   -- el flag dialogue.open es global: se limpia al recargar la escena
+    dialogue.attach()  -- interaction.on_npc se vuelve a conectar en cada escena
     interaction.say = function(t) line.text, line.left = t, c.line_time end
     player_walker = nil -- un walker de la escena anterior no vale
     local m, err = load_tmx(c.map)
@@ -263,6 +266,8 @@ function M.make_update(cfg)
       return
     end
 
+    local dlg_open = dialogue.is_open() -- foto del inicio del frame (la E que cierra no abre puertas)
+
     draw_world()
 
     local prompt = nil
@@ -281,6 +286,7 @@ function M.make_update(cfg)
         door = nil
       end
       if transition then door = nil end
+      if dlg_open then door = nil end
 
       -- Zona: aviso solo al cambiar (no al volver a entrar en la misma)
       local z = logic.find_zone(idx.zones, fcx, fcy)
@@ -313,7 +319,7 @@ function M.make_update(cfg)
       end
 
       -- Interactuables (NPCs/objetos): nunca a la vez que una puerta ni en transicion
-      local suppress = transition or ignore_until_clear or door_raw ~= nil or fade.alpha() > 0
+      local suppress = dlg_open or transition or ignore_until_clear or door_raw ~= nil or fade.alpha() > 0
       local ihint = interaction.update(dt, {
         x = fcx, y = fcy, facing = player_walker:get_facing(), suppress = suppress,
       })
@@ -341,14 +347,17 @@ function M.make_update(cfg)
 
     -- Tecla 0: volver a la escena principal (flanco; no durante una transicion)
     local bdown = is_action_activated("back")
-    if bdown and not was_back and c.back_scene and not transition then
+    if bdown and not was_back and c.back_scene and not transition and not dlg_open then
       load_scene(c.back_scene)
     end
     was_back = bdown
 
+    -- El dialogo va despues de puertas e interaccion: la E que lo cierra ya fue consumida
+    dialogue.update(dt)
+
     -- Textos: solo con la pantalla despejada (los rects HUD se pintan bajo el
     -- texto y el fundido quedaria tapado por el)
-    if fade.alpha() == 0 then
+    if fade.alpha() == 0 and not dialogue.is_open() then
       if toast.left > 0 then
         toast.left = toast.left - dt
         draw_centered(toast.text, 12)

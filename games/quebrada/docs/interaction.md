@@ -67,15 +67,15 @@ Keys: `interact` or `interact_alt` (the same keys as doors: `E` / `Enter`).
 
 Interaction is blocked while either world flag is set:
 
-- `dialogue.open` (set by the future dialogue system, issue later)
+- `dialogue.open` (set by `dialogue.lua` while a dialogue is open)
 - `libreta.open` (set by the future notebook UI)
 
 While blocked, the indicator and the HUD text are hidden and `E` does nothing.
 
 ## Hooks
 
-- `interaction.on_npc(name, obj)`: called for `npc` interactables. The future
-  dialogue system sets it. Without it, the NPC's `line` property is shown.
+- `interaction.on_npc(name, obj)`: called for `npc` interactables. `dialogue.attach()` sets it on every scene load and maps `npc` to
+  `dialogue.scripts`. Without it, the NPC's `line` property is shown.
 - `interaction.say(text)`: shows a one-line message. The town controller sets it
   to its line slot. Without it, the text is printed as `[interaction] ...`.
 

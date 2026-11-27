@@ -339,6 +339,9 @@ get it through `set_loot` and hand it to whoever collects them.
 | --- | --- | --- |
 | `draw_text(x, y, text, font_id?, r?, g?, b?, a?)` | — | **Screen** coordinates. Lasts one frame. |
 | `draw_text_world(x, y, text, font_id?, r?, g?, b?, a?)` | — | **World** coordinates, scrolls with the camera. Lasts one frame. |
+| `draw_text_wrapped(x, y, max_w, text, font_id?, r?, g?, b?, a?)` | — | **Screen** coordinates. `max_w` is in logical units. Wraps at spaces, honors `\n`, and breaks words wider than `max_w` mid-word. Lasts one frame. |
+| `measure_text(text, font_id?, max_w?)` | `w, h` | Size of the text in logical units (native pixels divided by the scale, rounded up). With `max_w` it measures the wrapped text. Returns `0, 0` for empty text or an unknown font. |
+| `get_line_height(font_id?)` | height | Line height of the font in logical units (`0` for an unknown font). |
 | `add_text(e, text, font_id?, r?, g?, b?, a?, offset_x?, offset_y?)` | — | A persistent label attached to the entity's transform. |
 | `set_text(e, text)` | — | |
 | `set_text_color(e, r, g, b, a?)` | — | |
@@ -347,6 +350,8 @@ get it through `set_loot` and hand it to whoever collects them.
 | `draw_image(asset_id, x, y, w, h, a?, layer?, opts?)` | — | **Screen** coordinates, stretched to `w` x `h`. `a` (0-255) defaults to `255`. `layer` is `"back"` (under the entities), `"front"` (default: over the entities, under the HUD rects and text) or `"hud"` (over the HUD rects, under the text). `opts = { src = {x, y, w, h}, angle = deg }` draws only that texture rect and rotates clockwise around the centre of the `w` x `h` destination. Lasts one frame. |
 
 `font_id` defaults to `"default"`; colour channels default to `255`.
+
+Text is rasterized at native resolution while positions scale, so with a logical size the glyphs stay sharp. `measure_text`, `get_line_height` and `max_w` all work in logical units.
 
 The `draw_*` calls push into a buffer that is flushed and cleared every frame,
 so a HUD line has to be re-issued from `update()` each time:

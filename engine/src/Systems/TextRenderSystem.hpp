@@ -59,7 +59,7 @@ class TextRenderSystem : public System {
             // 2. Modo inmediato: lo que los scripts pidieron este frame (va encima)
             for (const auto& command : textBuffer.getCommands()) {
                 this->draw(renderer, assetManager, camera, command.text, command.fontId,
-                    command.x, command.y, command.color, command.isWorldSpace, view);
+                    command.x, command.y, command.color, command.isWorldSpace, view, command.maxW);
             }
 
             this->evictOldEntries();
@@ -77,9 +77,11 @@ class TextRenderSystem : public System {
         void draw(SDL_Renderer* renderer, std::unique_ptr<AssetManager>& assetManager,
             const SDL_Rect& camera, const std::string& text, const std::string& fontId,
             int x, int y, SDL_Color color, bool isWorldSpace,
-            const pixelperfect::Layout& view = pixelperfect::Layout()) {
+            const pixelperfect::Layout& view = pixelperfect::Layout(), int maxW = 0) {
 
-            CachedText* cached = this->getOrCreate(renderer, assetManager, fontId, text);
+            // maxW viene en unidades lógicas; el texto se rasteriza a resolución nativa
+            const int wrapPx = maxW > 0 ? maxW * view.scale : 0;
+            CachedText* cached = this->getOrCreate(renderer, assetManager, fontId, text, wrapPx);
             if (!cached) return;
 
             SDL_SetTextureColorMod(cached->texture, color.r, color.g, color.b);
@@ -99,11 +101,11 @@ class TextRenderSystem : public System {
         }
 
         CachedText* getOrCreate(SDL_Renderer* renderer, std::unique_ptr<AssetManager>& assetManager,
-            const std::string& fontId, const std::string& text) {
+            const std::string& fontId, const std::string& text, int wrapPx = 0) {
 
             if (text.empty()) return nullptr;
 
-            const std::string key = fontId + "\x1f" + text;
+            const std::string key = fontId + "\x1f" + std::to_string(wrapPx) + "\x1f" + text;
 
             auto found = this->cache.find(key);
             if (found != this->cache.end()) {
@@ -116,7 +118,9 @@ class TextRenderSystem : public System {
 
             // Blanco puro: el color final lo pone SDL_SetTextureColorMod
             SDL_Color white = { 255, 255, 255, 255 };
-            SDL_Surface* surface = TTF_RenderUTF8_Blended(font, text.c_str(), white);
+            SDL_Surface* surface = (wrapPx > 0)
+                ? TTF_RenderUTF8_Blended_Wrapped(font, text.c_str(), white, static_cast<Uint32>(wrapPx))
+                : TTF_RenderUTF8_Blended(font, text.c_str(), white);
 
             if (!surface) {
                 std::cout << "[TextRenderSystem] Error rendering text: "

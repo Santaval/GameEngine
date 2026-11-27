@@ -12,6 +12,7 @@ scene = {
     fonts = {
         [0] =
         { fontId = "default", filePath = "@common/fonts/DejaVuSansMono.ttf", fontSize = 10 },
+        { fontId = "dialogue", filePath = "@common/fonts/DejaVuSansMono.ttf", fontSize = 16 },
     },
     -- Pasos por superficie (issue #65) y ambiente por zona/hora (issue #65)
     sounds = {

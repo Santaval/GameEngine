@@ -14,6 +14,7 @@ struct TextCommand {
   int y;
   SDL_Color color;
   bool isWorldSpace;
+  int maxW = 0;  // ancho máximo en unidades lógicas; 0 = sin ajuste de línea
 };
 
 // Buffer de modo inmediato: los scripts de Lua lo llenan durante update()
@@ -24,8 +25,8 @@ class TextBuffer {
 
   public:
     void push(const std::string& text, const std::string& fontId, int x, int y,
-      SDL_Color color, bool isWorldSpace) {
-        this->commands.push_back({ text, fontId, x, y, color, isWorldSpace });
+      SDL_Color color, bool isWorldSpace, int maxW = 0) {
+        this->commands.push_back({ text, fontId, x, y, color, isWorldSpace, maxW });
     }
 
     // clear() conserva la capacidad: no hay reservas por frame
