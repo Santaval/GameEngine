@@ -51,6 +51,8 @@ local function fire(id, event, arg)
     local ok, e = pcall(hook, id, arg)
     if not ok then print("[missions] hook " .. logic.HOOKS[event] .. " fallo: " .. tostring(e)) end
   end
+  -- Fin de mision: guardado automatico (issue #52), despues del hook para incluir sus cambios
+  if event == "complete" or event == "fail" then require("save").autosave() end
   return true
 end
 

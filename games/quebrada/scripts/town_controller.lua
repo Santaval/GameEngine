@@ -28,6 +28,7 @@ local surfaces = require("surface_logic")
 local footsteps = require("footsteps")
 local amb = require("ambience")
 local interaction = require("interaction")
+local save = require("save")
 local dialogue = require("dialogue")
 local missions = require("missions")
 local mlogic = require("missions_logic")
@@ -237,7 +238,11 @@ function M.make_update(cfg)
     lighting.init()
     foco.init()
     tod.init(m)
-    tod.on_day = function(d) line.text, line.left = "Día " .. d, c.line_time end
+    save.note_map(c.map, c.scenes and c.scenes[c.map])
+    tod.on_day = function(d)
+      line.text, line.left = "Día " .. d, c.line_time
+      save.autosave() -- amanecer = dia nuevo (issue #52)
+    end
     interaction.on_sleep = function()
       if not tod.sleep() then
         line.text, line.left = "Todavía no tengo sueño", c.line_time
@@ -335,6 +340,7 @@ function M.make_update(cfg)
       }
     end
     ws.set_ctx(new_ctx)
+    save.autosave({ map = target_map, scene = scene }) -- entrar o salir de una casa (issue #52)
     -- load_scene es diferido: el negro se mantiene hasta que cargue la escena nueva
     load_scene(scene)
   end

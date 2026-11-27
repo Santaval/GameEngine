@@ -3,7 +3,7 @@
 -- Laid out for a 480x270 logical size (pixel_perfect); fine at 1280x720 too.
 -- Keys 1-4 restart each effect from its first frame. Key 5 opens the top-down
 -- walker demo (#61), key 6 the doors/interiors/zones demo (#62); key 0 there
--- comes back here.
+-- comes back here. Key 7 continues the saved game (#52).
 local hello = require("hello")
 local ui = require("ui_helpers")
 
@@ -34,6 +34,7 @@ scene = {
         { name = "fx4", key = 52 },
         { name = "walkdemo", key = 53 }, -- 5
         { name = "towndemo", key = 54 }, -- 6
+        { name = "continue", key = 55 }, -- 7
     },
     entities = {
         [0] =
@@ -53,6 +54,13 @@ scene = {
             components = {
                 transform = { position = { x = 0, y = 0 } },
                 script = { path = "scripts/town_demo_launch.lua" },
+            },
+        },
+        {
+            -- Press 7: continue the saved game
+            components = {
+                transform = { position = { x = 0, y = 0 } },
+                script = { path = "scripts/continue_launch.lua" },
             },
         },
     },

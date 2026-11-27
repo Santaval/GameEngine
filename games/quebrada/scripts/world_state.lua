@@ -7,7 +7,7 @@
 --
 -- Los flags se leen siempre en el momento (nunca se cachean): una puerta se abre
 -- en cuanto cambia el flag. set(name, nil) borra un flag. snapshot/restore son
--- los ganchos del sistema de guardado (issue #51): aun no se escribe ningun archivo.
+-- los ganchos del sistema de guardado (issue #52, ver save.lua y docs/save.md).
 world_state = world_state or { flags = {}, ctx_table = {}, listeners = {} }
 
 local M = world_state

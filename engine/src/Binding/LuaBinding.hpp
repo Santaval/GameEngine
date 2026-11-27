@@ -23,6 +23,7 @@
 #include "GravityBindings.hpp"
 #include "PathBindings.hpp"
 #include "PhysicsBindings.hpp"
+#include "SaveBindings.hpp"
 #include "ScriptBindings.hpp"
 #include "ShapeBindings.hpp"
 #include "ImageBindings.hpp"

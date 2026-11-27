@@ -90,6 +90,7 @@ class ScriptSystem : public System {
     registerInventoryBindings(lua);
     registerLootBindings(lua);
     registerGameBindings(lua);
+    registerSaveBindings(lua);
     registerNetworkBindings(lua);
     registerCullingBindings(lua);
     registerMapBindings(lua);

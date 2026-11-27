@@ -713,6 +713,35 @@ for these screens live in `ui_helpers.lua`. The Aval Cup map is described in
 
 ---
 
+## Saving
+
+Lua has no `io`, so the engine saves and loads tables as JSON (same conversion as the
+network layer, `src/Network/LuaJson.hpp`).
+
+| Function | Description |
+| --- | --- |
+| `save_data(slot, table)` | Writes `table` to the slot. Returns `true`, or `false` if it could not be written (the previous save stays intact). `slot` is 1-64 characters of `A-Z a-z 0-9 _ -`. |
+| `load_data(slot)` | Returns the saved table, or `nil` if the slot does not exist or both files are unreadable. |
+| `has_save(slot)` | `true` if `load_data(slot)` would return a table. |
+
+- **Location**: the platform's user data folder, `SDL_GetPrefPath("santaval", "Quebrada")`
+  (`~/Library/Application Support/Quebrada/` on macOS), never next to the binary. If SDL gives
+  no path, `<game root>/saves/` is used.
+- **Files**: `save_<slot>.json`, plus `save_<slot>.json.bak` (the previous save) and a short-lived
+  `.tmp`.
+- **Crash safety**: the new save is written completely to `.tmp` and then renamed over the old one,
+  and the previous readable save is copied to `.bak` first. Killing the process mid-save leaves the
+  old save usable; if the main file is ever corrupt, `load_data` falls back to `.bak`.
+- **Table shape**: the top level must be a table. Tables that are exactly `1..n` become arrays;
+  anything else becomes an object with string keys (so a table mixing both loses the numeric keys
+  on the way back: use pure arrays or string keys). `nil`, functions and userdata are dropped.
+  `1.0` comes back as the integer `1`; NaN/inf become `nil`; nesting is limited to 32 levels.
+  Strings are UTF-8 and round-trip exactly.
+- **Versioning is up to the game**: put a `version` field in the table and migrate it in Lua
+  (Quebrada: [save.md](../../games/quebrada/docs/save.md)).
+
+---
+
 ## Tiled maps
 
 | Function | Description |
