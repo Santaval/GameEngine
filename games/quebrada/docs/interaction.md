@@ -159,3 +159,10 @@ Automated tests are not used for this feature. Check in the game after building:
   those phases; it is ANDed with `enabled`. See `time-of-day.md`.
 - `sleep = true` on an `interact = "object"` makes the interaction call
   `interaction.on_sleep()` (the controller wires it to `time_of_day.sleep()`).
+
+## Giving a tool: `give_tool` (issue #53)
+
+`give_tool = "<id>"` on an `interact = "object"` gives the player that tool
+([tools.md](tools.md)): it sets the flag `tool.<id>`, says `Conseguiste: <name>` and calls
+`interaction.on_tool(id)` (the controller autosaves). Once owned, the interactable disables
+itself. An unknown id is ignored with a `[tools]` log.

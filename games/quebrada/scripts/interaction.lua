@@ -116,14 +116,25 @@ function M.from_map(map)
             if p.set_flag and p.set_flag ~= "" then ws.set(p.set_flag, true) end
             if p.sleep and M.on_sleep then M.on_sleep(); return end
             if p.recharge and M.on_recharge then M.on_recharge(p.recharge); return end
+            if p.give_tool and p.give_tool ~= "" then
+              local tools = require("tools")
+              local def = tools.def(p.give_tool)
+              if def and tools.give(p.give_tool) then
+                say("Conseguiste: " .. def.name)
+                if M.on_tool then M.on_tool(p.give_tool) end
+              end
+              return
+            end
             say(p.line or "...")
           end
         end
         -- `enabled` (condicion de flags) y `only` (hora del dia, issue #66) se combinan con AND
         local cond = (p.enabled ~= nil and p.enabled ~= "") and p.enabled or nil
         local only = (type(p.only) == "string" and p.only ~= "") and p.only or nil
-        if cond or only then
+        local give = (type(p.give_tool) == "string" and p.give_tool ~= "") and p.give_tool or nil
+        if cond or only or give then
           it.enabled = function()
+            if give and ws.has("tool." .. give) then return false end
             if only and not require("time_of_day").visible(only) then return false end
             if cond then return door_logic.eval_condition(cond, ws.has) end
             return true

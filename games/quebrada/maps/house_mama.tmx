@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Interior de la casa (issue #62): solo capas de objetos, sin tileset. 12x9 tiles de 16 px = 192x144. -->
-<map version="1.10" tiledversion="1.10.2" orientation="orthogonal" renderorder="right-down" width="12" height="9" tilewidth="16" tileheight="16" infinite="0" nextlayerid="6" nextobjectid="24">
+<map version="1.10" tiledversion="1.10.2" orientation="orthogonal" renderorder="right-down" width="12" height="9" tilewidth="16" tileheight="16" infinite="0" nextlayerid="6" nextobjectid="25">
  <properties>
   <property name="surface" value="madera"/>
  </properties>
@@ -68,6 +68,13 @@
     <property name="label" value="Cargar el foco"/>
     <property name="recharge" value="foco"/>
     <property name="line" value="El foco ya esta cargado."/>
+   </properties>
+  </object>
+  <object id="24" name="linterna" class="interactable" x="88" y="24" width="16" height="16">
+   <properties>
+    <property name="interact" value="object"/>
+    <property name="label" value="Tomar el foco"/>
+    <property name="give_tool" value="foco"/>
    </properties>
   </object>
  </objectgroup>

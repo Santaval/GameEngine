@@ -21,8 +21,8 @@ ranura, `slot1`.
 
 No se guardan los sonidos en curso, la tarjeta de titulo ni la posicion exacta: se reaparece en
 el spawn con el que se entro al mapa (o en el `default` si se guardo en pleno mapa). Los ajustes
-de audio los guarda el motor aparte (`settings.json`). Las herramientas (#53) aun no existen: cuando
-las haya, sus flags ya entran en `flags`.
+de audio los guarda el motor aparte (`settings.json`). Las herramientas (#53) son flags
+`tool.<id>`, asi que ya entran en `flags` (la herramienta elegida no se guarda).
 
 ## Cuando se guarda (autosave)
 

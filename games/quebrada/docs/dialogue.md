@@ -15,7 +15,7 @@ Each value is a list of lines:
 | `speaker` | Name shown in the tab above the box. Empty or missing hides the tab. |
 | `text` | The line. `\n` forces a paragraph break. |
 | `voice` | Reserved. Sound id played on the `voice` bus when the line starts and stopped when it ends. It does not drive timing yet. An unknown id logs one engine line. |
-| `set_flag` | World flag set to `true` when the line is finished. |
+| `set_flag` | World flag set to `true` when the line is finished. `set_flag = "tool.sal"` gives the player a tool ([tools.md](tools.md)). |
 | `choices` | Shown after the last page of the line. Each entry is a string or `{ text, set_flag?, next?, when?, mission_accept?, mission_reject?, call? }`. |
 | `when` | Condition: a function, or a string such as `"a,!b"` over world flags. If false, the line is skipped. |
 | `mission_offer` | Mission id offered (state `none` to `offered`) when the line starts. Lines with `choices` never emit "done", so the offer cannot wait for the end of the line. It is idempotent. |

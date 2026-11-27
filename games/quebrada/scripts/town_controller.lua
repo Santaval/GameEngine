@@ -39,6 +39,7 @@ local consequences = require("consequences")
 local lighting = require("lighting")
 local tod = require("time_of_day")
 local foco = require("foco")
+local tools = require("tools")
 
 local M = {}
 
@@ -96,7 +97,7 @@ function M.make_update(cfg)
   local was_debug = false
   local was_back = false
   local was_time = false
-  local was_foco = false                  -- flanco de la tecla G (foco, issue #67)
+  local was_tool = {}                     -- flancos de las teclas de herramientas (issue #53)
   local toast = { text = nil, left = 0 }  -- aviso de zona (arriba)
   local line = { text = nil, left = 0 }   -- frase de puerta cerrada / depuracion (abajo)
   local saved_input = nil
@@ -250,6 +251,7 @@ function M.make_update(cfg)
         foco.recharge()
       end
     end
+    interaction.on_tool = function() save.autosave() end -- recoger una herramienta (issue #53)
     interaction.on_recharge = function(what)
       if what == "foco" then foco.recharge(); line.text, line.left = "Foco cargado", c.line_time end
     end
@@ -506,13 +508,21 @@ function M.make_update(cfg)
       end
       was_time = tdown
 
-      -- G enciende / apaga el foco (issue #67); sin bateria avisa
-      local fodown = is_action_activated("foco")
-      if fodown and not was_foco and not dlg_open and not ov.open and not story.is_open() and not tod.is_busy() and fade.alpha() == 0 then
-        local ok, msg = foco.toggle()
-        if not ok then line.text, line.left = msg, c.line_time end
+      -- Herramientas (issue #53): 1-4 seleccionan, X usa la seleccionada. El jugador no sabe
+      -- de ninguna en concreto: tools.lua ejecuta el uso definido en sus datos
+      local tools_ok = not dlg_open and not ov.open and not story.is_open() and not tod.is_busy() and fade.alpha() == 0
+      for n = 1, 4 do
+        local name = "tool" .. n
+        local d = is_action_activated(name)
+        if d and not was_tool[name] and tools_ok then tools.select(n) end
+        was_tool[name] = d
       end
-      was_foco = fodown
+      local ud = is_action_activated("tool_use")
+      if ud and not was_tool.use and tools_ok then
+        local msg = tools.use()
+        if msg then line.text, line.left = msg, c.line_time end
+      end
+      was_tool.use = ud
       amb.tick(dt)
       -- Pistas: no se evaluan con pantalla ocupada (no se pierden, esperan)
       local hidden = dlg_open or transition or ov.open or story.is_open() or fade.alpha() > 0 or tod.is_busy()
@@ -555,6 +565,7 @@ function M.make_update(cfg)
         draw_centered(prompt, 226)
       end
       foco.draw_hud()
+      tools.draw_hud()
     end
 
     draw_overlay()

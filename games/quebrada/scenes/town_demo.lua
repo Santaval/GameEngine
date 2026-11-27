@@ -71,7 +71,11 @@ scene = {
         { name = "debug_toggle", key = 102 }, -- f
         { name = "back", key = 48 },        -- 0
         { name = "toggle_time", key = 110 }, -- n: dia / noche
-        { name = "foco", key = 103 },  -- g: foco
+        { name = "tool1", key = 49 },  -- 1-4: elegir herramienta (issue #53)
+        { name = "tool2", key = 50 },
+        { name = "tool3", key = 51 },
+        { name = "tool4", key = 52 },
+        { name = "tool_use", key = 120 }, -- x: usar la herramienta elegida
         { name = "debug_overlay", key = 1073741884 }, -- F3: overlay de flags y misiones
     },
     entities = {

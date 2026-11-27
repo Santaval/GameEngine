@@ -19,17 +19,17 @@ Night darkness with light circles, built on the engine's
 - Flicker shakes the radius too, a little (down to 75% at the deepest dip), on a smooth curve.
 - Press `N` in the town or a house to toggle day/night and see it. `lighting.lua` now only
   attaches the halo.
-- **Foco (issue #67).** Press `G` to turn on the foco: a beam of 3 circles in front of the
+- **Foco (issue #67).** The foco is a tool (#53, [tools.md](tools.md)): take it from the `linterna` in
+  the house, then select it and press `X` to turn it on: a beam of 3 circles in front of the
   player, following the facing. It runs on a battery of 90 seconds that drains only while it is
-  on; below 20% the light weakens, and at 0 it turns off and `G` says `Sin bateria`. Recharge it
+  on; below 20% the light weakens, and at 0 it turns off and `X` says `Sin bateria`. Recharge it
   at the `cargador` in the house (`Cargar el foco`) or by sleeping in the bed. A small HUD bar
-  (bottom left) shows the charge and hides when it is full and off. Tools (#53) are not
-  implemented yet, so the foco is always available for now. Logic: `scripts/foco_logic.lua`;
+  (bottom left) shows the charge and hides when it is full and off. Logic: `scripts/foco_logic.lua`;
   controller: `scripts/foco.lua`.
 
 ## Manual checklist
 
 - At night a row of posts lights the street; one flickers and one is broken.
-- `G` turns the foco on, the bar drains, it dies at 0 and `G` says `Sin bateria`.
+- Take the `linterna`; `X` turns the foco on, the bar drains, it dies at 0 and `X` says `Sin bateria`.
 - Recharge at the `cargador` in the house, or by sleeping.
 - HUD, dialogue and subtitles are drawn after the overlay and are never darkened.
