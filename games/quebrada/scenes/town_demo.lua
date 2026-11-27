@@ -1,6 +1,7 @@
 -- Demo de puertas, interiores y zonas (issue #62): el barrio.
 -- WASD o flechas para andar, Shift corre, E / Enter interactua con la puerta,
--- F alterna el flag house.chayo.open (depuracion), 0 vuelve a la escena principal.
+-- F alterna el flag house.chayo.open (depuracion), 0 vuelve a la escena principal,
+-- N alterna dia / noche (ambiente, issue #65).
 -- Pensado para 480x270 logico (pixel_perfect). Teclas SDL: Right 1073741903,
 -- Left 1073741904, Down 1073741905, Up 1073741906, LShift 1073742049, RShift 1073742053.
 scene = {
@@ -11,6 +12,45 @@ scene = {
     fonts = {
         [0] =
         { fontId = "default", filePath = "@common/fonts/DejaVuSansMono.ttf", fontSize = 10 },
+    },
+    -- Pasos por superficie (issue #65) y ambiente por zona/hora (issue #65)
+    sounds = {
+        [0] =
+        { assetId = "step_lastre_walk", filePath = "sounds/sfx/sfx_step_lastre_walk.mp3" },
+        { assetId = "step_lastre_run", filePath = "sounds/sfx/sfx_step_lastre_run.mp3" },
+        { assetId = "step_zacate_walk", filePath = "sounds/sfx/sfx_step_zacate_walk.mp3" },
+        { assetId = "step_zacate_run", filePath = "sounds/sfx/sfx_step_zacate_run.mp3" },
+        { assetId = "step_madera_walk", filePath = "sounds/sfx/sfx_step_madera_walk.mp3" },
+        { assetId = "step_madera_run", filePath = "sounds/sfx/sfx_step_madera_run.mp3" },
+        { assetId = "step_concreto_walk", filePath = "sounds/sfx/sfx_step_concreto_walk.mp3" },
+        { assetId = "step_concreto_run", filePath = "sounds/sfx/sfx_step_concreto_run.mp3" },
+        -- Bucles de ambiente: en streaming (solo se decodifican al sonar)
+        { assetId = "amb_pueblo_day", filePath = "sounds/amb/amb_pueblo_day.mp3", stream = true },
+        { assetId = "amb_pueblo_night", filePath = "sounds/amb/amb_pueblo_night.mp3", stream = true },
+        { assetId = "amb_monte_day", filePath = "sounds/amb/amb_monte_day.mp3", stream = true },
+        { assetId = "amb_monte_night", filePath = "sounds/amb/amb_monte_night.mp3", stream = true },
+        { assetId = "amb_quebrada_day", filePath = "sounds/amb/amb_quebrada_day.mp3", stream = true },
+        { assetId = "amb_quebrada_night", filePath = "sounds/amb/amb_quebrada_night.mp3", stream = true },
+        -- Sonidos de un disparo del ambiente (pasan cerca del jugador)
+        { assetId = "moto_pass_01", filePath = "sounds/sfx/sfx_moto_pass_01.mp3" },
+        { assetId = "moto_pass_02", filePath = "sounds/sfx/sfx_moto_pass_02.mp3" },
+        { assetId = "moto_pass_03", filePath = "sounds/sfx/sfx_moto_pass_03.mp3" },
+        { assetId = "moto_far_01", filePath = "sounds/sfx/sfx_moto_far_01.mp3" },
+        { assetId = "dog_far_01", filePath = "sounds/sfx/sfx_dog_far_01.mp3" },
+        { assetId = "dog_far_02", filePath = "sounds/sfx/sfx_dog_far_02.mp3" },
+        { assetId = "dog_far_03", filePath = "sounds/sfx/sfx_dog_far_03.mp3" },
+        { assetId = "dog_far_04", filePath = "sounds/sfx/sfx_dog_far_04.mp3" },
+        { assetId = "rooster_far_01", filePath = "sounds/sfx/sfx_rooster_far_01.mp3" },
+        { assetId = "rooster_far_02", filePath = "sounds/sfx/sfx_rooster_far_02.mp3" },
+        { assetId = "dogs_chorus_far_01", filePath = "sounds/sfx/sfx_dogs_chorus_far_01.mp3" },
+        { assetId = "dogs_chorus_far_02", filePath = "sounds/sfx/sfx_dogs_chorus_far_02.mp3" },
+        { assetId = "dogs_chorus_far_03", filePath = "sounds/sfx/sfx_dogs_chorus_far_03.mp3" },
+        { assetId = "owl_01", filePath = "sounds/sfx/sfx_owl_01.mp3" },
+        { assetId = "owl_02", filePath = "sounds/sfx/sfx_owl_02.mp3" },
+        { assetId = "owl_03", filePath = "sounds/sfx/sfx_owl_03.mp3" },
+        { assetId = "owl_04", filePath = "sounds/sfx/sfx_owl_04.mp3" },
+        { assetId = "wind_gust", filePath = "sounds/sfx/sfx_wind_gust.mp3" },
+        { assetId = "cow_far_01", filePath = "sounds/sfx/sfx_cow_far_01.mp3" },
     },
     keys = {
         [0] =
@@ -28,6 +68,7 @@ scene = {
         { name = "interact_alt", key = 13 }, -- Enter
         { name = "debug_toggle", key = 102 }, -- f
         { name = "back", key = 48 },        -- 0
+        { name = "toggle_time", key = 110 }, -- n: dia / noche
     },
     entities = {
         [0] =

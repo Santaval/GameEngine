@@ -4,6 +4,7 @@
 -- Los rects de puertas y zonas del TMX se sondean cada frame con la caja de pies
 -- del jugador (el motor no tiene triggers estaticos). El jugador publica los
 -- globales player_entity y player_walker (ver town_player.lua).
+-- Tambien alimenta el ambiente por zona/hora y la superficie de los pasos (issue #65).
 --
 -- Config:
 --   map      ruta del TMX de esta escena (obligatorio)
@@ -15,6 +16,9 @@
 local logic = require("door_logic")
 local ws = require("world_state")
 local fade = require("fade")
+local surfaces = require("surface_logic")
+local footsteps = require("footsteps")
+local amb = require("ambience")
 
 local M = {}
 
@@ -60,6 +64,7 @@ function M.make_update(cfg)
   local was_interact = false
   local was_debug = false
   local was_back = false
+  local was_time = false
   local toast = { text = nil, left = 0 }  -- aviso de zona (arriba)
   local line = { text = nil, left = 0 }   -- frase de puerta cerrada / depuracion (abajo)
   local saved_input = nil
@@ -110,6 +115,7 @@ function M.make_update(cfg)
     end
     map = m
     idx = logic.index_objects(m)
+    footsteps.set_source(surfaces.build(m))
     local n, cerr = load_tmx_colliders(c.map)
     if not n then print("[town] colliders: " .. tostring(cerr)) end
     -- Llegada con fundido: el primer frame ya es negro (sin destello)
@@ -281,6 +287,7 @@ function M.make_update(cfg)
           toast.text = z.properties.title or zid
           toast.left = c.toast_time
         end
+        amb.set_zone(z.properties.ambience) -- idempotente; tambien tras recargar escena
       end
 
       -- Interaccion por flanco (is_action_activated es "mantenida")
@@ -309,6 +316,15 @@ function M.make_update(cfg)
         line.left = c.line_time
       end
       was_debug = fdown
+
+      -- N alterna dia/noche (el ambiente solo lee la hora)
+      local tdown = is_action_activated("toggle_time")
+      if tdown and not was_time then
+        amb.set_time(amb.get_time() == "day" and "night" or "day")
+        print("[ambience] hora: " .. amb.get_time())
+      end
+      was_time = tdown
+      amb.tick(dt)
     end
 
     -- Tecla 0: volver a la escena principal (flanco; no durante una transicion)

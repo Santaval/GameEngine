@@ -10,6 +10,7 @@ local fn, obj = require("walker").make_update({
     box = { x = 3, y = 8, w = 10, h = 8 },
     bounds = { x = 0, y = 0, w = 640, h = 480 },
   },
+  footsteps = { on_state = require("footsteps").on_state }, -- pasos por superficie (issue #65)
 })
 
 update = function()

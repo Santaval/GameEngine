@@ -32,7 +32,8 @@
 --   footsteps = {
 --     frames = {1, 3},           frames (base 0, relativos al tag) en los que cae un paso
 --     stride = 14,               px por paso si frames es nil o no hay get_animation_frame
---     on_footstep = function(entity, foot) end,   foot = "left" | "right"; aqui se enchufara el audio
+--     on_footstep = function(entity, foot, running) end,   foot = "left" | "right"; running = true si Shift esta pulsado
+--     on_state = function(entity, moving, running) end,    cada frame; para sonidos de pasos en bucle
 --   }
 --
 -- API del objeto: M.new(cfg), obj:step(entity), obj:get_facing(),
@@ -117,14 +118,16 @@ function Walker:set_facing(dir) self.facing = dir end
 function Walker:is_moving() return self.moving end
 
 -- Dispara el paso y alterna el pie
-function Walker:emit_footstep(entity)
+function Walker:emit_footstep(entity, running)
   local foot = self.foot
   self.foot = (foot == "left") and "right" or "left"
   local cb = self.footsteps.on_footstep
-  if cb then cb(entity, foot) end
+  if cb then cb(entity, foot, running) end
 end
 
-function Walker:update_footsteps(entity, tag, speed, dt)
+function Walker:update_footsteps(entity, tag, speed, dt, running)
+  local on_state = self.footsteps.on_state
+  if on_state then on_state(entity, self.moving, running) end
   if not self.moving then
     self.prev_frame = nil
     self.stride_acc = 0
@@ -143,7 +146,7 @@ function Walker:update_footsteps(entity, tag, speed, dt)
       self.prev_frame = frame
     else
       if math2.crossed_frame(self.prev_frame, frame, self.frame_set) then
-        self:emit_footstep(entity)
+        self:emit_footstep(entity, running)
       end
       self.prev_frame = frame
     end
@@ -153,7 +156,7 @@ function Walker:update_footsteps(entity, tag, speed, dt)
     self.stride_acc = self.stride_acc + speed * dt
     if self.stride_acc >= stride then
       self.stride_acc = self.stride_acc - stride
-      self:emit_footstep(entity)
+      self:emit_footstep(entity, running)
     end
   end
 end
@@ -222,7 +225,7 @@ function Walker:step(entity)
 
   -- 5. Pasos
   if self.footsteps then
-    self:update_footsteps(entity, tag, cur_speed, dt)
+    self:update_footsteps(entity, tag, cur_speed, dt, run and true or false)
   end
   self.prev_tag = tag
 

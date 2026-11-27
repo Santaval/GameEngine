@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Barrio de prueba (issue #62): solo capas de objetos, sin tileset. 40x30 tiles de 16 px = 640x480.
-     Los puntos de spawn marcan el CENTRO de la caja de pies del jugador. -->
-<map version="1.10" tiledversion="1.10.2" orientation="orthogonal" renderorder="right-down" width="40" height="30" tilewidth="16" tileheight="16" infinite="0" nextlayerid="5" nextobjectid="30">
+     Los puntos de spawn marcan el CENTRO de la caja de pies del jugador.
+     Capa "surfaces" (issue #65): rects class="surface" con la propiedad surface (lastre, zacate, madera, concreto) para los pasos. -->
+
+<map version="1.10" tiledversion="1.10.2" orientation="orthogonal" renderorder="right-down" width="40" height="30" tilewidth="16" tileheight="16" infinite="0" nextlayerid="6" nextobjectid="40">
  <objectgroup id="1" name="collision">
   <object id="1" name="wall_top" x="-16" y="-16" width="672" height="16"/>
   <object id="2" name="wall_bottom" x="-16" y="480" width="672" height="16"/>
@@ -56,15 +58,54 @@
    <properties>
     <property name="zone" value="barrio_alto"/>
     <property name="title" value="Barrio Alto"/>
-    <property name="ambience" value="viento"/>
+    <property name="ambience" value="monte"/>
    </properties>
   </object>
   <object id="26" name="zone_plaza" class="zone" x="0" y="200" width="640" height="280">
    <properties>
     <property name="zone" value="plaza"/>
     <property name="title" value="La Plaza"/>
-    <property name="ambience" value="gente"/>
+    <property name="ambience" value="pueblo"/>
     <property name="save" type="bool" value="true"/>
+   </properties>
+  </object>
+  <object id="27" name="zone_quebrada" class="zone" x="0" y="400" width="160" height="80">
+   <properties>
+    <property name="zone" value="quebrada"/>
+    <property name="title" value="La Quebrada"/>
+    <property name="ambience" value="quebrada"/>
+   </properties>
+  </object>
+ </objectgroup>
+ <objectgroup id="5" name="surfaces">
+  <object id="30" name="zacate_norte" class="surface" x="0" y="0" width="640" height="64">
+   <properties>
+    <property name="surface" value="zacate"/>
+   </properties>
+  </object>
+  <object id="31" name="zacate_oeste" class="surface" x="0" y="200" width="192" height="160">
+   <properties>
+    <property name="surface" value="zacate"/>
+   </properties>
+  </object>
+  <object id="32" name="zacate_sureste" class="surface" x="480" y="380" width="160" height="100">
+   <properties>
+    <property name="surface" value="zacate"/>
+   </properties>
+  </object>
+  <object id="33" name="plaza_concreto" class="surface" x="256" y="240" width="160" height="112">
+   <properties>
+    <property name="surface" value="concreto"/>
+   </properties>
+  </object>
+  <object id="34" name="porche_mama" class="surface" x="96" y="160" width="64" height="16">
+   <properties>
+    <property name="surface" value="madera"/>
+   </properties>
+  </object>
+  <object id="35" name="porche_cobertizo" class="surface" x="480" y="364" width="64" height="24">
+   <properties>
+    <property name="surface" value="madera"/>
    </properties>
   </object>
  </objectgroup>

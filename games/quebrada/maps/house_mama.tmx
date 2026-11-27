@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Interior de la casa (issue #62): solo capas de objetos, sin tileset. 12x9 tiles de 16 px = 192x144. -->
 <map version="1.10" tiledversion="1.10.2" orientation="orthogonal" renderorder="right-down" width="12" height="9" tilewidth="16" tileheight="16" infinite="0" nextlayerid="5" nextobjectid="20">
+ <properties>
+  <property name="surface" value="madera"/>
+ </properties>
  <objectgroup id="1" name="collision">
   <object id="1" name="wall_top" x="-16" y="-16" width="224" height="16"/>
   <object id="2" name="wall_bottom" x="-16" y="144" width="224" height="16"/>
@@ -30,6 +33,7 @@
    <properties>
     <property name="zone" value="casa_mama"/>
     <property name="title" value="Casa de Mamá"/>
+    <property name="ambience" value="casa"/>
    </properties>
   </object>
  </objectgroup>

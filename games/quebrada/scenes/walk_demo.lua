@@ -29,6 +29,15 @@ scene = {
         [0] =
         -- La Llorona (issue #63): el NPC la emite con volumen y paneo por distancia
         { assetId = "llorona", filePath = "sounds/llorona.mp3", stream = true },
+        -- Pasos por superficie (issue #65); este demo no tiene mapa: todo es lastre
+        { assetId = "step_lastre_walk", filePath = "sounds/sfx/sfx_step_lastre_walk.mp3" },
+        { assetId = "step_lastre_run", filePath = "sounds/sfx/sfx_step_lastre_run.mp3" },
+        { assetId = "step_zacate_walk", filePath = "sounds/sfx/sfx_step_zacate_walk.mp3" },
+        { assetId = "step_zacate_run", filePath = "sounds/sfx/sfx_step_zacate_run.mp3" },
+        { assetId = "step_madera_walk", filePath = "sounds/sfx/sfx_step_madera_walk.mp3" },
+        { assetId = "step_madera_run", filePath = "sounds/sfx/sfx_step_madera_run.mp3" },
+        { assetId = "step_concreto_walk", filePath = "sounds/sfx/sfx_step_concreto_walk.mp3" },
+        { assetId = "step_concreto_run", filePath = "sounds/sfx/sfx_step_concreto_run.mp3" },
     },
     -- Ducking por defecto (issue #64): mientras la Llorona (bus voice) suena, musica y ambiente bajan
     audio = { duck = { amount = 0.35, fade_ms = 300 } },
