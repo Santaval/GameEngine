@@ -16,7 +16,8 @@ return {
   { id = "vecina_hecha", who = "vecina",
     when = m.all(m.mission_done("chequelo"), m.not_(m.mission_done("chequelo", "detour_cafetal")), manana),
     lines = { { speaker = "Vecina", text = "Volviste entero, y eso ya es decir mucho. Los perros no ladraron en toda la madrugada." } } },
-  -- Ejemplo con resultado: requiere que algo llame missions.complete("chequelo", "detour_cafetal")
+  -- Con resultado: en zona1 el trigger house_arrival llama missions.complete("chequelo", "detour_cafetal")
+  -- si el jugador paso por el cafetal (scripts/chequelo_triggers.lua, docs/zona1.md)
   { id = "vecina_cafetal", who = "vecina",
     when = m.all(m.mission_done("chequelo", "detour_cafetal"), manana),
     lines = { { speaker = "Vecina", text = "Dicen que te vieron por el cafetal, lejos del camino. ¿Qué buscabas allá?" } } },

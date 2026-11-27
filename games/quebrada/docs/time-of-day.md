@@ -44,8 +44,8 @@ the coarse time. Usable in Tiled `locked`/`enabled` strings (e.g. `locked = "tim
 ## Missions
 
 `mission_defs.lua`: `chequelo` sets night on `on_accept` (and on `on_start_night`) and day on
-`on_complete`/`on_fail`. Nothing calls `start_night`/`complete`/`fail` yet, so after accepting it stays
-night until you sleep in the bed (or press `N`).
+`on_complete`/`on_fail`. Only the `zona1` triggers call `start_night`/`complete` (issue #78, [zona1.md](zona1.md)); elsewhere,
+after accepting it stays night until you sleep in the bed (or press `N`).
 Clues in `legends/*.lua` can use `time = "dawn"` or `"dusk"` as well as `"day"`/`"night"`.
 
 ## Sleeping

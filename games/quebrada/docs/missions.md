@@ -77,8 +77,10 @@ and `0`, and hides the toast, line and prompt texts.
 - Mission row: Left / Right / `E` cycle the state (via `jump`, no hooks). `jump` also stamps `mission.<id>.day` with the current day.
 - Flag row: Right / `E` toggles a boolean or adds 1, Left toggles a boolean or subtracts 1. Strings are read-only.
 
-Nothing calls `start_night`, `complete` or `fail` yet, so use the overlay to reach
-those states.
+In `zona1` (issue #78) the triggers call `start_night` and `complete` for `chequelo` (see
+[zona1.md](zona1.md)): `walk_start` at the church door (needs `accepted`) and `house_arrival` at
+mama's door (needs `night_active`, completes with the first detour taken or `done`). `fail` is still
+unused, and in any other map use the overlay to reach those states.
 
 ## Leads
 

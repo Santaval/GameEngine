@@ -27,6 +27,10 @@
 --   docs/buildings.md). nil = sigue a tile_map; false = apagado.
 --   world_debug  true (por defecto) = dibuja la rejilla, los rects de colision y las puertas
 --   encima del mapa; las escenas con tiles de edificios lo ponen en false.
+--   Triggers y emisores (issue #78): triggers.lua dispara los rects class="trigger" de la capa
+--   `triggers` (misiones, p. ej. la noche del chequelo) y emitters.lua reproduce los class="emitter"
+--   segun `only` / `when`. Docs: games/quebrada/docs/zona1.md
+--   on_start  funcion opcional que se llama una vez cuando el jugador ya esta colocado en el mapa.
 local logic = require("door_logic")
 local ws = require("world_state")
 local fade = require("fade")
@@ -48,6 +52,8 @@ local foco = require("foco")
 local tools = require("tools")
 local libreta_ui = require("libreta_ui")
 local roofs = require("roofs")
+local triggers = require("triggers")
+local emitters = require("emitters")
 
 local M = {}
 
@@ -66,6 +72,7 @@ M.DEFAULTS = {
   tile_map = false, -- true = dibujar las capas de tiles del TMX con load_tile_map (issue #55)
   roofs = nil,      -- nil = sigue a tile_map; techos que se desvanecen + ventanas encendidas (issue #71)
   world_debug = true, -- false = sin rejilla / colisiones / puertas dibujadas (issue #71)
+  on_start = nil,   -- funcion llamada una vez al colocar al jugador (issue #78)
 }
 
 local FONT = "default"
@@ -249,6 +256,9 @@ function M.make_update(cfg)
     consequences.init()
     consequences.validate()
     interaction.from_map(m)
+    triggers.init(m)
+    triggers.say = function(t) line.text, line.left = t, c.line_time end
+    emitters.init(m)
     lighting.init()
     foco.init()
     tod.init(m)
@@ -441,6 +451,10 @@ function M.make_update(cfg)
     if not placed then
       if c.roofs then roofs.update(dt, nil) end
       placed = try_place()
+      if placed and c.on_start then
+        local ok, e = pcall(c.on_start)
+        if not ok then print("[town] on_start fallo: " .. tostring(e)) end
+      end
     else
       local px, py = get_position(player_entity)
       local foot = logic.foot_box(px, py, c.box)
@@ -489,6 +503,9 @@ function M.make_update(cfg)
         end
         amb.set_zone(z.properties.ambience) -- idempotente; tambien tras recargar escena
       end
+
+      -- Triggers de mapa (issue #78): no durante una transicion, con el overlay abierto ni con la tarjeta de hora
+      if not transition and not ov.open and not tod.is_busy() then triggers.tick(foot) end
 
       -- Interaccion por flanco (is_action_activated es "mantenida")
       local down = interact_down()
@@ -561,6 +578,7 @@ function M.make_update(cfg)
       end
       was_tool.use = ud
       amb.tick(dt)
+      emitters.tick(dt)
       -- Pistas: no se evaluan con pantalla ocupada (no se pierden, esperan)
       local hidden = dlg_open or transition or ov.open or story.is_open() or libreta_ui.is_open() or fade.alpha() > 0 or tod.is_busy()
       story.tick(dt, { x = fcx, y = fcy, zone = ws.ctx().zone, time = amb.get_time(), phase = tod.get(), map = c.map, hidden = hidden })

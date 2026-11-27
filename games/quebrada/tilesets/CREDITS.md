@@ -34,3 +34,10 @@ is the same TO-BE-CHOSEN placeholder as above.
 
 The church follows the photo `games/quebrada/docs/reference/iglesia/iglesia-frente.jpg` (shapes and colours only).
 Mama's house is based on a written description, not on a committed photo.
+
+## Park sheet (zone 1)
+
+`tilesets/park.png` / `park.tsx` (skate park floors and banks, rails, playground equipment, sand, basketball + football
+court, line pieces, hoops, goals, walkway) are original procedural art drawn by
+`games/quebrada/tools/tilegen/catalog_park.mjs`. No third party pixels. The licence is the same TO-BE-CHOSEN placeholder
+as above (this file does not decide the licence of the original art).

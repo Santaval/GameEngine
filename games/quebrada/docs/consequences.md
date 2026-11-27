@@ -137,7 +137,8 @@ The neighbour in `town.tmx` is the example (`id="42"`, at `232,212`, free floor)
 ## Caveats
 
 - F3 cannot set outcome strings, so `vecina_cafetal` (`detour_cafetal`) is not reachable
-  from the overlay. It is an example for a future `complete("chequelo", "detour_cafetal")`.
+  from the overlay. In `zona1` it is reachable by playing: walk into the cafetal gap during the
+  night and then to mama's door (`complete("chequelo", "detour_cafetal")`, see [zona1.md](zona1.md)).
 - The NPC `who` is not checked against the TMX at run time. A misspelt `who` is silent.
 - Mamá's story (`story="chequelo"`) takes `E` until it has been heard. Her day comment
   follows the story, not before it.

@@ -4,14 +4,14 @@
 
 # Interprete de Lua independiente para games/aval/tests/map_determinism.lua y
 # games/quebrada/tests/walker_math.lua, games/quebrada/tests/door_logic.lua,
-# games/quebrada/tests/time_of_day_logic.lua, games/quebrada/tests/foco_logic.lua y games/quebrada/tests/save_logic.lua y games/quebrada/tests/tools_logic.lua y games/quebrada/tests/libreta_logic.lua y games/quebrada/tests/tileset_check.lua y games/quebrada/tests/roofs_logic.lua y games/quebrada/tests/buildings_check.lua (opcional)
+# games/quebrada/tests/time_of_day_logic.lua, games/quebrada/tests/foco_logic.lua y games/quebrada/tests/save_logic.lua y games/quebrada/tests/tools_logic.lua y games/quebrada/tests/libreta_logic.lua y games/quebrada/tests/tileset_check.lua y games/quebrada/tests/roofs_logic.lua y games/quebrada/tests/buildings_check.lua y games/quebrada/tests/park_check.lua y games/quebrada/tests/triggers_logic.lua y games/quebrada/tests/zona1_check.lua (opcional)
 LUA_BIN := $(firstword $(shell command -v lua5.3 lua5.4 lua 2>/dev/null))
 
 # Node (opcional): generador del tileset del pueblo y de los edificios, games/quebrada/tools/tilegen (issues #55, #71).
 # `make tiles` regenera games/quebrada/tilesets/town.{png,tsx}, maps/tiles_demo.tmx,
-# tilesets/buildings.{png,tsx}, maps/buildings_demo.tmx y maps/house_mama.tmx;
+# tilesets/buildings.{png,tsx}, tilesets/park.{png,tsx} (parque), maps/buildings_demo.tmx, maps/house_mama.tmx y maps/zona1.tmx (issue #78);
 # `make test` comprueba que lo versionado coincide con lo que genera el codigo.
-# games/quebrada/tests/tileset_check.lua y buildings_check.lua tambien validan esos archivos (opcional, con Lua).
+# games/quebrada/tests/tileset_check.lua, buildings_check.lua y park_check.lua tambien validan esos archivos (opcional, con Lua).
 NODE_BIN := $(firstword $(shell command -v node 2>/dev/null))
 TILEGEN := games/quebrada/tools/tilegen/gen.mjs
 
@@ -34,8 +34,11 @@ ifneq ($(LUA_BIN),)
 	$(LUA_BIN) games/quebrada/tests/tileset_check.lua
 	$(LUA_BIN) games/quebrada/tests/roofs_logic.lua
 	$(LUA_BIN) games/quebrada/tests/buildings_check.lua
+	$(LUA_BIN) games/quebrada/tests/park_check.lua
+	$(LUA_BIN) games/quebrada/tests/triggers_logic.lua
+	$(LUA_BIN) games/quebrada/tests/zona1_check.lua
 else
-	@echo "Sin interprete de Lua (lua5.3/lua): se omiten games/aval/tests/map_determinism.lua y games/quebrada/tests/walker_math.lua y games/quebrada/tests/door_logic.lua y games/quebrada/tests/time_of_day_logic.lua y games/quebrada/tests/foco_logic.lua y games/quebrada/tests/save_logic.lua y games/quebrada/tests/tools_logic.lua y games/quebrada/tests/libreta_logic.lua y games/quebrada/tests/tileset_check.lua y games/quebrada/tests/roofs_logic.lua y games/quebrada/tests/buildings_check.lua"
+	@echo "Sin interprete de Lua (lua5.3/lua): se omiten games/aval/tests/map_determinism.lua y games/quebrada/tests/walker_math.lua y games/quebrada/tests/door_logic.lua y games/quebrada/tests/time_of_day_logic.lua y games/quebrada/tests/foco_logic.lua y games/quebrada/tests/save_logic.lua y games/quebrada/tests/tools_logic.lua y games/quebrada/tests/libreta_logic.lua y games/quebrada/tests/tileset_check.lua y games/quebrada/tests/roofs_logic.lua y games/quebrada/tests/buildings_check.lua y games/quebrada/tests/park_check.lua y games/quebrada/tests/triggers_logic.lua y games/quebrada/tests/zona1_check.lua"
 endif
 ifneq ($(NODE_BIN),)
 	$(NODE_BIN) $(TILEGEN) --check

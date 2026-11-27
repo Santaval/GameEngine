@@ -86,3 +86,8 @@ the flashlight and charger 88-136,24). New group `seats` with `seat_mama` (class
 - 32 lit slots (ids 288-319; see the generator for how many are used), 48 interior furniture slots (33 used at the time of writing).
 - The porch row is walkable only because its cells are transparent apart from a post.
 - Hand-written Tiled edits to generated maps are lost on the next `make tiles`.
+
+## Zone 1
+
+`zona1_map.mjs` places the same five buildings on a 90x54 map (issue #78, [zona1.md](zona1.md)). It has its own
+`PLACE` and copies of the autotiler helpers; `buildings_map.mjs` and the demo outputs are untouched.

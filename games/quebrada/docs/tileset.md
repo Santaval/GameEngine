@@ -231,4 +231,5 @@ and update `tilesets/CREDITS.md`.
 - Buildings and roofs live in a second sheet, `tilesets/buildings.png`: see [buildings.md](buildings.md).
   Maps that use it declare it after the town tileset with `firstgid` 145 (town has 144 tiles);
   `tests/tileset_check.lua` only validates `town.tsx` and `tiles_demo.tmx`, `tests/buildings_check.lua` the rest.
+- The park (skate park, playground, court, lines) lives in a third sheet, `tilesets/park.png` ([park.md](park.md)), declared after buildings with `firstgid` 529 (144 + 384 + 1); `tests/park_check.lua` validates it.
 - Palette is mid-tone on purpose so the lighting layer's darkening stays readable.

@@ -33,7 +33,10 @@ top-left).
 | Gate | rect | `gate` | `gates` | `locked` (same syntax as doors), `locked_line`, optional `lead`. Not a collider: while locked, the controller returns the player to the last free position. Keep it at least 12 px thick. See [leads.md](leads.md) |
 | Lead marker | any | `door`, `gate` or `marker` | any | `lead` (`house.<id>` or `zone.<id>`): shows a small bobbing dot while `lead.mark.<key>` is set and `lead.seen.<key>` is not. See [leads.md](leads.md) |
 | Surface | rect | `surface` | `surfaces` | `surface` (lastre, zacate, madera or concreto); decides the footstep sound, see [audio.md](audio.md). The map property `surface` is the default for cells without a surface |
-| Emitter | rect or point | `emitter` | `emitters` | `sound` (required), `radius` / `max_distance`, `min_distance`, `volume`, `loop` (default true), `rolloff`; started by `emitters_from_map(map)`, see [Spatial audio](../../../engine/docs/lua-api.md#spatial-audio) |
+| Emitter | rect or point | `emitter` | `emitters` | `sound` (required), `radius` / `max_distance`, `min_distance`, `volume`, `loop` (default true), `rolloff`, plus `only` (time of day), `when` (flag condition) and `interval` (seconds between one-shots, instead of a loop) when played by `scripts/emitters.lua` (the town controller); `emitters_from_map(map)` ignores those three, see [Spatial audio](../../../engine/docs/lua-api.md#spatial-audio) |
+| Trigger | rect | `trigger` | `triggers` | `trigger` (id; not `id`), `mission`, `requires` (door-lock syntax, empty = true), `sets` (flags set on enter), `line`. Fires once per stay while the mission is `accepted` or `night_active`; run by `scripts/triggers.lua`, see [zona1.md](zona1.md) |
+| Edge | rect | `edge` | `edges` | `edge` (id), `connects_to` (empty for now). Marker for future map connections; nothing reads it yet. Each has a spawn `edge_<id>` |
+| Route | point | `route` | `route` | `route_00`..`route_NN`: the intended walk (documentation and tests), not read by the game |
 | Interactable | rect or point | `interactable` | `interactables` | `npc` (NPC id) or `interact` (`npc` or `object`; `door` is not supported here), `label`, `target`, `radius` (default 24), `line`, `set_flag`, `enabled` (condition syntax `a`, `!a`, `a,!b`); see [interaction.md](interaction.md) |
 | Wall | rect | any | `collision` | read by `load_tmx_colliders` |
 
