@@ -14,6 +14,9 @@
 --   debug_flag  flag que alterna la tecla F ("house.chayo.open")
 --   debug_overlay  true = F3 abre el overlay de flags y misiones (tecla "debug_overlay" en la escena)
 --   back_scene  escena a la que vuelve la tecla 0 ("scenes/main.lua"); nil = sin salida
+--   Historias narradas y libreta (issue #68): story.lua reproduce la grabacion con el
+--   overlay del reproductor y dispara pistas. Teclas opcionales de la escena:
+--   story_pause (Espacio), story_stop y story_stop_alt (Retroceso y Q).
 local logic = require("door_logic")
 local ws = require("world_state")
 local fade = require("fade")
@@ -24,6 +27,7 @@ local interaction = require("interaction")
 local dialogue = require("dialogue")
 local missions = require("missions")
 local mlogic = require("missions_logic")
+local story = require("story")
 
 local M = {}
 
@@ -117,7 +121,7 @@ function M.make_update(cfg)
       if ov.open then
         ov.open = false
         unlock_input()
-      elseif placed and not transition and not dlg_open and fade.alpha() == 0 then
+      elseif placed and not transition and not dlg_open and fade.alpha() == 0 and not story.is_open() then
         ov.open = true
         ov.sel = 1
         lock_input()
@@ -187,6 +191,8 @@ function M.make_update(cfg)
     interaction.clear()
     dialogue.reset()   -- el flag dialogue.open es global: se limpia al recargar la escena
     dialogue.attach()  -- interaction.on_npc se vuelve a conectar en cada escena
+    story.reset()      -- load_scene detuvo los sonidos: se guarda/descarta la sesion vieja
+    story.attach()
     interaction.say = function(t) line.text, line.left = t, c.line_time end
     player_walker = nil -- un walker de la escena anterior no vale
     local m, err = load_tmx(c.map)
@@ -364,6 +370,7 @@ function M.make_update(cfg)
       if transition then door = nil end
       if dlg_open then door = nil end
       if ov.open then door = nil end
+      if story.is_open() then door = nil end
 
       -- Zona: aviso solo al cambiar (no al volver a entrar en la misma)
       local z = logic.find_zone(idx.zones, fcx, fcy)
@@ -396,7 +403,7 @@ function M.make_update(cfg)
       end
 
       -- Interactuables (NPCs/objetos): nunca a la vez que una puerta ni en transicion
-      local suppress = dlg_open or transition or ignore_until_clear or door_raw ~= nil or fade.alpha() > 0 or ov.open
+      local suppress = dlg_open or transition or ignore_until_clear or door_raw ~= nil or fade.alpha() > 0 or ov.open or story.is_open()
       local ihint = interaction.update(dt, {
         x = fcx, y = fcy, facing = player_walker:get_facing(), suppress = suppress,
       })
@@ -404,7 +411,7 @@ function M.make_update(cfg)
 
       -- Depuracion: F alterna el flag (la puerta cambia al frame siguiente)
       local fdown = is_action_activated("debug_toggle")
-      if fdown and not was_debug and c.debug_flag and not ov.open then
+      if fdown and not was_debug and c.debug_flag and not ov.open and not story.is_open() then
         local v = not ws.has(c.debug_flag)
         ws.set(c.debug_flag, v)
         line.text = c.debug_flag .. " = " .. tostring(v)
@@ -420,6 +427,11 @@ function M.make_update(cfg)
       end
       was_time = tdown
       amb.tick(dt)
+      -- Pistas: no se evaluan con pantalla ocupada (no se pierden, esperan)
+      story.tick(dt, {
+        x = fcx, y = fcy, zone = ws.ctx().zone, time = amb.get_time(), map = c.map,
+        hidden = dlg_open or transition or ov.open or story.is_open() or fade.alpha() > 0,
+      })
     end
 
     -- F3: overlay de depuracion (tambien captura teclas mientras esta abierto)
@@ -427,21 +439,24 @@ function M.make_update(cfg)
 
     -- Tecla 0: volver a la escena principal (flanco; no durante una transicion)
     local bdown = is_action_activated("back")
-    if bdown and not was_back and c.back_scene and not transition and not dlg_open and not ov.open then
+    if bdown and not was_back and c.back_scene and not transition and not dlg_open and not ov.open and not story.is_open() then
       load_scene(c.back_scene)
     end
     was_back = bdown
 
     -- El dialogo va despues de puertas e interaccion: la E que lo cierra ya fue consumida
     dialogue.update(dt)
+    story.update(dt)
 
     -- Textos: solo con la pantalla despejada (los rects HUD se pintan bajo el
     -- texto y el fundido quedaria tapado por el)
-    if fade.alpha() == 0 and not dialogue.is_open() and not ov.open then
+    if fade.alpha() == 0 and not dialogue.is_open() and not ov.open and not story.is_open() then
       if toast.left > 0 then
         toast.left = toast.left - dt
         draw_centered(toast.text, 12)
       end
+      local ct = story.clue_text()
+      if ct then draw_centered("Pista: " .. ct, 30) end
       if line.left > 0 then
         line.left = line.left - dt
         draw_centered(line.text, 226)

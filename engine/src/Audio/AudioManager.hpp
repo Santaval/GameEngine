@@ -106,6 +106,8 @@ class AudioManager {
     int playSound(const std::string& soundId, double volume, bool loop,
       audiobus::Bus bus = audiobus::Bus::Sfx);
     void stopSound(int handle, int fadeMs);
+    void pauseSound(int handle);
+    void resumeSound(int handle);
     void setSoundVolume(int handle, double volume);
     bool isPlaying(int handle) const;
     // Como playSound pero posicionado en el mundo: el volumen baja con la distancia

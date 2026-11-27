@@ -106,10 +106,24 @@ Every scene must declare each sound it plays in its `sounds` table:
 
 - `town_demo.lua`: the 8 step sounds, the 6 town loops (`amb_pueblo_*`,
   `amb_monte_*`, `amb_quebrada_*`) and the one-shot sounds of those sets.
-- `house_demo.lua`: the 8 step sounds and `amb_casa_day` / `amb_casa_night`.
+- `house_demo.lua`: the 8 step sounds, `amb_casa_day` / `amb_casa_night` and the
+  narrated story `story_chequelo` (issue #68).
 - `walk_demo.lua`: the 8 step sounds.
 
 Ambience loops are declared with `stream = true` (decoded when first played).
+
+## Narrated stories (issue #68)
+
+A story recording is a `stream = true` sound declared in the scene, for example
+`{ assetId = "story_chequelo", filePath = "sounds/stories/chequelo.mp3", stream = true }`.
+It is played with `play_sound(id, { bus = "voice" })`, so the ambience and the
+music duck to 0.35 while it plays. `sound_duration(id)` is read right after the
+play starts, so the progress uses the real length.
+
+`pause_sound(handle)` and `resume_sound(handle)` pause and resume the recording
+without losing its position (see [lua-api.md](../../../engine/docs/lua-api.md#audio)).
+A paused voice keeps the ducking active. The player stops a paused recording with
+`stop_sound(handle)` without a fade. Details: [stories.md](stories.md).
 
 ## Limitations
 

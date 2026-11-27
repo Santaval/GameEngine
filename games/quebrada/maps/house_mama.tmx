@@ -43,6 +43,7 @@
     <property name="npc" value="mama"/>
     <property name="label" value="Hablar"/>
     <property name="target" value="mamá"/>
+    <property name="story" value="chequelo"/>
     <property name="line" value="Mamá: ¿Ya vas a salir?"/>
    </properties>
   </object>

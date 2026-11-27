@@ -65,6 +65,15 @@ inline void stopSound(int handle, sol::optional<int> fadeMs) {
     Game::getInstance().getAudio()->stopSound(handle, std::max(0, fadeMs.value_or(0)));
 }
 
+// Pausa / reanuda una voz sin perder la posicion. Handle desconocido: se ignora
+inline void pauseSound(int handle) {
+    Game::getInstance().getAudio()->pauseSound(handle);
+}
+
+inline void resumeSound(int handle) {
+    Game::getInstance().getAudio()->resumeSound(handle);
+}
+
 inline void setSoundVolume(int handle, double volume) {
     Game::getInstance().getAudio()->setSoundVolume(handle, volume);
 }
@@ -218,6 +227,8 @@ inline sol::table emittersFromMap(sol::table map, sol::optional<sol::table> opts
 inline void registerAudioBindings(sol::state& lua) {
   lua.set_function("play_sound", playSound);
   lua.set_function("stop_sound", stopSound);
+  lua.set_function("pause_sound", pauseSound);
+  lua.set_function("resume_sound", resumeSound);
   lua.set_function("set_sound_volume", setSoundVolume);
   lua.set_function("is_playing", isSoundPlaying);
   lua.set_function("sound_position", soundPosition);

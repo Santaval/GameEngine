@@ -52,8 +52,8 @@ string `"a,!b"` over world flags (same syntax as door locks).
 ## Save hooks
 
 `world_state.snapshot()` returns a pure table of the persistable flags (only
-booleans, numbers and strings; the transient `dialogue.open` and `libreta.open`
-flags and the transition context are excluded). `world_state.restore(t)` replaces
+booleans, numbers and strings; the transient `dialogue.open`, `libreta.open` and
+`story.open` flags and the transition context are excluded). `world_state.restore(t)` replaces
 them and notifies listeners. `world_state.add(name, n?)` increments a counter and
 `set(name, nil)` clears a flag. No file is written yet.
 

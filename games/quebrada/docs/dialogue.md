@@ -83,6 +83,13 @@ The player is frozen (the walker input is replaced and restored afterwards),
 `dialogue.open` is set, doors and interactables are blocked, the back key is
 ignored, and the toast, line and prompt texts are hidden.
 
+## Narrated stories (issue #68)
+
+A story's `greeting`, `closing` and `recommendations` are ordinary scripts
+started with `dialogue.start`. The greeting's `on_end` starts the recording.
+The story overlay and the dialogue never show at the same time.
+See [stories.md](stories.md).
+
 ## Limits
 
 - One dialogue at a time.

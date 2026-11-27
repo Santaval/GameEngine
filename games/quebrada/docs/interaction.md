@@ -81,6 +81,22 @@ While blocked, the indicator and the HUD text are hidden and `E` does nothing.
 
 Interactables with `set_flag` set that world flag to `true` when used.
 
+Narrated stories (issue #68) add three hooks, all wired by `story.attach()`:
+
+- `interaction.story_available(id)`: returns `true` when the story can be started.
+  It drives the prompt: with it `true`, the label is `interaction.STORY_LABEL`
+  ("Escuchar la historia") and the target is not shown.
+- `interaction.on_story(id, npc, obj)`: starts the story. Used when the story is
+  available and the NPC has a `story` property.
+- `interaction.STORY_LABEL`: the label used for an available story.
+
+An interactable can set `label_fn(it)`, which returns `(label, bare)`. When `bare` is
+`true`, the target is not appended to the label. `interaction.update` reads the
+label through it on every frame.
+
+While a story is playing, `interaction.is_blocked()` is `true` (flag
+`story.open`), so no prompt is handled.
+
 ## TMX: `interactable` objects
 
 Put interactables in an object layer (the examples use `interactables`) with
@@ -93,6 +109,7 @@ Put interactables in an object layer (the examples use `interactables`) with
 | `interact` | `npc` or `object`. `door` is not supported here: doors belong in the `doors` layer, and a warning is printed. |
 | `label` | HUD verb (default "Hablar" for NPCs, "Examinar" for objects). |
 | `target` | HUD object, for example `mamá`. |
+| `story` | Id of a narrated story (issue #68). While the story is available, the NPC prompt reads "E — Escuchar la historia" (no target) and E starts it. Otherwise the prompt and action are the NPC's own. |
 | `radius` | Range in px (default 24). |
 | `line` | One-line message (default `...`). |
 | `set_flag` | Flag set to `true` on use (objects). |

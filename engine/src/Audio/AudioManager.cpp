@@ -410,6 +410,25 @@ void AudioManager::stopSound(int handle, int fadeMs) {
   else Mix_HaltChannel(voice->channel);
 }
 
+void AudioManager::pauseSound(int handle) {
+  if (!this->available) return;
+
+  const Voice* voice = this->findVoice(handle);
+  if (!voice || voice->channel < 0 || voice->channel >= MAX_CHANNELS) return;
+  if (this->channelOwner[voice->channel] != handle) return;
+  // El canal sigue "sonando" para Mix_Playing: la voz y el ducking se conservan
+  Mix_Pause(voice->channel);
+}
+
+void AudioManager::resumeSound(int handle) {
+  if (!this->available) return;
+
+  const Voice* voice = this->findVoice(handle);
+  if (!voice || voice->channel < 0 || voice->channel >= MAX_CHANNELS) return;
+  if (this->channelOwner[voice->channel] != handle) return;
+  Mix_Resume(voice->channel);
+}
+
 void AudioManager::setSoundVolume(int handle, double volume) {
   if (!this->available) return;
 

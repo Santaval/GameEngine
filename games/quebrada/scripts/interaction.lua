@@ -14,6 +14,9 @@ M.DEFAULT_RADIUS = 24
 M.KEY_LABEL = "E"
 M.on_npc = nil -- fn(nombre, obj): la registrara el dialogo (issue futuro)
 M.say = nil    -- fn(texto): el controlador muestra una linea de aviso
+M.STORY_LABEL = "Escuchar la historia"
+M.story_available = nil -- fn(id) -> bool: la registra story.attach()
+M.on_story = nil        -- fn(id, npc, obj): la registra story.attach()
 
 local items = {}
 local was_down = false
@@ -42,7 +45,7 @@ end
 
 -- Interaccion bloqueada mientras haya dialogo o libreta abiertos
 function M.is_blocked()
-  return ws.has("dialogue.open") or ws.has("libreta.open")
+  return ws.has("dialogue.open") or ws.has("libreta.open") or ws.has("story.open")
 end
 
 local function say(text)
@@ -62,8 +65,10 @@ local function resolve_rect(it)
 end
 
 local function text_of(it)
-  local t = it.label or "Interactuar"
-  if it.target and it.target ~= "" then t = t .. " con " .. it.target end
+  local label, bare = it.label, false
+  if it.label_fn then label, bare = it.label_fn(it) end
+  local t = label or "Interactuar"
+  if not bare and it.target and it.target ~= "" then t = t .. " con " .. it.target end
   return M.KEY_LABEL .. " — " .. t
 end
 
@@ -82,10 +87,24 @@ function M.from_map(map)
         local it = { rect = rect, radius = tonumber(p.radius), name = o.name }
         if kind == "npc" then
           local npc = p.npc
+          local sid = (p.story ~= nil and p.story ~= "") and p.story or nil
           it.label = p.label or "Hablar"
           it.target = p.target
+          if sid then
+            -- Narrador: con historia disponible el boton es "Escuchar la historia"
+            it.label_fn = function()
+              if M.story_available and M.story_available(sid) then return M.STORY_LABEL, true end
+              return p.label or "Hablar", false
+            end
+          end
           it.on_interact = function()
-            if M.on_npc then M.on_npc(npc, o) else say(p.line or "...") end
+            if sid and M.story_available and M.story_available(sid) and M.on_story then
+              M.on_story(sid, npc, o)
+            elseif M.on_npc then
+              M.on_npc(npc, o)
+            else
+              say(p.line or "...")
+            end
           end
         else
           it.label = p.label or "Examinar"

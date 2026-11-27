@@ -67,7 +67,7 @@ function M.take_arrival()
 end
 
 -- Flags transitorios de interfaz: no se guardan ni se restauran
-M.TRANSIENT = { ["dialogue.open"] = true, ["libreta.open"] = true }
+M.TRANSIENT = { ["dialogue.open"] = true, ["libreta.open"] = true, ["story.open"] = true }
 
 local function persistable(name, v)
   local t = type(v)

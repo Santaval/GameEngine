@@ -398,6 +398,8 @@ from `0` (silent) to `1` (full). Up to 48 sounds can play at once; beyond that
 | --- | --- | --- |
 | `play_sound(id, opts?)` | handle | `opts = { volume = 1, loop = false, bus = "sfx" }`. Returns an integer handle, or `0` if the sound does not exist or no channel is free. `bus` is one of `"voice"`, `"sfx"`, `"ambience"`, `"music"` (see [Buses and ducking](#buses-and-ducking)). |
 | `stop_sound(handle, fade_ms?)` | — | Stops the sound, optionally fading out over `fade_ms`. Unknown or finished handles are ignored. |
+| `pause_sound(handle)` | — | Pauses a playing sound. `sound_position` stays frozen and `is_playing` stays `true`. A voice on the `voice` bus keeps the ducking active. Unknown or finished handles are ignored. Do not fade-stop a paused sound (the fade never ends): stop it with `stop_sound(handle)`. |
+| `resume_sound(handle)` | — | Resumes a paused sound from where it stopped. |
 | `set_sound_volume(handle, v)` | — | Changes the volume of a playing sound. |
 | `is_playing(handle)` | boolean | `false` once the sound ended or was stopped. |
 | `sound_position(handle)` | seconds or `nil` | Playback position, accurate to about 50 ms. Wraps back to `0` on looping sounds. `nil` if the handle is no longer playing. |
@@ -568,7 +570,7 @@ local music_now = get_bus_volume("music")   -- 0.5
 | `get_mouse_world_position()` | `x, y` | Screen position plus the camera offset. |
 
 Action names come from the scene's `keys` and `mouse` tables — see
-[scene-format.md](scene-format.md).
+[scene-format.md](scene-format.md). Escape quits the engine and is never delivered to scripts; do not bind it in a scene's `keys`.
 
 > **`is_action_activated` reports the key being *held*, not a press.** To react
 > once per press, track the previous state yourself:
