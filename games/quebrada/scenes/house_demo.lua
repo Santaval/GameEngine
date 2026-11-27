@@ -28,6 +28,7 @@ scene = {
         { assetId = "step_concreto_run", filePath = "sounds/sfx/sfx_step_concreto_run.mp3" },
         { assetId = "amb_casa_day", filePath = "sounds/amb/amb_casa_day.mp3", stream = true },
         { assetId = "amb_casa_night", filePath = "sounds/amb/amb_casa_night.mp3", stream = true },
+        { assetId = "sfx_libreta_new", filePath = "sounds/sfx/sfx_new.mp3" }, -- aviso "Nuevo" (issue #80)
         -- Grabacion completa de la leyenda (issue #68): en streaming
         { assetId = "story_chequelo", filePath = "sounds/stories/chequelo.mp3", stream = true },
     },
@@ -54,6 +55,8 @@ scene = {
         { name = "tool4", key = 52 },
         { name = "tool_use", key = 120 }, -- x: usar la herramienta elegida
         { name = "debug_overlay", key = 1073741884 }, -- F3: overlay de flags y misiones
+        { name = "libreta", key = 9 },       -- Tab: libreta (issue #80)
+        { name = "libreta_alt", key = 108 }, -- l
         { name = "story_pause", key = 32 },      -- Espacio: pausa / reanudar la historia
         { name = "story_stop", key = 8 },        -- Retroceso: detener (Esc cierra el motor)
         { name = "story_stop_alt", key = 113 },  -- q

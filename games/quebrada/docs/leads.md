@@ -48,7 +48,8 @@ A rule without `person` or `legend` is terminal and is only allowed on a legend 
 
 `libreta.add_lead(id, text, person, source)`, `has_lead(id)`, `leads()` and
 `lead_count()`. Flag layout in [stories.md](stories.md). A rule with a `person` adds a
-lead; a terminal rule only shows its line.
+lead; a terminal rule only shows its line. The libreta lists leads whose marker has not been
+visited under *Misiones > Por hacer* ([libreta.md](libreta.md)).
 
 ## Tiled
 

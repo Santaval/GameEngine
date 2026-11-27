@@ -13,6 +13,13 @@ local ws = require("world_state")
 
 local M = {}
 
+-- Aviso suave de "Nuevo" (issue #80): suena al anotarse una entrada nueva. Silencioso si la
+-- escena no declara el sonido o no hay motor (pruebas)
+M.NEW_SOUND = "sfx_libreta_new"
+function M.notify()
+  if play_sound then pcall(play_sound, M.NEW_SOUND, { bus = "sfx", volume = 0.4 }) end
+end
+
 function M.has_clue(id) return ws.has("libreta.clue." .. id) end
 function M.clue_count() return ws.get("libreta.clue_count", 0) end
 
@@ -28,6 +35,7 @@ function M.add_clue(id, text, source)
   ws.set("libreta.clue_text." .. id, text or "")
   if source then ws.set("libreta.clue_src." .. id, source) end
   ws.set("libreta.clue." .. id, true)
+  M.notify()
   return true
 end
 
@@ -61,6 +69,7 @@ function M.add_lead(id, text, person, source)
   if person then ws.set("libreta.lead_person." .. id, person) end
   if source then ws.set("libreta.lead_src." .. id, source) end
   ws.set("libreta.lead." .. id, true)
+  M.notify()
   return true
 end
 

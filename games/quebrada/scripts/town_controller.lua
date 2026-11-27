@@ -40,6 +40,7 @@ local lighting = require("lighting")
 local tod = require("time_of_day")
 local foco = require("foco")
 local tools = require("tools")
+local libreta_ui = require("libreta_ui")
 
 local M = {}
 
@@ -97,6 +98,7 @@ function M.make_update(cfg)
   local was_debug = false
   local was_back = false
   local was_time = false
+  local was_libreta = false               -- flanco de Tab / L (libreta, issue #80)
   local was_tool = {}                     -- flancos de las teclas de herramientas (issue #53)
   local toast = { text = nil, left = 0 }  -- aviso de zona (arriba)
   local line = { text = nil, left = 0 }   -- frase de puerta cerrada / depuracion (abajo)
@@ -147,7 +149,7 @@ function M.make_update(cfg)
       if ov.open then
         ov.open = false
         unlock_input()
-      elseif placed and not transition and not dlg_open and fade.alpha() == 0 and not story.is_open() then
+      elseif placed and not transition and not dlg_open and fade.alpha() == 0 and not story.is_open() and not libreta_ui.is_open() then
         ov.open = true
         ov.sel = 1
         lock_input()
@@ -219,6 +221,7 @@ function M.make_update(cfg)
     dialogue.reset()   -- el flag dialogue.open es global: se limpia al recargar la escena
     dialogue.attach()  -- interaction.on_npc se vuelve a conectar en cada escena
     story.reset()      -- load_scene detuvo los sonidos: se guarda/descarta la sesion vieja
+    libreta_ui.reset() -- la libreta no sigue abierta tras recargar la escena
     story.attach()
     interaction.say = function(t) line.text, line.left = t, c.line_time end
     leads.say = function(t) line.text, line.left = t, c.lead_time end
@@ -414,7 +417,7 @@ function M.make_update(cfg)
 
     draw_world()
     interaction.draw_figures()
-    if not ov.open and not story.is_open() then leads.draw_markers(lidx.markers, clock) end
+    if not ov.open and not story.is_open() and not libreta_ui.is_open() then leads.draw_markers(lidx.markers, clock) end
 
     local prompt = nil
     if not placed then
@@ -450,6 +453,7 @@ function M.make_update(cfg)
       if dlg_open then door = nil end
       if ov.open then door = nil end
       if story.is_open() then door = nil end
+      if libreta_ui.is_open() then door = nil end
       if tod.is_busy() then door = nil end
 
       -- Zona: aviso solo al cambiar (no al volver a entrar en la misma)
@@ -484,7 +488,7 @@ function M.make_update(cfg)
       end
 
       -- Interactuables (NPCs/objetos): nunca a la vez que una puerta ni en transicion
-      local suppress = dlg_open or transition or ignore_until_clear or door_raw ~= nil or fade.alpha() > 0 or ov.open or story.is_open() or tod.is_busy()
+      local suppress = dlg_open or transition or ignore_until_clear or door_raw ~= nil or fade.alpha() > 0 or ov.open or story.is_open() or libreta_ui.is_open() or tod.is_busy()
       local ihint = interaction.update(dt, {
         x = fcx, y = fcy, facing = player_walker:get_facing(), suppress = suppress,
       })
@@ -492,7 +496,7 @@ function M.make_update(cfg)
 
       -- Depuracion: F alterna el flag (la puerta cambia al frame siguiente)
       local fdown = is_action_activated("debug_toggle")
-      if fdown and not was_debug and c.debug_flag and not ov.open and not story.is_open() then
+      if fdown and not was_debug and c.debug_flag and not ov.open and not story.is_open() and not libreta_ui.is_open() then
         local v = not ws.has(c.debug_flag)
         ws.set(c.debug_flag, v)
         line.text = c.debug_flag .. " = " .. tostring(v)
@@ -510,7 +514,20 @@ function M.make_update(cfg)
 
       -- Herramientas (issue #53): 1-4 seleccionan, X usa la seleccionada. El jugador no sabe
       -- de ninguna en concreto: tools.lua ejecuta el uso definido en sus datos
-      local tools_ok = not dlg_open and not ov.open and not story.is_open() and not tod.is_busy() and fade.alpha() == 0
+      -- Libreta (issue #80): Tab / L abre y cierra. Bloquea al jugador como el overlay F3; el
+      -- ambiente sigue sonando (amb.tick no depende de los overlays)
+      local ldown = is_action_activated("libreta") or is_action_activated("libreta_alt")
+      if ldown and not was_libreta then
+        if libreta_ui.is_open() then
+          libreta_ui.close()
+          unlock_input()
+        elseif not dlg_open and not ov.open and not story.is_open() and not transition and not tod.is_busy() and fade.alpha() == 0 then
+          libreta_ui.open()
+          lock_input()
+        end
+      end
+      was_libreta = ldown
+      local tools_ok = not dlg_open and not ov.open and not story.is_open() and not libreta_ui.is_open() and not tod.is_busy() and fade.alpha() == 0
       for n = 1, 4 do
         local name = "tool" .. n
         local d = is_action_activated(name)
@@ -525,7 +542,7 @@ function M.make_update(cfg)
       was_tool.use = ud
       amb.tick(dt)
       -- Pistas: no se evaluan con pantalla ocupada (no se pierden, esperan)
-      local hidden = dlg_open or transition or ov.open or story.is_open() or fade.alpha() > 0 or tod.is_busy()
+      local hidden = dlg_open or transition or ov.open or story.is_open() or libreta_ui.is_open() or fade.alpha() > 0 or tod.is_busy()
       story.tick(dt, { x = fcx, y = fcy, zone = ws.ctx().zone, time = amb.get_time(), phase = tod.get(), map = c.map, hidden = hidden })
       leads.tick({ hidden = hidden })
     end
@@ -538,9 +555,18 @@ function M.make_update(cfg)
     -- F3: overlay de depuracion (tambien captura teclas mientras esta abierto)
     update_overlay(dlg_open)
 
+    -- Libreta: navegacion; "replay" = volver a oir una historia (cierra y suelta al jugador
+    -- antes, para que el bloqueo de la historia no herede el de la libreta)
+    local lact, lid = libreta_ui.update(dt)
+    if lact == "replay" then
+      libreta_ui.close()
+      unlock_input()
+      story.play(lid, { replay = true })
+    end
+
     -- Tecla 0: volver a la escena principal (flanco; no durante una transicion)
     local bdown = is_action_activated("back")
-    if bdown and not was_back and c.back_scene and not transition and not dlg_open and not ov.open and not story.is_open() then
+    if bdown and not was_back and c.back_scene and not transition and not dlg_open and not ov.open and not story.is_open() and not libreta_ui.is_open() then
       load_scene(c.back_scene)
     end
     was_back = bdown
@@ -551,7 +577,7 @@ function M.make_update(cfg)
 
     -- Textos: solo con la pantalla despejada (los rects HUD se pintan bajo el
     -- texto y el fundido quedaria tapado por el)
-    if fade.alpha() == 0 and not dialogue.is_open() and not ov.open and not story.is_open() then
+    if fade.alpha() == 0 and not dialogue.is_open() and not ov.open and not story.is_open() and not libreta_ui.is_open() then
       if toast.left > 0 then
         toast.left = toast.left - dt
         draw_centered(toast.text, 12)
@@ -568,6 +594,7 @@ function M.make_update(cfg)
       tools.draw_hud()
     end
 
+    libreta_ui.draw()
     draw_overlay()
 
     fade.draw() -- siempre el ultimo del fundido de puertas

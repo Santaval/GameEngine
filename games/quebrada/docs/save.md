@@ -19,6 +19,8 @@ ranura, `slot1`.
 | `foco.battery` | Bateria del foco (el foco se reanuda apagado) |
 | `place` | `map`, `scene` y `ctx` (llegada pendiente, `return_*`, zona) para reaparecer en el mismo sitio |
 
+Lo "Nuevo" de la libreta son flags `libreta.seen.<tipo>.<id>` y entra en `flags`.
+
 No se guardan los sonidos en curso, la tarjeta de titulo ni la posicion exacta: se reaparece en
 el spawn con el que se entro al mapa (o en el `default` si se guardo en pleno mapa). Los ajustes
 de audio los guarda el motor aparte (`settings.json`). Las herramientas (#53) son flags

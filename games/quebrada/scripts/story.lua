@@ -61,6 +61,7 @@ local function commit(id, frac)
   if rounded > M.progress(id) then ws.set(logic.key(id, "progress"), rounded) end
   if s ~= "none" and not ws.has(logic.key(id, "started")) then
     ws.set(logic.key(id, "started"), true)
+    libreta.notify() -- historia nueva en la libreta (issue #80)
   end
   if s == "heard" and not ws.has(logic.key(id, "heard")) then
     ws.set(logic.key(id, "heard"), true)
@@ -130,7 +131,8 @@ function M.listen(id)
   M.play(id)
 end
 
-function M.play(id)
+-- opts.replay: volver a oir desde la libreta (sin cierre ni recomendaciones al terminar)
+function M.play(id, opts)
   local lg = M.legends[id]
   if not lg or st.sess then return false end
   if not lg.sound then say("Todavía no se grabó esta historia."); return false end
@@ -142,7 +144,8 @@ function M.play(id)
   -- La duracion se pide con la voz activa: un stream solo se decodifica una vez
   local dur = sound_duration(lg.sound) or 0
   st.sess = { id = id, handle = handle, dur = dur, pos = 0, frac = 0,
-              state = logic.next_state("idle", "start"), newly = false }
+              state = logic.next_state("idle", "start"), newly = false,
+              replay = opts and opts.replay or false }
   -- Flancos sembrados con el estado actual: la tecla que abrio no cuenta
   was.pause, was.stop = held("story_pause"), held("story_stop", "story_stop_alt")
   ws.set("story.open", true)
@@ -172,7 +175,7 @@ local function close(reason)
   ws.set("story.open", false)
   st.sess = nil
   local lg = M.legends[s.id]
-  if lg and reason ~= "lost" and (newly or reason == "ended") then
+  if lg and reason ~= "lost" and not s.replay and (newly or reason == "ended") then
     local script = concat(lg.closing, lg.recommendations)
     if #script > 0 then dialogue.start(script) end
   end

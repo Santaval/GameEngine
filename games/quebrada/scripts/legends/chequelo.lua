@@ -15,6 +15,9 @@ return {
   -- Disponible solo despues de la primera charla (asi "Hablar" va primero)
   requires = m.not_(m.mission_is("chequelo", "none")),
   mission_offer = "chequelo",      -- opcional: se ofrece al empezar (idempotente)
+  -- Final alcanzado (libreta, issue #80): flag con el valor y texto de cada valor
+  ending_flag = "chequelo.ending",
+  endings = { stayed_home = "Te quedaste en casa", failed = "Saliste mal parado", done = "Fuiste al monte" },
   greeting = {
     { speaker = "Mamá", text = "Siéntate, mijo. La grabé para que no se perdiera." },
     { speaker = "Mamá", text = "Escucha con calma. No hay que entenderla toda de una vez." },

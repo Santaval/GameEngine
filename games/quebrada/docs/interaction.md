@@ -68,7 +68,7 @@ Keys: `interact` or `interact_alt` (the same keys as doors: `E` / `Enter`).
 Interaction is blocked while either world flag is set:
 
 - `dialogue.open` (set by `dialogue.lua` while a dialogue is open)
-- `libreta.open` (set by the future notebook UI)
+- `libreta.open` (set by the libreta screen, [libreta.md](libreta.md))
 
 While blocked, the indicator and the HUD text are hidden and `E` does nothing.
 

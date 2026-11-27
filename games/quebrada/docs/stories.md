@@ -36,7 +36,8 @@ The overlay and the dialogue box never show at the same time.
 | `teller` | Value of the NPC's `npc` property (for example `mama`). |
 | `teller_name` | Name shown on the overlay. |
 | `sound` | assetId of the recording. It must be declared in the scene's `sounds`. Optional: a legend without a recording is a valid node of the lead graph, but the prompt never offers it. |
-| `kind` | `"real"` (recording) or `"generated"`. Documentation only. |
+| `kind` | `"real"` (recording) or `"generated"`. The libreta shows the recorder icon only when `kind == "real"` **and** `sound` is set. |
+| `ending_flag`, `endings` | Optional. Flag holding the ending reached and a `value -> text` table; the libreta shows it on the story page (see [libreta.md](libreta.md)). |
 | `title` | Title shown on the overlay. |
 | `summary` | Short text shown on the overlay (wrapped, at most 6 lines). |
 | `heard_at` | Fraction (0 < x <= 1) at which the story counts as heard. Default `0.8`. |
@@ -141,7 +142,7 @@ Word-of-mouth leads (issue #69) use a parallel set, one per legend (API: `add_le
 API: `add_clue(id, text, source)` (returns `true` if new), `has_clue(id)`,
 `clues()` (list of `{ n, id, text, source }`), `clue_count()`.
 
-There is no libreta screen yet. To test a clue again, turn its
+The libreta screen ([libreta.md](libreta.md), Tab / L) shows them. To test a clue again, turn its
 `libreta.clue.<story>.<clue>` flag off in the F3 overlay.
 
 ## Controls
