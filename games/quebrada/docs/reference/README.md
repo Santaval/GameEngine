@@ -25,14 +25,14 @@ Pendiente: contar los pasos iglesia → casa para fijar la escala.
 |---|---|---|
 | Aerogeneradores | `aerogeneradores/*` (4) | torre con vehículo para escala, camino a la cresta, atardecer con laguna, vista aérea |
 | Camino de las carretas | `camino/camino-de-carretas.jpg` | lastre y piedra, huellas, franjas de zacate |
-| Monte de hule y níspero | `monte/*` (2) | ladera boscosa, potrero y palma al frente |
+| Monte de hule y níspero | `monte/*` (3) | ladera boscosa, potrero y palma al frente; vista aérea del bosque con laguna de cráter (útil para la copa de los árboles) |
 | Río | `rio/quebrada-piedras.jpg` | |
 | Cafetal | `cafetal/cafetal-terrazas.jpg` | filas en terrazas |
 | Clínica (Ebais) | `clinica/ebais-rampa.jpg` | piedra arriba, techo de zinc azul, rampa con barandas amarillas, calle de adoquín |
 | Escuela | `escuela/escuela-frente.jpg` | techo de zinc rojo, columnas rosadas, malla ciclón, bancas de madera |
 | Iglesia | `iglesia/iglesia-frente.jpg` | blanca, aguja roja, puertas café, setos |
 
-Se dejaron fuera por tener marca de agua o de Google Street View: una torre con logo (TOROSI), el paso del río con logo, calle de lastre, calle de asfalto (Ruta Nacional Terciaria, doble línea amarilla), la casa de mamá (paredes blancas, techo de zinc claro con borde rojo, ventana arqueada con cortinas, moto tapada con lona, árbol grande al frente) y el colegio (Liceo, paredes verde claro, cerca baja y rotulo en el muro).
+Se dejaron fuera por tener marca de agua o de Google Street View: una torre con logo (TOROSI), la vista aérea del bosque con logos de televisión (`huleynis3`), el paso del río con logo, calle de lastre, calle de asfalto (Ruta Nacional Terciaria, doble línea amarilla), la casa de mamá (paredes blancas, techo de zinc claro con borde rojo, ventana arqueada con cortinas, moto tapada con lona, árbol grande al frente) y el colegio (Liceo, paredes verde claro, cerca baja y rotulo en el muro).
 
 ## Faltan para cerrar el issue
 
