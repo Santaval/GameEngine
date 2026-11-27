@@ -30,6 +30,7 @@ implemented one domain per file under [`src/Binding/`](../src/Binding/).
 - [Audio](#audio)
   - [Spatial audio](#spatial-audio)
   - [Buses and ducking](#buses-and-ducking)
+- [Lighting](#lighting)
 - [Input](#input)
 - [Trajectory path](#trajectory-path)
 - [Scripts & hooks](#scripts--hooks)
@@ -561,6 +562,43 @@ local music_now = get_bus_volume("music")   -- 0.5
 
 ---
 
+## Lighting
+
+A darkness overlay with soft light circles. A screen-sized light map is filled with
+the ambient colour, every visible light is added to it as a radial gradient
+(generated in code, no asset), and the map is multiplied over the world. It runs
+after the world and before the HUD, so `draw_rect`, `hud` images, text, dialogue
+and subtitles are never darkened. Lights are culled against the camera.
+
+With the ambient at full white (`255, 255, 255`) and no transition running the
+whole pass is skipped, so daytime scenes cost nothing.
+
+Colours are `0..255`. `intensity` is `0..1` (higher values are clamped when drawn).
+`flicker` is `0..1`: how far the light dips when it flickers (`0` = steady).
+
+| Function | Description |
+| --- | --- |
+| `add_light(x, y, radius, r, g, b, [intensity])` | Creates a free light at world coordinates and returns its id (`> 0`). `intensity` defaults to `1`. Returns `0` (and logs) if `radius <= 0`. |
+| `move_light(id, x, y)` | Moves a free light. |
+| `set_light(id, opts)` | Changes any of `x`, `y`, `radius`, `intensity`, `flicker`, `r`, `g`, `b` (or `color = { r=, g=, b= }`). Setting `intensity` cancels a running fade. |
+| `fade_light(id, to, seconds)` | Fades the intensity to `to` over `seconds` (`<= 0` is instant). The light is not removed at `0`. |
+| `remove_light(id)` | Deletes a free light. |
+| `set_ambient(r, g, b, [seconds])` | Sets the ambient colour, linearly over `seconds` (default `0`, instant). Night is roughly `20, 26, 51`. |
+| `attach_light(entity, [opts])` | Adds (or updates) a `LightComponent` on an entity, centred on its sprite. Same fields as the scene [`light`](scene-format.md#light) component. |
+| `detach_light(entity)` | Removes the entity's light. |
+| `lights_from_map(map, [opts])` | Creates a light for each Tiled object of class `opts.class` (default `"light"`). Properties: `radius` (required), `r`, `g`, `b`, `intensity`, `flicker`. The light sits at the centre of the object's rectangle. Returns the list of ids. |
+
+Ids are never reused. An unknown id is ignored silently (so `move_light` can be
+called every frame). `load_scene` removes every free light and resets the ambient to
+white; a scene can set its own with [`lighting`](scene-format.md#lighting).
+
+```lua
+set_ambient(20, 26, 51, 2.0)                       -- dusk over two seconds
+local lamp = add_light(320, 200, 90, 255, 200, 120, 0.9)
+set_light(lamp, { flicker = 0.2 })
+fade_light(lamp, 0, 1.5)
+```
+
 ## Input
 
 | Function | Returns | Notes |
@@ -763,7 +801,9 @@ their cell.
    creation order). Without a map and without `set_y_sort(true)`, `world`
    sprites keep their creation order, as before.
 4. `above` tile layers, then sprites with layer `above`.
-5. Trajectory, collider debug, `draw_image` with layer `front`, HUD.
+5. Trajectory, collider debug, `draw_image` with layer `front`, `draw_rect_world`
+   rects, then the [lighting](#lighting) overlay. Everything after it is never lit:
+   HUD (`draw_rect`, `hud` images, text).
 
 A tile sorts by the bottom edge of its cell plus `sort_offset`; a sprite sorts by
 the bottom edge of its current frame (or `set_sprite_sort_offset`).

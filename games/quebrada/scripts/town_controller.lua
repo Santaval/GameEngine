@@ -35,6 +35,7 @@ local story = require("story")
 local leads = require("leads")
 local llogic = require("leads_logic")
 local consequences = require("consequences")
+local lighting = require("lighting")
 
 local M = {}
 
@@ -221,6 +222,7 @@ function M.make_update(cfg)
     consequences.init()
     consequences.validate()
     interaction.from_map(m)
+    lighting.init(m)
     footsteps.set_source(surfaces.build(m))
     local n, cerr = load_tmx_colliders(c.map)
     if not n then print("[town] colliders: " .. tostring(cerr)) end
@@ -483,6 +485,9 @@ function M.make_update(cfg)
       story.tick(dt, { x = fcx, y = fcy, zone = ws.ctx().zone, time = amb.get_time(), map = c.map, hidden = hidden })
       leads.tick({ hidden = hidden })
     end
+
+    -- Iluminacion: ambiente segun la hora y linterna del jugador
+    lighting.tick()
 
     -- F3: overlay de depuracion (tambien captura teclas mientras esta abierto)
     update_overlay(dlg_open)

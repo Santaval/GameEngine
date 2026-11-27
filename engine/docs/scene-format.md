@@ -149,6 +149,18 @@ audio = {
 Every field under `duck` is optional. The bus volumes themselves are not part of
 the scene: they belong to the player and are saved in `settings.json`.
 
+## `lighting`
+
+Optional. Sets the ambient colour this scene starts with (see
+[Lighting](lua-api.md#lighting)). Without it the scene starts at full white, i.e.
+no darkness. Lights and ambient are reset on every scene load.
+
+```lua
+lighting = {
+  ambient = { r = 20, g = 26, b = 51 },  -- 0..255 each, default 255
+},
+```
+
 ## `keys`
 
 Maps a name to an SDL keycode. Scripts then ask for the name, never the code.
@@ -429,6 +441,21 @@ active and follows the entity, with volume by distance and pan by horizontal
 offset relative to the listener. It stops when the entity dies. The entity
 needs a `transform`; its center is the position plus half the sprite size
 (scaled) when it has a sprite. See [Spatial audio](lua-api.md#spatial-audio).
+
+### `light`
+
+A circular light centred on the entity (the middle of its sprite, plus `offset`).
+Needs a `transform`. See [Lighting](lua-api.md#lighting).
+
+```lua
+light = {
+  radius    = 64,                          -- default 64; must be > 0
+  color     = { r = 255, g = 210, b = 150 }, -- default white
+  intensity = 1,                           -- default 1
+  flicker   = 0,                           -- default 0
+  offset    = { x = 0, y = 0 },            -- default 0, 0
+},
+```
 
 ### `equipment`
 

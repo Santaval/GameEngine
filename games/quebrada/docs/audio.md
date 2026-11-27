@@ -23,8 +23,8 @@ every frame, `ambience.tick(dt)` every frame, and `ambience.set_time(...)` on ke
   way to change it; `ambience.get_time()` reads it.
 - Key `N` toggles it in the town and house scenes (`toggle_time` in the scene's
   `keys`).
-- Ambience only reads the time. Future work (#55 surfaces, lighting) should call
-  `set_time` instead of keeping its own clock.
+- Ambience only reads the time. Lighting (`scripts/lighting.lua`, see `lighting.md`)
+  reads `get_time` and does not keep its own clock. Future work should do the same.
 
 ## Ambience sets
 

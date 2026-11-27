@@ -15,6 +15,7 @@
 #include "HealthBindings.hpp"
 #include "InputBindings.hpp"
 #include "InventoryBindings.hpp"
+#include "LightBindings.hpp"
 #include "LootBindings.hpp"
 #include "MapBindings.hpp"
 #include "MovementBindings.hpp"

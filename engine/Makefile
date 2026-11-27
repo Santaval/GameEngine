@@ -166,9 +166,11 @@ test: $(DEPS_STAMP) $(PUGI_HDR)
 	./tests/pixel_perfect_test
 	$(CC) $(CFLAGS) $(STD) $(INC_PATH) tests/TileMapTest.cpp src/Map/TmxLoader.cpp -lz -o tests/tile_map_test
 	./tests/tile_map_test
+	$(CC) $(CFLAGS) $(STD) $(INC_PATH) tests/LightingTest.cpp -o tests/lighting_test
+	./tests/lighting_test
 
 clean:
-	rm -f engine-bin tests/network_registry_test tests/net_sync_test tests/damage_sync_test tests/world_sync_test tests/lua_json_test tests/impact_damage_test tests/tmx_loader_test tests/physics_test tests/aseprite_atlas_test tests/pixel_perfect_test tests/tile_map_test
+	rm -f engine-bin tests/network_registry_test tests/net_sync_test tests/damage_sync_test tests/world_sync_test tests/lua_json_test tests/impact_damage_test tests/tmx_loader_test tests/physics_test tests/aseprite_atlas_test tests/pixel_perfect_test tests/tile_map_test tests/lighting_test
 
 clean-deps:
 	rm -rf $(IXWS_OBJ) $(IXWS_LIB) $(IXWS_DIR)/build $(IXWS_DIR)/libixwebsocket.a

@@ -36,6 +36,7 @@ class SceneLoader {
     void addGravityComponent(Entity entity, const sol::table& components);
     void addCullComponent(Entity entity, const sol::table& components);
     void addSoundEmitterComponent(Entity entity, const sol::table& components);
+    void addLightComponent(Entity entity, const sol::table& components);
     void addEquipmentComponent(Entity entity, const sol::table& components);
     void addInventoryComponent(Entity entity, const sol::table& components);
     void addLootComponent(Entity entity, const sol::table& components);

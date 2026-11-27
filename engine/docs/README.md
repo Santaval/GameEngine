@@ -5,7 +5,7 @@ entirely in Lua.
 
 | Document | What's in it |
 | --- | --- |
-| [lua-api.md](lua-api.md) | Every function the engine exposes to Lua. |
+| [lua-api.md](lua-api.md) | Every function the engine exposes to Lua, including [lighting](lua-api.md#lighting) (darkness overlay and light circles). |
 | [scene-format.md](scene-format.md) | The `scene` table: assets, input mappings, entities and every component. |
 | [collision.md](collision.md) | Box colliders, static walls, solid Tiled tiles, trigger zones and wall sliding. |
 | [health-and-damage.md](health-and-damage.md) | Hit points, contact damage, invulnerability and death hooks. |

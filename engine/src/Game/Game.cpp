@@ -42,6 +42,7 @@
 #include "../Systems/ColliderRenderSystem.hpp"
 #include "../Systems/TileMapRenderSystem.hpp"
 #include "../Systems/SpatialAudioSystem.hpp"
+#include "../Systems/LightingSystem.hpp"
 
 Game::Game() {
     this->assetManager = std::make_unique<AssetManager>();
@@ -316,6 +317,7 @@ void Game::setup() {
     this->registry->addSystem<ColliderRenderSystem>();
     this->registry->addSystem<BoxColliderRenderSystem>();
     this->registry->addSystem<SpatialAudioSystem>();
+    this->registry->addSystem<LightingSystem>();
 
     // Una entidad muerta se borra de los pares de trigger sin generar Exit
     this->registry->onEntityKilled([this](Entity entity) {
@@ -459,6 +461,8 @@ void Game::loadScene(const std::string& requestedScene) {
     // El tile map y el orden por Y tambien son de la escena
     this->tileMap.reset();
     this->ySort = false;
+    // Sin luces y con ambiente blanco hasta que la escena diga otra cosa
+    this->registry->getSystem<LightingSystem>().reset();
 
     // Los modulos cacheados por require guardan estado en sus locals
     // (cooldowns, menus abiertos...): se descargan para empezar limpio
@@ -489,6 +493,15 @@ void Game::loadScene(const std::string& requestedScene) {
         if (audio) {
             sol::optional<sol::table> duck = (*audio)["duck"];
             if (duck) this->applyDuckTable(*duck);
+        }
+        // scene.lighting.ambient = { r, g, b } es opcional: sin el, la escena arranca sin oscuridad
+        sol::optional<sol::table> lightingDef = scene["lighting"];
+        if (lightingDef) {
+            sol::optional<sol::table> amb = (*lightingDef)["ambient"];
+            if (amb) {
+                this->registry->getSystem<LightingSystem>().setAmbient(
+                    (*amb)["r"].get_or(255), (*amb)["g"].get_or(255), (*amb)["b"].get_or(255), 0.0f);
+            }
         }
     }
 }
@@ -677,7 +690,7 @@ void Game::render() {
     }
     if (this->tileMap) this->tileMap->drawPass(this->renderer, this->camera, tilemap::Pass::Above);
     renderSystem.drawLayer(this->renderer, SpriteLayer::Above);
-    // Gancho: la iluminacion iria aqui (antes de las imagenes "front" y del HUD)
+    // La iluminacion va despues de los rectangulos de mundo (Quebrada dibuja ahi su mundo) y antes del HUD
 
     // La trayectoria va encima de los sprites pero debajo del HUD de texto
     this->registry->getSystem<PathRenderSystem>().update(this->renderer, this->camera, this->deltaTime);
@@ -692,9 +705,12 @@ void Game::render() {
     // Imagenes de la capa "front": sobre las entidades y bajo el HUD
     this->drawSprites(1);
 
+    LightingSystem& lighting = this->registry->getSystem<LightingSystem>();
     if (this->pixelPerfect) {
         // Rectangulos de mundo: aun en la pasada logica
         this->drawRects(RectPass::World);
+        // Luz: multiplica el mundo en coordenadas logicas; el HUD de abajo no se oscurece
+        lighting.render(this->renderer, this->camera);
 
         // Pasada nativa: barras del letterbox, HUD y sprites de HUD en pixeles de la ventana
         SDL_RenderSetLogicalSize(this->renderer, 0, 0);
@@ -703,7 +719,14 @@ void Game::render() {
         this->drawSprites(2, this->layout);
     } else {
         // Paneles del HUD (rectangulos): van antes del texto para que el texto quede encima
-        this->drawRects(RectPass::All);
+        if (lighting.isActive()) {
+            // Con luz: mundo, luz y luego HUD (fuera de pixel-perfect el layout es la identidad)
+            this->drawRects(RectPass::World);
+            lighting.render(this->renderer, this->camera);
+            this->drawRects(RectPass::Hud);
+        } else {
+            this->drawRects(RectPass::All);
+        }
 
         // Imagenes de la capa "hud": sobre los paneles del HUD (iconos del minimapa)
         this->drawSprites(2);
@@ -770,6 +793,7 @@ void Game::update() {
         this->registry->getSystem<BoxColliderSystem>().getEntities());
     // Al final: el oyente y los emisores ya estan en su posicion de este frame
     this->updateSpatialAudio(deltaTime);
+    this->registry->getSystem<LightingSystem>().update(deltaTime);
 }
 
 void Game::updateSpatialAudio(double dt) {
@@ -855,6 +879,7 @@ void Game::destroy() {
 
     // Las texturas y las fuentes tienen que morir antes que el renderer y antes de TTF_Quit
     this->registry->getSystem<TextRenderSystem>().clearCache();
+    this->registry->getSystem<LightingSystem>().releaseTextures();
     this->tileMap.reset();
     // Los volumenes de bus se guardan antes de cerrar, aunque el ultimo cambio sea reciente
     if (this->audioSettingsDirty) this->saveAudioSettings();

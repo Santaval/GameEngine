@@ -21,6 +21,7 @@
 #include "../Components/LootComponent.hpp"
 #include "../Components/CullComponent.hpp"
 #include "../Components/SoundEmitterComponent.hpp"
+#include "../Components/LightComponent.hpp"
 #include "../Animation/AtlasRegistry.hpp"
 
 
@@ -414,6 +415,31 @@ void SceneLoader::addSoundEmitterComponent(Entity entity, const sol::table& comp
   entity.getComponent<SoundEmitterComponent>().bus = bus;
 }
 
+void SceneLoader::addLightComponent(Entity entity, const sol::table& components) {
+  sol::optional<sol::table> hasLight = components["light"];
+  if (hasLight == sol::nullopt) return;
+
+  sol::table light = *hasLight;
+  float radius = light["radius"].get_or(64.0f);
+  if (radius <= 0.0f) {
+    std::cout << "[SceneLoader] light: radius must be > 0, ignored" << std::endl;
+    return;
+  }
+
+  int r = 255, g = 255, b = 255;
+  sol::optional<sol::table> color = light["color"];
+  if (color != sol::nullopt) {
+    r = (*color)["r"].get_or(255);
+    g = (*color)["g"].get_or(255);
+    b = (*color)["b"].get_or(255);
+  }
+  float intensity = light["intensity"].get_or(1.0f);
+  float flicker = light["flicker"].get_or(0.0f);
+  glm::vec2 offset = getVec2(light, "offset", glm::vec2(0.0, 0.0));
+
+  entity.addComponent<LightComponent>(radius, r, g, b, intensity, flicker, offset);
+}
+
 void SceneLoader::addEquipmentComponent(Entity entity, const sol::table& components) {
   sol::optional<sol::table> hasEquipment = components["equipment"];
   if (hasEquipment == sol::nullopt) return;
@@ -537,6 +563,7 @@ Entity SceneLoader::buildEntity(sol::state& lua, const sol::table& entityDef, Re
     addInventoryComponent(newEntity, components);
     addLootComponent(newEntity, components);
     addSoundEmitterComponent(newEntity, components);
+    addLightComponent(newEntity, components);
     addScriptComponent(lua, newEntity, components);
   }
 
