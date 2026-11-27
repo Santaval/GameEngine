@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cmath>
 #include <filesystem>
 #include <iostream>
 
@@ -10,8 +11,10 @@
 #include "../Network/WorldSync.hpp"
 #include "../Network/NetworkRegistry.hpp"
 #include "../Network/NetworkScripting.hpp"
+#include "../Util/AudioBus.hpp"
 #include "../Util/Culling.hpp"
 #include "../Util/GamePath.hpp"
+#include "../Util/Settings.hpp"
 #include "../Map/TmxLoader.hpp"
 #include "../Map/TileMap.hpp"
 #include "../Components/TransformComponent.hpp"
@@ -116,6 +119,84 @@ void Game::loadGameConfig() {
     this->configPixelPerfect = cfg.get_or("pixel_perfect", false);
 }
 
+// Ajustes de audio en settings.json (ver Util/Settings.hpp): { "audio": { "buses": { "music": 0.5 } } }
+std::string Game::settingsFile() const {
+    return settings::settingsPath(this->gameName, this->gameRoot);
+}
+
+void Game::loadAudioSettings() {
+    nlohmann::json j = settings::read(this->settingsFile());
+    if (!j.contains("audio") || !j.at("audio").is_object()) return;
+
+    const nlohmann::json& audio = j.at("audio");
+    if (!audio.contains("buses") || !audio.at("buses").is_object()) return;
+
+    for (const auto& entry : audio.at("buses").items()) {
+        audiobus::Bus bus = audiobus::Bus::Sfx;
+        if (!audiobus::parseBus(entry.key(), bus)) continue;
+        if (!entry.value().is_number()) continue;
+
+        this->audioManager->setBusVolume(bus, entry.value().get<double>());
+    }
+}
+
+void Game::saveAudioSettings() {
+    const std::string path = this->settingsFile();
+    // Se parte del archivo actual para no borrar lo que no es de audio
+    nlohmann::json j = settings::read(path);
+    nlohmann::json& audio = j["audio"];
+    if (!audio.is_object()) audio = nlohmann::json::object();
+    nlohmann::json& buses = audio["buses"];
+    if (!buses.is_object()) buses = nlohmann::json::object();
+
+    for (int i = 0; i < audiobus::BUS_COUNT; i++) {
+        audiobus::Bus bus = static_cast<audiobus::Bus>(i);
+        // Dos decimales: el float del volumen no deja 0.30000001 en el archivo
+        double value = std::round(static_cast<double>(this->audioManager->getBusVolume(bus)) * 100.0) / 100.0;
+        buses[audiobus::busName(bus)] = value;
+    }
+
+    if (!settings::write(path, j)) {
+        std::cout << "[Game] Could not write settings to " << path << std::endl;
+    }
+    this->audioSettingsDirty = false;
+}
+
+void Game::markAudioSettingsDirty() {
+    this->audioSettingsDirty = true;
+    this->audioSettingsDirtyAt = SDL_GetTicks();
+}
+
+// Partiendo del ducking actual, aplica los campos presentes en la tabla. buses reemplaza la lista de buses
+void Game::applyDuckTable(const sol::table& opts) {
+    audiobus::DuckConfig config = this->audioManager->getDuckConfig();
+    config.enabled = opts.get_or<bool>("enabled", config.enabled);
+    config.amount = opts.get_or<float>("amount", config.amount);
+    config.fadeMs = opts.get_or<int>("fade_ms", config.fadeMs);
+
+    sol::optional<sol::table> buses = opts.get<sol::optional<sol::table>>("buses");
+    if (buses) {
+        for (bool& listed : config.buses) listed = false;
+        for (const auto& entry : *buses) {
+            if (!entry.second.is<std::string>()) continue;
+            std::string name = entry.second.as<std::string>();
+
+            audiobus::Bus bus = audiobus::Bus::Sfx;
+            if (!audiobus::parseBus(name, bus)) {
+                std::cout << "[Audio] set_ducking: unknown bus '" << name << "', ignored" << std::endl;
+                continue;
+            }
+            if (bus == audiobus::Bus::Voice) {
+                std::cout << "[Audio] set_ducking: the voice bus is never ducked, ignored" << std::endl;
+                continue;
+            }
+            config.buses[static_cast<int>(bus)] = true;
+        }
+    }
+
+    this->audioManager->setDuckConfig(config);
+}
+
 std::string Game::buildPackagePath() const {
     const std::string scripts = this->gameRoot + "/scripts";
     std::string path = scripts + "/?.lua;";
@@ -151,6 +232,8 @@ void Game::init() {
 
     // Sin dispositivo de audio el motor sigue: las llamadas de audio quedan en no-op
     this->audioManager->init();
+    // Despues de init: los volumenes guardados se aplican al mezclador ya abierto
+    this->loadAudioSettings();
 
     SDL_DisplayMode displayMode;
     SDL_GetCurrentDisplayMode(0, &displayMode);
@@ -359,6 +442,8 @@ void Game::loadScene(const std::string& requestedScene) {
     }
     // Las voces y la musica son de la escena que se descarga (los assets se conservan por id)
     this->audioManager->stopAll();
+    // El ducking es de la escena: vuelve al por defecto antes de leer scene.audio.duck
+    this->audioManager->resetDuckConfig();
     // El oyente fijado con set_listener era una entidad de la escena que se descarga
     this->listenerEntity = -1;
     this->textBuffer.clear();
@@ -395,6 +480,17 @@ void Game::loadScene(const std::string& requestedScene) {
 
     this->sceneLoader->load(scenePath, this->lua, this->assetManager,
         this->controllerManager, this->registry, this->renderer);
+
+    // scene.audio.duck es opcional: sin el, la escena usa el ducking por defecto (ya repuesto)
+    sol::object sceneObj = this->lua["scene"];
+    if (sceneObj.is<sol::table>()) {
+        sol::table scene = sceneObj.as<sol::table>();
+        sol::optional<sol::table> audio = scene["audio"];
+        if (audio) {
+            sol::optional<sol::table> duck = (*audio)["duck"];
+            if (duck) this->applyDuckTable(*duck);
+        }
+    }
 }
 
 bool Game::loadTileMap(const std::string& path, double x, double y, std::string& error) {
@@ -711,6 +807,13 @@ void Game::updateSpatialAudio(double dt) {
         }
     }
 
+    // Buses y ducking antes que las voces espaciales: el mismo frame usa el volumen nuevo
+    this->audioManager->updateBuses(dt);
+    // Los ajustes se guardan cuando el jugador deja de moverlos (500 ms sin cambios)
+    if (this->audioSettingsDirty && SDL_GetTicks() - this->audioSettingsDirtyAt >= 500) {
+        this->saveAudioSettings();
+    }
+
     // El oyente se fija antes de arrancar voces nuevas para que no suenen un frame con el viejo
     this->audioManager->setListener(listenerX, listenerY);
     this->registry->getSystem<SpatialAudioSystem>().update(*this->audioManager);
@@ -753,6 +856,8 @@ void Game::destroy() {
     // Las texturas y las fuentes tienen que morir antes que el renderer y antes de TTF_Quit
     this->registry->getSystem<TextRenderSystem>().clearCache();
     this->tileMap.reset();
+    // Los volumenes de bus se guardan antes de cerrar, aunque el ultimo cambio sea reciente
+    if (this->audioSettingsDirty) this->saveAudioSettings();
     // Los canales se detienen antes de liberar los chunks; el mezclador se cierra
     // despues, para que Mix_FreeMusic aun tenga sus decodificadores cargados
     this->audioManager->stopAll();

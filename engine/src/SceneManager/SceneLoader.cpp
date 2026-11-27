@@ -404,7 +404,14 @@ void SceneLoader::addSoundEmitterComponent(Entity entity, const sol::table& comp
     std::cout << "[SceneLoader] sound_emitter: unknown rolloff '" << rolloffName << "', using linear" << std::endl;
   }
 
+  audiobus::Bus bus = audiobus::Bus::Sfx;
+  std::string busName = emitter["bus"].get_or(std::string("sfx"));
+  if (!audiobus::parseBus(busName, bus)) {
+    std::cout << "[SceneLoader] sound_emitter: unknown bus '" << busName << "', using sfx" << std::endl;
+  }
+
   entity.addComponent<SoundEmitterComponent>(sound, minDist, maxDist, rolloff, volume, loop, offset);
+  entity.getComponent<SoundEmitterComponent>().bus = bus;
 }
 
 void SceneLoader::addEquipmentComponent(Entity entity, const sol::table& components) {

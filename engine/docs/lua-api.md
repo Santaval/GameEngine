@@ -29,6 +29,7 @@ implemented one domain per file under [`src/Binding/`](../src/Binding/).
 - [Camera](#camera)
 - [Audio](#audio)
   - [Spatial audio](#spatial-audio)
+  - [Buses and ducking](#buses-and-ducking)
 - [Input](#input)
 - [Trajectory path](#trajectory-path)
 - [Scripts & hooks](#scripts--hooks)
@@ -390,7 +391,7 @@ from `0` (silent) to `1` (full). Up to 48 sounds can play at once; beyond that
 
 | Function | Returns | Notes |
 | --- | --- | --- |
-| `play_sound(id, opts?)` | handle | `opts = { volume = 1, loop = false }`. Returns an integer handle, or `0` if the sound does not exist or no channel is free. |
+| `play_sound(id, opts?)` | handle | `opts = { volume = 1, loop = false, bus = "sfx" }`. Returns an integer handle, or `0` if the sound does not exist or no channel is free. `bus` is one of `"voice"`, `"sfx"`, `"ambience"`, `"music"` (see [Buses and ducking](#buses-and-ducking)). |
 | `stop_sound(handle, fade_ms?)` | — | Stops the sound, optionally fading out over `fade_ms`. Unknown or finished handles are ignored. |
 | `set_sound_volume(handle, v)` | — | Changes the volume of a playing sound. |
 | `is_playing(handle)` | boolean | `false` once the sound ended or was stopped. |
@@ -398,6 +399,9 @@ from `0` (silent) to `1` (full). Up to 48 sounds can play at once; beyond that
 | `sound_duration(id)` | seconds or `nil` | Length of the sound. `nil` if the id is unknown. |
 | `play_music(id, fade_ms?, opts?)` | — | `opts = { loop = true, volume = 1 }`. Only one music track plays at a time: starting another replaces it. |
 | `stop_music(fade_ms?)` | — | Stops the music, optionally fading out. |
+| `set_bus_volume(bus, v)` | — | Volume of a bus, `0` to `1`. Saved to `settings.json`. An unknown bus name is logged and ignored. |
+| `get_bus_volume(bus)` | number or `nil` | Current volume of a bus. `nil` if the bus name is unknown. |
+| `set_ducking(opts)` | — | Changes the ducking of the current scene. See [Buses and ducking](#buses-and-ducking). |
 
 `sound_position` is meant for syncing subtitles to a voice recording:
 
@@ -436,7 +440,7 @@ distance gain).
 
 | Function | Returns | Notes |
 | --- | --- | --- |
-| `play_sound_at(id, x, y, opts?)` | handle | `opts = { volume = 1, loop = false, min_dist = 64, max_dist = 400, rolloff = "linear", pan_width = 0, follow = entity }`. Positions are world coordinates (the same ones as `get_position`). With `follow`, `x, y` is only the starting point: the emitter then tracks the center of that entity and stops when it dies. |
+| `play_sound_at(id, x, y, opts?)` | handle | `opts = { volume = 1, loop = false, min_dist = 64, max_dist = 400, rolloff = "linear", pan_width = 0, follow = entity, bus = "sfx" }`. Positions are world coordinates (the same ones as `get_position`). With `follow`, `x, y` is only the starting point: the emitter then tracks the center of that entity and stops when it dies. |
 | `set_listener(entity)` | — | Chooses which entity hears the audio. `nil` goes back to the automatic listener. |
 | `set_emitter_position(handle, x, y)` | — | Moves the emitter and stops it following an entity. |
 | `set_emitter_distance_override(handle, d)` | — | Uses `d` instead of the real distance for the volume (the "distance lie"). `nil` removes it. The pan keeps the real direction. |
@@ -484,9 +488,69 @@ itself for a point object), in the same coordinates as the rest of the map.
 | `radius` / `max_distance` | Distance at which the sound is silent (default 400). `max_distance` wins when both exist. |
 | `min_distance` | Full-volume radius (default 64). |
 | `volume`, `loop`, `rolloff` | Same as in `play_sound_at`. `loop` defaults to `true`. |
+| `bus` | `"voice"`, `"sfx"`, `"ambience"` or `"music"`. Default `"sfx"`; an unknown name is logged and the emitter uses `"sfx"`. |
 
 An emitter can also be attached to an entity from the scene with the
 [`sound_emitter`](scene-format.md#sound_emitter) component.
+
+### Buses and ducking
+
+Every sound plays on a *bus*. The bus has its own volume, set by the game with
+`set_bus_volume` (for example from an options screen):
+
+| Bus | Used for | Ducked by default |
+| --- | --- | --- |
+| `voice` | Dialogue and narration | Never |
+| `sfx` | Effects (default for `play_sound`) | No |
+| `ambience` | Looping background sounds | Yes |
+| `music` | `play_music` | Yes |
+
+The final volume of a voice is `volume * bus_volume * duck` (times the distance
+gain for emitters). `duck` is `1` normally and the ducking amount while ducking
+is active. The music track uses the same formula with its `volume` argument.
+
+**Ducking.** While any voice on the `voice` bus is playing, the buses in the
+duck list drop to `amount` (default `0.35`). They come back to `1` once no voice
+is left. The change is a linear fade over `fade_ms` (default `300`). A voice that
+is stopping keeps the ducking until its channel is silent. A music track started
+during a duck starts at the ducked volume.
+
+```lua
+-- a narration on the voice bus ducks the music and the ambience while it plays
+play_sound("mama_story", { bus = "voice" })
+-- looping ambience on its own bus, positioned in the world
+play_sound_at("crickets", x, y, { bus = "ambience", loop = true })
+
+-- scene: scene.audio.duck is optional; these are the defaults
+set_ducking({ enabled = true, amount = 0.35, fade_ms = 300, buses = { "ambience", "music" } })
+set_ducking({ enabled = false })   -- turns it off for this scene
+```
+
+| Field | Notes |
+| --- | --- |
+| `enabled` | `false` turns ducking off. Default `true`. |
+| `amount` | Volume of the ducked buses, `0` to `1`. Clamped to that range. |
+| `fade_ms` | Length of the fade in milliseconds. `0` changes the volume at once. |
+| `buses` | List of bus names to duck. Replaces the default list. `"voice"` is ignored (it is never ducked). |
+
+Each scene starts with the defaults above. A scene can set its own ducking with
+[`audio.duck`](scene-format.md#audio) in its scene file; without it the defaults
+apply. `set_ducking` only changes the current scene and is not saved.
+
+**Saved settings.** `set_bus_volume` writes the four bus volumes to
+`settings.json` in the game's preferences folder, under `audio.buses`
+(`{ "audio": { "buses": { "music": 0.5 } } }`). The folder comes from
+`SDL_GetPrefPath("gameEngine", <game>)`; if SDL cannot give one, the file goes
+in the game's folder (`games/<name>/settings.json`). The write happens about
+500 ms after the last change and when the game closes. The file is merged with
+what is already there, so other keys are kept. The saved values are loaded at
+start-up, before the first scene. A file that cannot be read is ignored.
+
+```lua
+-- options menu: the music slider, and a key that mutes music
+set_bus_volume("music", 0.5)
+local music_now = get_bus_volume("music")   -- 0.5
+```
 
 ---
 

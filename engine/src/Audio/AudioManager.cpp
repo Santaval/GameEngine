@@ -140,7 +140,102 @@ void AudioManager::stopAll() {
   this->releaseUnusedStreams();
 }
 
-int AudioManager::startVoice(const std::string& soundId, double volume, bool loop) {
+float AudioManager::duckFor(audiobus::Bus bus) const {
+  // La voz nunca se atenua a si misma, aunque alguien la ponga en la mascara
+  if (bus == audiobus::Bus::Voice) return 1.0f;
+  if (!this->duck.enabled || !this->duck.buses[static_cast<int>(bus)]) return 1.0f;
+  return this->duckGain;
+}
+
+double AudioManager::busGain(audiobus::Bus bus) const {
+  return this->busVolume[static_cast<int>(bus)] * this->duckFor(bus);
+}
+
+void AudioManager::applyVoiceVolume(Voice& voice) {
+  double gain = voice.baseVolume * this->busGain(voice.bus);
+  if (voice.spatial) gain *= voice.sp.gain;
+
+  int vol = toMixVolume(gain);
+  if (vol != voice.lastVol) {
+    Mix_Volume(voice.channel, vol);
+    voice.lastVol = vol;
+  }
+}
+
+void AudioManager::applyMusicVolume(bool force) {
+  int vol = toMixVolume(this->musicBase * this->busGain(audiobus::Bus::Music));
+  if (!force && vol == this->lastMusicVol) return;
+
+  Mix_VolumeMusic(vol);
+  this->lastMusicVol = vol;
+}
+
+void AudioManager::setBusVolume(audiobus::Bus bus, double volume) {
+  // Se guarda aunque no haya audio: asi el valor de los ajustes se conserva igual
+  this->busVolume[static_cast<int>(bus)] = static_cast<float>(std::clamp(volume, 0.0, 1.0));
+  if (!this->available) return;
+
+  // Las voces espaciales las actualiza applySpatial en el siguiente frame
+  for (auto& entry : this->voices) {
+    Voice& voice = entry.second;
+    if (voice.spatial || voice.bus != bus) continue;
+    if (voice.channel < 0 || voice.channel >= MAX_CHANNELS) continue;
+    if (this->channelOwner[voice.channel] != entry.first) continue;
+
+    this->applyVoiceVolume(voice);
+  }
+  if (bus == audiobus::Bus::Music) this->applyMusicVolume(false);
+}
+
+float AudioManager::getBusVolume(audiobus::Bus bus) const {
+  return this->busVolume[static_cast<int>(bus)];
+}
+
+void AudioManager::setDuckConfig(const audiobus::DuckConfig& config) {
+  this->duck = config;
+  this->duck.amount = std::clamp(config.amount, 0.0f, 1.0f);
+  this->duck.fadeMs = std::max(config.fadeMs, 0);
+}
+
+const audiobus::DuckConfig& AudioManager::getDuckConfig() const {
+  return this->duck;
+}
+
+void AudioManager::resetDuckConfig() {
+  this->duck = audiobus::DuckConfig();
+}
+
+void AudioManager::updateBuses(double dt) {
+  if (!this->available) return;
+
+  // Hay voz sonando si alguna voz del bus Voice sigue en un canal propio
+  bool voiceActive = false;
+  for (const auto& entry : this->voices) {
+    const Voice& voice = entry.second;
+    if (voice.bus != audiobus::Bus::Voice) continue;
+    if (voice.channel < 0 || voice.channel >= MAX_CHANNELS) continue;
+    if (this->channelOwner[voice.channel] != entry.first) continue;
+    if (Mix_Playing(voice.channel)) {
+      voiceActive = true;
+      break;
+    }
+  }
+
+  float target = (this->duck.enabled && voiceActive) ? this->duck.amount : 1.0f;
+  this->duckGain = audiobus::duckStep(this->duckGain, target, dt, this->duck);
+
+  for (auto& entry : this->voices) {
+    Voice& voice = entry.second;
+    if (voice.spatial) continue;
+    if (voice.channel < 0 || voice.channel >= MAX_CHANNELS) continue;
+    if (this->channelOwner[voice.channel] != entry.first) continue;
+
+    this->applyVoiceVolume(voice);
+  }
+  this->applyMusicVolume(false);
+}
+
+int AudioManager::startVoice(const std::string& soundId, double volume, bool loop, audiobus::Bus bus) {
   SoundAsset* sound = this->assets.getSound(soundId);
   if (!sound) return 0;
 
@@ -160,7 +255,9 @@ int AudioManager::startVoice(const std::string& soundId, double volume, bool loo
   Mix_UnregisterAllEffects(channel);
   playedFrames[channel].store(0);
   Mix_RegisterEffect(channel, positionEffect, nullptr, nullptr);
-  Mix_Volume(channel, toMixVolume(volume));
+  // Volumen inicial con el bus y el ducking del momento; applyVoiceVolume lo mantiene
+  int initial = toMixVolume(volume * this->busGain(bus));
+  Mix_Volume(channel, initial);
 
   int handle = this->nextHandle++;
   Voice voice;
@@ -168,23 +265,25 @@ int AudioManager::startVoice(const std::string& soundId, double volume, bool loo
   voice.soundId = soundId;
   voice.loop = loop;
   voice.baseVolume = volume;
+  voice.bus = bus;
+  voice.lastVol = initial;
   this->voices[handle] = voice;
   this->channelOwner[channel] = handle;
   return handle;
 }
 
-int AudioManager::playSound(const std::string& soundId, double volume, bool loop) {
+int AudioManager::playSound(const std::string& soundId, double volume, bool loop, audiobus::Bus bus) {
   if (!this->available) return 0;
 
-  return this->startVoice(soundId, volume, loop);
+  return this->startVoice(soundId, volume, loop, bus);
 }
 
 int AudioManager::playSoundAt(const std::string& soundId, double volume, bool loop, float x, float y,
-    const spatial::SpatialParams& params, int followEntity) {
+    const spatial::SpatialParams& params, int followEntity, audiobus::Bus bus) {
   if (!this->available) return 0;
 
   // Arranca en silencio: applySpatial fija el volumen real antes del siguiente buffer
-  int handle = this->startVoice(soundId, 0.0, loop);
+  int handle = this->startVoice(soundId, 0.0, loop, bus);
   if (handle == 0) return 0;
 
   Voice& voice = this->voices[handle];
@@ -222,11 +321,8 @@ void AudioManager::applySpatial(Voice& voice, float dt, bool snap) {
     sp.pan += (targetPan - sp.pan) * alpha;
   }
 
-  int vol = toMixVolume(voice.baseVolume * sp.gain);
-  if (vol != sp.lastVol) {
-    Mix_Volume(voice.channel, vol);
-    sp.lastVol = vol;
-  }
+  // Volumen final = base * bus * ducking * ganancia espacial (solo cambia si el valor cambia)
+  this->applyVoiceVolume(voice);
 
   int left = 255;
   int right = 255;
@@ -322,7 +418,7 @@ void AudioManager::setSoundVolume(int handle, double volume) {
 
   // En una voz espacial solo cambia la base: updateSpatial aplica base * ganancia
   voice->baseVolume = volume;
-  if (!voice->spatial) Mix_Volume(voice->channel, toMixVolume(volume));
+  if (!voice->spatial) this->applyVoiceVolume(*voice);
 }
 
 bool AudioManager::isPlaying(int handle) const {
@@ -373,7 +469,8 @@ void AudioManager::playMusic(const std::string& musicId, int fadeMs, bool loop, 
 
   // Solo hay un slot de musica: se corta la anterior antes de empezar
   Mix_HaltMusic();
-  Mix_VolumeMusic(toMixVolume(volume));
+  this->musicBase = volume;
+  this->applyMusicVolume(true);
 
   int result = fadeMs > 0
     ? Mix_FadeInMusic(music, loop ? -1 : 1, fadeMs)

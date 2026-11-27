@@ -51,7 +51,7 @@ class SpatialAudioSystem : public System {
         params.rolloff = emitter.rolloff;
 
         emitter.handle = audio.playSoundAt(emitter.sound, emitter.volume, emitter.loop,
-          pos.x, pos.y, params, entity.getId());
+          pos.x, pos.y, params, entity.getId(), emitter.bus);
       }
     }
 };

@@ -5,6 +5,7 @@
 #include <string>
 
 #include "../AssetManager/AssetManager.hpp"
+#include "../Util/AudioBus.hpp"
 #include "../Util/SpatialAudio.hpp"
 
 // Audio con SDL_mixer: efectos y voces (Mix_Chunk en canales) y una sola musica
@@ -28,8 +29,7 @@ class AudioManager {
       float gain = 0.0f;
       float pan = 0.0f;
       bool init = false;
-      // Ultimos valores enviados al mezclador (-1 = ninguno): solo se llama si cambian
-      int lastVol = -1;
+      // Ultimo paneo enviado al mezclador (-1 = ninguno): solo se llama si cambia
       int lastL = -1;
       int lastR = -1;
     };
@@ -42,6 +42,10 @@ class AudioManager {
       double baseVolume = 1.0;
       bool spatial = false;
       Spatial sp;
+      // Bus al que pertenece la voz (define su volumen de bus y el ducking)
+      audiobus::Bus bus = audiobus::Bus::Sfx;
+      // Ultimo volumen enviado a Mix_Volume (-1 = ninguno): solo se llama si cambia
+      int lastVol = -1;
     };
 
     AssetManager& assets;
@@ -55,6 +59,15 @@ class AudioManager {
     // Posicion del oyente (la fija Game cada frame)
     float listenerX = 0.0f;
     float listenerY = 0.0f;
+    // Volumen de cada bus (0..1), indexado por audiobus::Bus
+    float busVolume[audiobus::BUS_COUNT] = {1.0f, 1.0f, 1.0f, 1.0f};
+    // Configuracion del ducking y su ganancia actual (1 = sin ducking)
+    audiobus::DuckConfig duck;
+    float duckGain = 1.0f;
+    // Volumen pedido para la musica (antes del bus y del ducking)
+    double musicBase = 1.0;
+    // Ultimo volumen de musica enviado a Mix_VolumeMusic (-1 = ninguno)
+    int lastMusicVol = -1;
 
     // Decodifica el chunk de un sonido stream=true la primera vez que suena
     Mix_Chunk* ensureChunk(SoundAsset& sound);
@@ -63,9 +76,17 @@ class AudioManager {
     const Voice* findVoice(int handle) const;
     Voice* findVoice(int handle);
     // Reproduce el sonido en un canal libre y registra la voz; 0 si falla
-    int startVoice(const std::string& soundId, double volume, bool loop);
+    int startVoice(const std::string& soundId, double volume, bool loop, audiobus::Bus bus);
     // Calcula ganancia y paneo de la voz y los manda al mezclador si cambiaron
     void applySpatial(Voice& voice, float dt, bool snap);
+    // Ganancia de ducking que aplica un bus (1 si no esta en la mascara o no hay ducking)
+    float duckFor(audiobus::Bus bus) const;
+    // Volumen de bus * ducking de un bus
+    double busGain(audiobus::Bus bus) const;
+    // Manda a Mix_Volume el volumen final de una voz no espacial o espacial; solo si cambia
+    void applyVoiceVolume(Voice& voice);
+    // Manda a Mix_VolumeMusic la musica con bus y ducking; force ignora lastMusicVol
+    void applyMusicVolume(bool force);
 
   public:
     explicit AudioManager(AssetManager& assetManager);
@@ -77,11 +98,13 @@ class AudioManager {
     void shutdown();
     // Una vez por frame: descarta voces terminadas y libera chunks stream
     void update();
-    // Detiene todas las voces y la musica (carga de escena y cierre)
+    // Detiene todas las voces y la musica (carga de escena y cierre). Conserva
+    // los volumenes de bus y no reinicia el ducking
     void stopAll();
 
     // Devuelve un handle > 0, o 0 si el sonido no existe o no hay canal libre
-    int playSound(const std::string& soundId, double volume, bool loop);
+    int playSound(const std::string& soundId, double volume, bool loop,
+      audiobus::Bus bus = audiobus::Bus::Sfx);
     void stopSound(int handle, int fadeMs);
     void setSoundVolume(int handle, double volume);
     bool isPlaying(int handle) const;
@@ -90,7 +113,8 @@ class AudioManager {
     // handle (stop_sound, set_sound_volume, is_playing sirven igual). Con
     // followEntity >= 0 la posicion la resuelve updateSpatial cada frame
     int playSoundAt(const std::string& soundId, double volume, bool loop, float x, float y,
-      const spatial::SpatialParams& params, int followEntity);
+      const spatial::SpatialParams& params, int followEntity,
+      audiobus::Bus bus = audiobus::Bus::Sfx);
     // Fija la posicion del emisor y deja de seguir a la entidad
     void setEmitterPosition(int handle, float x, float y);
     // Distancia que se usa en lugar de la real para el volumen; dist < 0 la quita
@@ -110,4 +134,15 @@ class AudioManager {
 
     void playMusic(const std::string& musicId, int fadeMs, bool loop, double volume);
     void stopMusic(int fadeMs);
+
+    // Volumen de un bus (0..1). Se guarda aunque el audio no este disponible
+    void setBusVolume(audiobus::Bus bus, double volume);
+    float getBusVolume(audiobus::Bus bus) const;
+    // Configura el ducking; los valores fuera de rango se corrigen (amount 0..1, fadeMs >= 0)
+    void setDuckConfig(const audiobus::DuckConfig& config);
+    const audiobus::DuckConfig& getDuckConfig() const;
+    // Vuelve al ducking por defecto (ambiente y musica, 35 %, 300 ms)
+    void resetDuckConfig();
+    // Una vez por frame: avanza la ganancia de ducking y actualiza los buses no espaciales y la musica
+    void updateBuses(double dt);
 };

@@ -30,6 +30,8 @@ scene = {
         -- La Llorona (issue #63): el NPC la emite con volumen y paneo por distancia
         { assetId = "llorona", filePath = "sounds/llorona.mp3", stream = true },
     },
+    -- Ducking por defecto (issue #64): mientras la Llorona (bus voice) suena, musica y ambiente bajan
+    audio = { duck = { amount = 0.35, fade_ms = 300 } },
     keys = {
         [0] =
         { name = "walk_up", key = 119 },    -- w
@@ -44,6 +46,7 @@ scene = {
         { name = "run_alt", key = 1073742053 },
         { name = "back", key = 48 },        -- 0
         { name = "lie", key = 49 },         -- 1: mentira de distancia de la Llorona
+        { name = "music_vol", key = 109 },  -- m: volumen de la musica (bus music)
     },
     entities = {
         [0] =

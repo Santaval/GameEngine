@@ -126,9 +126,16 @@ class Game {
         int configLogicalH = 0;
         bool configPixelPerfect = false;
 
+        // Ajustes de audio guardados en settings.json (volumen de buses)
+        bool audioSettingsDirty = false;
+        Uint32 audioSettingsDirtyAt = 0;
+
         void loadGameConfig();
         std::string buildPackagePath() const;
         std::string entryScenePath() const;
+        std::string settingsFile() const;
+        void loadAudioSettings();
+        void saveAudioSettings();
 
     public:
         std::unique_ptr<ControllerManager> controllerManager;
@@ -177,6 +184,10 @@ class Game {
      void quit() { isRunning = false; }
      double getDeltaTime() const { return deltaTime; }
      AudioManager* getAudio() const { return audioManager.get(); }
+     // Aplica la tabla de set_ducking ({ enabled, amount, fade_ms, buses })
+     void applyDuckTable(const sol::table& opts);
+     // Pide guardar los ajustes de audio (se escriben con un pequeño retraso)
+     void markAudioSettingsDirty();
      void setListener(int entityId) { listenerEntity = entityId; }
      Registry* getRegistry() const { return registry.get(); }
      sol::state& getLua() { return lua; }

@@ -44,6 +44,7 @@ prefab paths used by `net_spawn`/`spawn_local`, which stay relative to
 scene = {
   sprites  = { ... },   -- required
   fonts    = { ... },   -- optional
+  audio    = { ... },   -- optional
   keys     = { ... },   -- required
   mouse    = { ... },   -- optional
   entities = { ... },   -- required
@@ -126,6 +127,27 @@ plays at a time.
 
 Both tables are 0-indexed like `fonts`, and their assets are kept by id across
 scene loads.
+
+## `audio`
+
+Optional. Sets the ducking of this scene (see
+[Buses and ducking](lua-api.md#buses-and-ducking)). Without it the defaults
+apply: while a voice plays, `ambience` and `music` drop to `0.35` over 300 ms.
+Each scene starts from the defaults, so a value here only lasts for this scene.
+
+```lua
+audio = {
+  duck = {
+    enabled = true,                     -- default true
+    amount  = 0.35,                     -- default 0.35, clamped to 0..1
+    fade_ms = 300,                      -- default 300
+    buses   = { "ambience", "music" },  -- default; "voice" is ignored
+  },
+},
+```
+
+Every field under `duck` is optional. The bus volumes themselves are not part of
+the scene: they belong to the player and are saved in `settings.json`.
 
 ## `keys`
 
@@ -398,10 +420,11 @@ sound_emitter = {
   volume       = 1,            -- default 1
   loop         = true,         -- default true
   offset       = { x = 0, y = 0 },  -- default { 0, 0 }, from the entity center
+  bus          = "sfx",        -- "voice", "sfx" (default), "ambience" or "music"
 }
 ```
 
-Adds a `SoundEmitterComponent`. The sound starts the first frame the entity is
+Adds a `SoundEmitterComponent`. An unknown `bus` is logged and the emitter uses `sfx`. The sound starts the first frame the entity is
 active and follows the entity, with volume by distance and pan by horizontal
 offset relative to the listener. It stops when the entity dies. The entity
 needs a `transform`; its center is the position plus half the sprite size

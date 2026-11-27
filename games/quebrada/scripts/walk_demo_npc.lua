@@ -34,16 +34,27 @@ local MAX_DIST = 220
 local voice = nil
 local lie = false
 local was_down = false
+-- Tecla m: alterna el volumen del bus de musica entre 1 y 0.3 (issue #64)
+local was_mv = false
 
 update = function()
   local entity = this
   walk_update()
 
+  -- La Llorona va en el bus "voice": mientras suena, la musica y el ambiente bajan (ducking)
   if not voice or not is_playing(voice) then
     voice = play_sound_at("llorona", 0, 0, {
-      loop = true, min_dist = 24, max_dist = MAX_DIST, follow = entity,
+      loop = true, min_dist = 24, max_dist = MAX_DIST, follow = entity, bus = "voice",
     })
   end
+
+  local mv = is_action_activated("music_vol")
+  if mv and not was_mv then
+    local v = get_bus_volume("music")
+    set_bus_volume("music", v > 0.5 and 0.3 or 1.0)
+    print("[audio] music bus volume: " .. tostring(get_bus_volume("music")))
+  end
+  was_mv = mv
 
   local down = is_action_activated("lie")
   if down and not was_down then

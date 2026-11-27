@@ -8,18 +8,57 @@
 #include "../Game/Game.hpp"
 #include "../ECS/Entity.hpp"
 #include "../Systems/SpatialAudioSystem.hpp"
+#include "../Util/AudioBus.hpp"
 #include "../Util/SpatialAudio.hpp"
 
-// opts = { volume = 0..1 (1 por defecto), loop = bool (false por defecto) }
+// Lee bus = "voice" | "sfx" | "ambience" | "music" de una tabla de opciones.
+// Si no esta o el nombre no existe, avisa y usa sfx
+inline audiobus::Bus readBus(const sol::table& t, const char* fn) {
+    audiobus::Bus bus = audiobus::Bus::Sfx;
+    std::string name = t.get_or("bus", std::string("sfx"));
+    if (!audiobus::parseBus(name, bus)) {
+        std::cerr << "[Audio] " << fn << ": unknown bus '" << name << "', using sfx" << std::endl;
+        bus = audiobus::Bus::Sfx;
+    }
+    return bus;
+}
+
+// opts = { volume = 0..1 (1 por defecto), loop = bool (false por defecto), bus = "sfx" }
 // Devuelve un handle > 0, o 0 si el sonido no existe o no hay canal libre
 inline int playSound(const std::string& soundId, sol::optional<sol::table> opts) {
     double volume = 1.0;
     bool loop = false;
+    audiobus::Bus bus = audiobus::Bus::Sfx;
     if (opts) {
         volume = opts->get_or("volume", 1.0);
         loop = opts->get_or("loop", false);
+        bus = readBus(*opts, "play_sound");
     }
-    return Game::getInstance().getAudio()->playSound(soundId, volume, loop);
+    return Game::getInstance().getAudio()->playSound(soundId, volume, loop, bus);
+}
+
+// set_bus_volume(name, v): volumen 0..1 de un bus. Se guarda en settings.json.
+// Nombre desconocido: aviso y no hace nada
+inline void setBusVolume(const std::string& name, double volume) {
+    audiobus::Bus bus = audiobus::Bus::Sfx;
+    if (!audiobus::parseBus(name, bus)) {
+        std::cerr << "[Audio] set_bus_volume: unknown bus '" << name << "'" << std::endl;
+        return;
+    }
+    Game::getInstance().getAudio()->setBusVolume(bus, volume);
+    Game::getInstance().markAudioSettingsDirty();
+}
+
+// get_bus_volume(name): volumen 0..1 del bus, o nil si el nombre no existe
+inline sol::optional<double> getBusVolume(const std::string& name) {
+    audiobus::Bus bus = audiobus::Bus::Sfx;
+    if (!audiobus::parseBus(name, bus)) return sol::nullopt;
+    return static_cast<double>(Game::getInstance().getAudio()->getBusVolume(bus));
+}
+
+// set_ducking({ enabled, amount, fade_ms, buses }): ver Game::applyDuckTable
+inline void setDucking(const sol::table& opts) {
+    Game::getInstance().applyDuckTable(opts);
 }
 
 inline void stopSound(int handle, sol::optional<int> fadeMs) {
@@ -70,17 +109,19 @@ inline void setListener(sol::optional<Entity> entity) {
 }
 
 // opts = { volume = 1, loop = false, min_dist = 64, max_dist = 400,
-//          rolloff = "linear" | "inverse", pan_width = 0, follow = entity }
+//          rolloff = "linear" | "inverse", pan_width = 0, follow = entity, bus = "sfx" }
 // Devuelve un handle como play_sound (0 si falla). Con follow, (x, y) es solo
 // la posicion inicial: despues la voz sigue al centro de esa entidad
 inline int playSoundAt(const std::string& soundId, double x, double y, sol::optional<sol::table> opts) {
     double volume = 1.0;
     bool loop = false;
     int followId = -1;
+    audiobus::Bus bus = audiobus::Bus::Sfx;
     spatial::SpatialParams params;
     if (opts) {
         volume = opts->get_or("volume", 1.0);
         loop = opts->get_or("loop", false);
+        bus = readBus(*opts, "play_sound_at");
         params.minDist = opts->get_or("min_dist", params.minDist);
         params.maxDist = opts->get_or("max_dist", params.maxDist);
         params.panWidth = opts->get_or("pan_width", params.panWidth);
@@ -102,7 +143,7 @@ inline int playSoundAt(const std::string& soundId, double x, double y, sol::opti
         }
     }
     return Game::getInstance().getAudio()->playSoundAt(soundId, volume, loop,
-        static_cast<float>(x), static_cast<float>(y), params, followId);
+        static_cast<float>(x), static_cast<float>(y), params, followId, bus);
 }
 
 // Mueve el emisor a (x, y) y deja de seguir a la entidad si la seguia
@@ -118,7 +159,7 @@ inline void setEmitterDistanceOverride(int handle, sol::optional<double> dist) {
 
 // Crea un emisor por cada objeto de la clase opts.class ("emitter" por defecto) del
 // mapa de load_tmx. Propiedades: sound (obligatoria), radius / max_distance,
-// min_distance, volume, loop (true por defecto), rolloff. La posicion es el
+// min_distance, volume, loop (true por defecto), rolloff, bus (sfx por defecto). La posicion es el
 // centro del rectangulo del objeto. Devuelve la lista de handles
 inline sol::table emittersFromMap(sol::table map, sol::optional<sol::table> opts, sol::this_state s) {
     sol::state_view lua(s);
@@ -166,8 +207,9 @@ inline sol::table emittersFromMap(sol::table map, sol::optional<sol::table> opts
 
         double volume = props.get_or("volume", 1.0);
         bool loop = props.get_or("loop", true);
+        audiobus::Bus bus = readBus(props, "emitters_from_map");
         int handle = Game::getInstance().getAudio()->playSoundAt(sound, volume, loop,
-            static_cast<float>(x), static_cast<float>(y), params, -1);
+            static_cast<float>(x), static_cast<float>(y), params, -1, bus);
         if (handle != 0) handles[++count] = handle;
     }
     return handles;
@@ -187,4 +229,7 @@ inline void registerAudioBindings(sol::state& lua) {
   lua.set_function("set_emitter_position", setEmitterPosition);
   lua.set_function("set_emitter_distance_override", setEmitterDistanceOverride);
   lua.set_function("emitters_from_map", emittersFromMap);
+  lua.set_function("set_bus_volume", setBusVolume);
+  lua.set_function("get_bus_volume", getBusVolume);
+  lua.set_function("set_ducking", setDucking);
 }

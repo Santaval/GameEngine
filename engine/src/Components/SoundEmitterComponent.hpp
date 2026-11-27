@@ -2,6 +2,7 @@
 
 #include <string>
 #include <glm/glm.hpp>
+#include "../Util/AudioBus.hpp"
 #include "../Util/SpatialAudio.hpp"
 
 // Emisor de sonido pegado a la entidad: SpatialAudioSystem arranca la voz la
@@ -16,6 +17,8 @@ struct SoundEmitterComponent {
   bool loop;
   // Desfase (px) respecto al centro de la entidad
   glm::vec2 offset;
+  // Bus de la voz; se asigna al cargar la escena (no es parametro del constructor)
+  audiobus::Bus bus = audiobus::Bus::Sfx;
   // Handle de la voz (0 = aun sin voz o no pudo sonar) y si ya se intento arrancar
   int handle = 0;
   bool started = false;
