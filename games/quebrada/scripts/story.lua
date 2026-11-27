@@ -23,8 +23,9 @@ local was = { pause = false, stop = false }
 local clue_q, clue_cur, clue_left = {}, nil, 0
 
 function M.define(def)
-  if type(def) ~= "table" or not def.id or not def.sound then
-    print("[story] leyenda invalida (falta id o sound)")
+  -- `sound` es opcional: una leyenda sin grabacion aun es un nodo valido del grafo (#69)
+  if type(def) ~= "table" or not def.id then
+    print("[story] leyenda invalida (falta id)")
     return
   end
   if M.legends[def.id] == nil then M.order[#M.order + 1] = def.id end
@@ -76,6 +77,7 @@ end
 function M.available(id)
   local lg = M.legends[id]
   if not lg then return false end
+  if not lg.sound then return false end -- sin grabacion: el prompt nunca la ofrece
   return logic.can_listen(M.state(id), missions.check(lg.requires), st.sess ~= nil, lg.repeatable)
 end
 
@@ -131,6 +133,7 @@ end
 function M.play(id)
   local lg = M.legends[id]
   if not lg or st.sess then return false end
+  if not lg.sound then say("Todavía no se grabó esta historia."); return false end
   local ok, handle = pcall(play_sound, lg.sound, { bus = "voice" })
   if not ok or not handle or handle == 0 then
     say("No se pudo reproducir la grabación.")

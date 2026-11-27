@@ -2,4 +2,5 @@
 -- Para anadir una: crear scripts/legends/<id>.lua y agregarla aqui.
 return {
   require("legends.chequelo"),
+  require("legends.chayo"),
 }

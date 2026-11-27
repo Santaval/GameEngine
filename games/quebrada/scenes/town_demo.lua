@@ -1,6 +1,6 @@
 -- Demo de puertas, interiores y zonas (issue #62): el barrio.
 -- WASD o flechas para andar, Shift corre, E / Enter interactua con la puerta,
--- F alterna el flag house.chayo.open (depuracion), 0 vuelve a la escena principal,
+-- F alterna el flag unlock.house.chayo (depuracion), 0 vuelve a la escena principal,
 -- N alterna dia / noche (ambiente, issue #65), F3 abre el overlay de flags y misiones (issue #51).
 -- Pensado para 480x270 logico (pixel_perfect). Teclas SDL: Right 1073741903,
 -- Left 1073741904, Down 1073741905, Up 1073741906, LShift 1073742049, RShift 1073742053.

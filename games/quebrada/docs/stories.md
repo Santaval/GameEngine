@@ -35,7 +35,7 @@ The overlay and the dialogue box never show at the same time.
 | `id` | Unique id. Used in the TMX `story` property and in flag names. |
 | `teller` | Value of the NPC's `npc` property (for example `mama`). |
 | `teller_name` | Name shown on the overlay. |
-| `sound` | assetId of the recording. It must be declared in the scene's `sounds`. |
+| `sound` | assetId of the recording. It must be declared in the scene's `sounds`. Optional: a legend without a recording is a valid node of the lead graph, but the prompt never offers it. |
 | `kind` | `"real"` (recording) or `"generated"`. Documentation only. |
 | `title` | Title shown on the overlay. |
 | `summary` | Short text shown on the overlay (wrapped, at most 6 lines). |
@@ -45,9 +45,11 @@ The overlay and the dialogue box never show at the same time.
 | `mission_offer` | Optional mission id, offered when the story starts (idempotent). |
 | `greeting` | Lines `{ speaker, text }` played before the recording, once. |
 | `closing` | Lines played after the recording ends, or after it is stopped once heard. |
-| `recommendations` | Lines appended after `closing`. |
+| `recommendations` | Lines appended after `closing`. Optional; the word-of-mouth lead now comes from `next`, not from here. |
 | `clues` | List of clues (see below). |
-| `next` | Reserved for issue #69: id of the next story. Not used yet. |
+| `next` | Word-of-mouth rules (issue #69). See [leads.md](leads.md). |
+| `final` | `true` lets the legend lead nowhere (see [leads.md](leads.md)). |
+| `resolve_when` | Condition that resolves the lead; when present it is the only trigger (see [leads.md](leads.md)). |
 | `on_heard` | Optional function `fn(id)`, called once when the story becomes heard. |
 
 ## Adding a legend
@@ -123,6 +125,19 @@ Rules:
 | `libreta.clue_src.<id>` | Id of the story that gave the clue. |
 | `libreta.clue_count` | Number of clues ever recorded. |
 
+Word-of-mouth leads (issue #69) use a parallel set, one per legend (API: `add_lead`,
+`has_lead`, `leads`, `lead_count`):
+
+| Flag | Meaning |
+| --- | --- |
+| `libreta.lead.<id>` | `true` while the lead is in the libreta. |
+| `libreta.lead_n.<id>` | Order number. |
+| `libreta.lead_id.<n>` | Id of the n-th lead. |
+| `libreta.lead_text.<id>` | Lead line. |
+| `libreta.lead_person.<id>` | Person the lead points to. |
+| `libreta.lead_src.<id>` | Legend that gave the lead. |
+| `libreta.lead_count` | Number of leads ever recorded. |
+
 API: `add_clue(id, text, source)` (returns `true` if new), `has_clue(id)`,
 `clues()` (list of `{ n, id, text, source }`), `clue_count()`.
 
@@ -155,4 +170,4 @@ the pause key does nothing and the hint on the overlay does not show it.
 - Scene loads stop every sound. If the scene reloads while a story plays, the
   session is saved (progress and "heard" if reached) and the overlay closes.
 - Only one story plays at a time.
-- `next` is reserved for issue #69.
+- `next` is handled by `leads.lua`, see [leads.md](leads.md).

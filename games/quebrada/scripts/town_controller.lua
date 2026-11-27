@@ -11,12 +11,15 @@
 --   scenes   { [ruta del TMX] = ruta de la escena } para las puertas que cambian de mapa
 --   box      caja de pies {x,y,w,h} dentro del sprite (por defecto 3,8,10,8)
 --   grid     paso de la rejilla de suelo en px (32)
---   debug_flag  flag que alterna la tecla F ("house.chayo.open")
+--   debug_flag  flag que alterna la tecla F ("unlock.house.chayo")
 --   debug_overlay  true = F3 abre el overlay de flags y misiones (tecla "debug_overlay" en la escena)
 --   back_scene  escena a la que vuelve la tecla 0 ("scenes/main.lua"); nil = sin salida
 --   Historias narradas y libreta (issue #68): story.lua reproduce la grabacion con el
 --   overlay del reproductor y dispara pistas. Teclas opcionales de la escena:
 --   story_pause (Espacio), story_stop y story_stop_alt (Retroceso y Q).
+--   Pistas de boca en boca y compuertas (issue #69): leads.lua resuelve las leyendas y publica
+--   flags unlock.*; las compuertas (class "gate", capa "gates") devuelven al jugador a su ultima
+--   posicion libre mientras esten cerradas. Docs: games/quebrada/docs/leads.md
 local logic = require("door_logic")
 local ws = require("world_state")
 local fade = require("fade")
@@ -28,6 +31,8 @@ local dialogue = require("dialogue")
 local missions = require("missions")
 local mlogic = require("missions_logic")
 local story = require("story")
+local leads = require("leads")
+local llogic = require("leads_logic")
 
 local M = {}
 
@@ -35,13 +40,14 @@ M.DEFAULTS = {
   box = { x = 3, y = 8, w = 10, h = 8 },
   scenes = {},
   grid = 32,
-  debug_flag = "house.chayo.open",
+  debug_flag = "unlock.house.chayo",
   debug_overlay = true,
   back_scene = "scenes/main.lua",
   default_prompt = "E: entrar",
   default_locked_line = "Está cerrado.",
   toast_time = 2.0,
   line_time = 2.0,
+  lead_time = 5.0,
 }
 
 local FONT = "default"
@@ -80,6 +86,9 @@ function M.make_update(cfg)
   local saved_input = nil
   local ov = { open = false, sel = 1, rows = {} } -- overlay de depuracion (F3)
   local ovk = {}                                  -- estado previo de teclas del overlay
+  local lidx = { gates = {}, markers = {} }       -- compuertas y marcadores de pistas (#69)
+  local safe = nil                                -- ultima posicion libre de compuertas {x,y}
+  local clock = 0                                 -- reloj para el vaiven de los marcadores
 
   -- ---- input del jugador ----
   local function lock_input()
@@ -170,6 +179,7 @@ function M.make_update(cfg)
   -- ---- colocar al jugador ----
   -- Teletransporta la caja de pies al spawn, orienta al walker y reinicia la camara
   local function place_player(sx, sy, facing)
+    safe = nil -- un teletransporte invalida la ultima posicion libre
     local px, py = logic.spawn_to_position(sx, sy, c.box)
     set_position(player_entity, px, py)
     set_velocity(player_entity, 0, 0)
@@ -194,6 +204,7 @@ function M.make_update(cfg)
     story.reset()      -- load_scene detuvo los sonidos: se guarda/descarta la sesion vieja
     story.attach()
     interaction.say = function(t) line.text, line.left = t, c.line_time end
+    leads.say = function(t) line.text, line.left = t, c.lead_time end
     player_walker = nil -- un walker de la escena anterior no vale
     local m, err = load_tmx(c.map)
     if not m then
@@ -203,6 +214,8 @@ function M.make_update(cfg)
     end
     map = m
     idx = logic.index_objects(m)
+    lidx = llogic.index_map(m.objects)
+    leads.validate()
     interaction.from_map(m)
     footsteps.set_source(surfaces.build(m))
     local n, cerr = load_tmx_colliders(c.map)
@@ -303,6 +316,8 @@ function M.make_update(cfg)
       return
     end
     transition = true
+    local lk = door.properties and door.properties.lead
+    if lk and lk ~= "" then leads.visit(lk) end
     lock_input()
     local same = (target_map == nil) or (target_map == c.map)
     fade.start_out(function()
@@ -335,12 +350,19 @@ function M.make_update(cfg)
         draw_rect_world(r.x, r.y, r.w, r.h, 80, 200, 90, 160, true)
       end
     end
+    for _, g in ipairs(lidx.gates) do
+      if logic.is_locked(g, ws.has) then
+        local r = g.rect
+        draw_rect_world(r.x, r.y, r.w, r.h, 160, 110, 40, 160, true)
+      end
+    end
   end
 
   -- ---- frame ----
   return function()
     local dt = math.min(get_delta_time(), 0.05)
     fade.update(dt)
+    clock = clock + dt
 
     if not map and not failed then init() end
     if failed then
@@ -351,6 +373,7 @@ function M.make_update(cfg)
     local dlg_open = dialogue.is_open() -- foto del inicio del frame (la E que cierra no abre puertas)
 
     draw_world()
+    if not ov.open and not story.is_open() then leads.draw_markers(lidx.markers, clock) end
 
     local prompt = nil
     if not placed then
@@ -361,6 +384,21 @@ function M.make_update(cfg)
       local fcx, fcy = foot.x + foot.w / 2, foot.y + foot.h / 2
       local door = logic.find_door(idx.doors, foot)
       local door_raw = door
+
+      -- Compuertas cerradas: sin collider conmutable, se devuelve al jugador a su ultima posicion libre
+      local gate = llogic.first_locked_gate(lidx.gates, foot, ws.has)
+      if gate then
+        if safe and not transition then
+          set_position(player_entity, safe.x, safe.y)
+          set_velocity(player_entity, 0, 0)
+          if line.left <= 0 then
+            line.text = gate.properties.locked_line or c.default_locked_line
+            line.left = c.line_time
+          end
+        end
+      elseif not transition then
+        safe = { x = px, y = py }
+      end
 
       -- Tras llegar, no se puede interactuar hasta salir una vez de toda puerta
       if ignore_until_clear then
@@ -379,6 +417,7 @@ function M.make_update(cfg)
         local ctx = ws.ctx()
         if zid ~= ctx.zone then
           ctx.zone = zid
+          leads.visit("zone." .. zid)
           toast.text = z.properties.title or zid
           toast.left = c.toast_time
         end
@@ -428,10 +467,9 @@ function M.make_update(cfg)
       was_time = tdown
       amb.tick(dt)
       -- Pistas: no se evaluan con pantalla ocupada (no se pierden, esperan)
-      story.tick(dt, {
-        x = fcx, y = fcy, zone = ws.ctx().zone, time = amb.get_time(), map = c.map,
-        hidden = dlg_open or transition or ov.open or story.is_open() or fade.alpha() > 0,
-      })
+      local hidden = dlg_open or transition or ov.open or story.is_open() or fade.alpha() > 0
+      story.tick(dt, { x = fcx, y = fcy, zone = ws.ctx().zone, time = amb.get_time(), map = c.map, hidden = hidden })
+      leads.tick({ hidden = hidden })
     end
 
     -- F3: overlay de depuracion (tambien captura teclas mientras esta abierto)

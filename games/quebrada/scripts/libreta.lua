@@ -6,6 +6,9 @@
 --   libreta.clue_text.<id> texto
 --   libreta.clue_src.<id>  id de la historia de origen (opcional)
 --   libreta.clue_count     cuantas pistas se han registrado
+-- Pistas de boca en boca (#69, ver docs/leads.md), una por leyenda:
+--   libreta.lead.<id>, libreta.lead_n.<id>, libreta.lead_id.<n>, libreta.lead_text.<id>,
+--   libreta.lead_person.<id>, libreta.lead_src.<id>, libreta.lead_count
 local ws = require("world_state")
 
 local M = {}
@@ -36,6 +39,40 @@ function M.clues()
     if id and M.has_clue(id) then
       out[#out + 1] = { n = n, id = id, text = ws.get("libreta.clue_text." .. id, ""),
                         source = ws.get("libreta.clue_src." .. id) }
+    end
+  end
+  return out
+end
+
+-- ---- pistas de boca en boca (issue #69): una por leyenda ----
+function M.has_lead(id) return ws.has("libreta.lead." .. id) end
+function M.lead_count() return ws.get("libreta.lead_count", 0) end
+
+-- Devuelve true si es nueva
+function M.add_lead(id, text, person, source)
+  if M.has_lead(id) then return false end
+  local n = ws.get("libreta.lead_n." .. id)
+  if type(n) ~= "number" then
+    n = ws.add("libreta.lead_count", 1)
+    ws.set("libreta.lead_n." .. id, n)
+    ws.set("libreta.lead_id." .. n, id)
+  end
+  ws.set("libreta.lead_text." .. id, text or "")
+  if person then ws.set("libreta.lead_person." .. id, person) end
+  if source then ws.set("libreta.lead_src." .. id, source) end
+  ws.set("libreta.lead." .. id, true)
+  return true
+end
+
+-- { { n, id, text, person, source }, ... } (solo las activas)
+function M.leads()
+  local out = {}
+  for n = 1, M.lead_count() do
+    local id = ws.get("libreta.lead_id." .. n)
+    if id and M.has_lead(id) then
+      out[#out + 1] = { n = n, id = id, text = ws.get("libreta.lead_text." .. id, ""),
+                        person = ws.get("libreta.lead_person." .. id),
+                        source = ws.get("libreta.lead_src." .. id) }
     end
   end
   return out

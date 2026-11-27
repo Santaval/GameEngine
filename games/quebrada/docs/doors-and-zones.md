@@ -12,6 +12,7 @@ Modules:
 | `scripts/door_logic.lua` | Pure logic (conditions, rects, spawns, facing, fade state machine). Tested without the engine: `games/quebrada/tests/door_logic.lua`. |
 | `scripts/world_state.lua` | Flag store plus transition context. Also `add(name, n)`, `snapshot()` and `restore(t)` (save hooks, see Persistence model). |
 | `scripts/missions_logic.lua`, `scripts/missions.lua`, `scripts/mission_defs.lua` | Mission state machine on top of the flags: pure logic, engine glue and data. See [missions.md](missions.md). |
+| `scripts/leads_logic.lua`, `scripts/leads.lua` | Word-of-mouth lead graph, markers and gates (issue #69): pure logic and engine glue. See [leads.md](leads.md). |
 | `scripts/fade.lua` | Black fade drawn with `draw_rect`. |
 | `scripts/town_controller.lua` | Per-scene controller: loads the TMX, places the player, handles prompts, zones and transitions. |
 | `scripts/town_player.lua`, `scripts/house_player.lua` | Player scripts: the walker from #61 plus the `player_entity` / `player_walker` globals. |
@@ -27,6 +28,8 @@ top-left).
 | Door | rect | `door` | `doors` | `target_map` (string; empty/absent = same map, `"@return"` = the map we came from), `target_spawn` (spawn name, or `"@return"`), `locked` (see below), `locked_line` (default "Está cerrado."), `prompt` (default "E: entrar"), `exit_spawn` (spawn name in the **outer** map where the player re-emerges after leaving the interior entered through this door) |
 | Spawn | point (`<point/>`) | `spawn` | `spawns` | `name`; optional string `facing` (`up`/`down`/`left`/`right`) |
 | Zone | rect | `zone` | `zones` | `zone` (id), `title` (toast text), optional `ambience` (ambience set key: pueblo, monte, quebrada, casa, ...; fed to `scripts/ambience.lua` by the map controller, see [audio.md](audio.md)), optional `save` (bool, informational) |
+| Gate | rect | `gate` | `gates` | `locked` (same syntax as doors), `locked_line`, optional `lead`. Not a collider: while locked, the controller returns the player to the last free position. Keep it at least 12 px thick. See [leads.md](leads.md) |
+| Lead marker | any | `door`, `gate` or `marker` | any | `lead` (`house.<id>` or `zone.<id>`): shows a small bobbing dot while `lead.mark.<key>` is set and `lead.seen.<key>` is not. See [leads.md](leads.md) |
 | Surface | rect | `surface` | `surfaces` | `surface` (lastre, zacate, madera or concreto); decides the footstep sound, see [audio.md](audio.md). The map property `surface` is the default for cells without a surface |
 | Emitter | rect or point | `emitter` | `emitters` | `sound` (required), `radius` / `max_distance`, `min_distance`, `volume`, `loop` (default true), `rolloff`; started by `emitters_from_map(map)`, see [Spatial audio](../../../engine/docs/lua-api.md#spatial-audio) |
 | Interactable | rect or point | `interactable` | `interactables` | `npc` (NPC id) or `interact` (`npc` or `object`; `door` is not supported here), `label`, `target`, `radius` (default 24), `line`, `set_flag`, `enabled` (condition syntax `a`, `!a`, `a,!b`); see [interaction.md](interaction.md) |
@@ -52,7 +55,7 @@ Rules:
 
 - `flag` : locked while the flag is set.
 - `!flag` : locked while the flag is **not** set, for example
-  `!house.chayo.open` (locked until the flag is set).
+  `!unlock.house.chayo` (locked until the flag is set).
 - `a,!b` : comma list = AND.
 - Empty or absent: never locked.
 
@@ -103,13 +106,14 @@ In the main scene press `6` to open the demo (`scenes/town_demo.lua`).
 | --- | --- |
 | WASD / arrows, Shift | Walk, run |
 | `E` / `Enter` | Interact with the door under your feet |
-| `F` | Toggle the flag `house.chayo.open` (debug) |
+| `F` | Toggle the flag `unlock.house.chayo` (debug) |
 | `N` | Toggle day / night (ambience, see [audio.md](audio.md)) |
 | `F3` | Debug overlay of flags and missions (see [missions.md](missions.md)) |
 | `0` | Back to the main scene |
 
 - Mama's door (`maps/house_mama.tmx`): enter, leave through the bottom door and
   land outside facing away from it.
-- Ña Chayo's door is locked until you press `F`.
+- Ña Chayo's door is locked until Mama's story lead resolves (accept or reject the mission) or you press `F`.
+- The quebrada gates and the shed door stay locked until Chayo's lead resolves, which happens the first time you enter her house.
 - The shed door teleports inside the same map (`shed_out`).
 - Zones: "Barrio Alto" (north) and "La Plaza" (south) show a toast when crossed.

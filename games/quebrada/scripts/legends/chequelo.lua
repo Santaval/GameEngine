@@ -22,9 +22,6 @@ return {
   closing = {
     { speaker = "Mamá", text = "Eso es lo que contaban. Ahora ya la sabes." },
   },
-  recommendations = {
-    { speaker = "Mamá", text = "Si quieres más historias, pregunta a los vecinos de la quebrada." },
-  },
   -- Pistas: texto corto (<= 60 caracteres). Todos los campos presentes se cumplen (AND):
   --   map, zone (id de zona), time ("day"|"night"), near = {x,y,r} (px de mundo), when (condicion)
   clues = {
@@ -34,5 +31,13 @@ return {
       when = m.mission_accepted("chequelo"),
       text = "La puerta del monte nunca se cierra del todo." },
   },
-  next = nil,                      -- reservado (#69): id de la siguiente historia
+  -- Boca en boca (#69): ver games/quebrada/docs/leads.md. Primera regla cuyo `when` se cumple.
+  next = {
+    { when = m.mission_rejected("chequelo"), person = "chayo",
+      line = "Mejor quédate. Mañana pasa donde Ña Chayo, ella vio irse la luz.",
+      unlocks = { "house.chayo" } },
+    { person = "chayo",
+      line = "Ña Chayo vio algo raro anoche. Pásale a preguntar antes de bajar.",
+      unlocks = { "house.chayo" } },
+  },
 }

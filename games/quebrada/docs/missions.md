@@ -72,6 +72,12 @@ and `0`, and hides the toast, line and prompt texts.
 Nothing calls `start_night`, `complete` or `fail` yet, so use the overlay to reach
 those states.
 
+## Leads
+
+`leads.tick` (see [leads.md](leads.md)) reads the state of a legend's `mission_offer`
+mission. When it leaves `none` and `offered` (accepted or rejected), the legend's lead
+resolves, even if the story never reaches its closing lines.
+
 ## Demo walkthrough
 
 1. Town demo, enter Mama's house and talk to her. The first lines play and the mission becomes `offered`.
