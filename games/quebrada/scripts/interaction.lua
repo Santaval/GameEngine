@@ -115,6 +115,7 @@ function M.from_map(map)
           it.on_interact = function()
             if p.set_flag and p.set_flag ~= "" then ws.set(p.set_flag, true) end
             if p.sleep and M.on_sleep then M.on_sleep(); return end
+            if p.recharge and M.on_recharge then M.on_recharge(p.recharge); return end
             say(p.line or "...")
           end
         end

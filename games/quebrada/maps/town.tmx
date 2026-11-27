@@ -4,11 +4,11 @@
      Capa "surfaces" (issue #65): rects class="surface" con la propiedad surface (lastre, zacate, madera, concreto) para los pasos.
      Capa "gates" (issue #69): rects class="gate" con `locked` (como las puertas) y `locked_line`; cerrados devuelven al jugador.
      Propiedad `lead` ("house.<id>" | "zone.<id>") en door/gate/marker: marcador sutil mientras la pista este sin visitar.
-     Hora del dia (#66): `only` ("day", "night", "dusk,night"...) en cualquier objeto lo muestra solo en esas fases; capa "lights": postes y ventanas.
+     Hora del dia (#66): `only` ("day", "night", "dusk,night"...) en cualquier objeto lo muestra solo en esas fases; capa "lights": postes, ventanas y fogata.
      Capa interactables (#70): la vecina aparece (enabled) el dia siguiente al resultado de chequelo; `figure` = figura provisional. -->
 
 
-<map version="1.10" tiledversion="1.10.2" orientation="orthogonal" renderorder="right-down" width="40" height="30" tilewidth="16" tileheight="16" infinite="0" nextlayerid="9" nextobjectid="53">
+<map version="1.10" tiledversion="1.10.2" orientation="orthogonal" renderorder="right-down" width="40" height="30" tilewidth="16" tileheight="16" infinite="0" nextlayerid="9" nextobjectid="58">
  <objectgroup id="1" name="collision">
   <object id="1" name="wall_top" x="-16" y="-16" width="672" height="16"/>
   <object id="2" name="wall_bottom" x="-16" y="480" width="672" height="16"/>
@@ -224,6 +224,59 @@
     <property name="b" type="int" value="100"/>
     <property name="intensity" type="float" value="0.8"/>
     <property name="flicker" type="float" value="0.1"/>
+    <property name="only" value="dusk,night"/>
+   </properties>
+  </object>
+  <object id="53" name="poste_calle_1" class="light" x="100" y="245" width="8" height="8">
+   <properties>
+    <property name="radius" type="int" value="70"/>
+    <property name="r" type="int" value="255"/>
+    <property name="g" type="int" value="220"/>
+    <property name="b" type="int" value="150"/>
+    <property name="intensity" type="float" value="0.9"/>
+    <property name="only" value="dusk,night"/>
+   </properties>
+  </object>
+  <object id="54" name="poste_calle_2" class="light" x="335" y="245" width="8" height="8">
+   <properties>
+    <property name="radius" type="int" value="70"/>
+    <property name="r" type="int" value="255"/>
+    <property name="g" type="int" value="220"/>
+    <property name="b" type="int" value="150"/>
+    <property name="intensity" type="float" value="0.9"/>
+    <property name="flicker" type="float" value="0.5"/>
+    <property name="only" value="dusk,night"/>
+   </properties>
+  </object>
+  <object id="55" name="poste_calle_roto" class="light" x="510" y="245" width="8" height="8">
+   <properties>
+    <property name="radius" type="int" value="60"/>
+    <property name="r" type="int" value="255"/>
+    <property name="g" type="int" value="220"/>
+    <property name="b" type="int" value="150"/>
+    <property name="intensity" type="float" value="0.5"/>
+    <property name="flicker" type="float" value="0.8"/>
+    <property name="only" value="dusk,night"/>
+   </properties>
+  </object>
+  <object id="56" name="poste_calle_3" class="light" x="600" y="245" width="8" height="8">
+   <properties>
+    <property name="radius" type="int" value="70"/>
+    <property name="r" type="int" value="255"/>
+    <property name="g" type="int" value="220"/>
+    <property name="b" type="int" value="150"/>
+    <property name="intensity" type="float" value="0.9"/>
+    <property name="only" value="dusk,night"/>
+   </properties>
+  </object>
+  <object id="57" name="fogata" class="light" x="580" y="440" width="8" height="8">
+   <properties>
+    <property name="radius" type="int" value="60"/>
+    <property name="r" type="int" value="255"/>
+    <property name="g" type="int" value="140"/>
+    <property name="b" type="int" value="60"/>
+    <property name="intensity" type="float" value="0.9"/>
+    <property name="flicker" type="float" value="0.4"/>
     <property name="only" value="dusk,night"/>
    </properties>
   </object>

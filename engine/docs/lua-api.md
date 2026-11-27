@@ -574,7 +574,9 @@ With the ambient at full white (`255, 255, 255`) and no transition running the
 whole pass is skipped, so daytime scenes cost nothing.
 
 Colours are `0..255`. `intensity` is `0..1` (higher values are clamped when drawn).
-`flicker` is `0..1`: how far the light dips when it flickers (`0` = steady).
+`flicker` is `0..1`: how far the light dips when it flickers (`0` = steady). It modulates
+the intensity and, a little, the radius (down to 75% at full dip), following a smooth noise
+curve with no random jumps.
 
 | Function | Description |
 | --- | --- |

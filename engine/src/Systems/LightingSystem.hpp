@@ -121,21 +121,25 @@ class LightingSystem : public System {
       SDL_RenderClear(renderer);
 
       for (const auto& l : this->lights) {
-        float a = l.intensity.value * lighting::flickerFactor(l.flicker, this->time, l.id);
+        float ff = lighting::flickerFactor(l.flicker, this->time, l.id);
+        float a = l.intensity.value * ff;
         if (a <= 0.0f) continue;
         if (!lighting::circleVisible(l.x, l.y, l.radius, camera.x, camera.y, camera.w, camera.h)) continue;
-        this->drawLight(renderer, l.x - camera.x, l.y - camera.y, l.radius, l.r, l.g, l.b, a);
+        float radius = l.radius * lighting::radiusFactor(ff);
+        this->drawLight(renderer, l.x - camera.x, l.y - camera.y, radius, l.r, l.g, l.b, a);
       }
 
       for (auto entity : this->getEntities()) {
         if (isDormant(entity)) continue;
         auto& lc = entity.getComponent<LightComponent>();
         if (lc.radius <= 0.0f) continue;
-        float a = lc.intensity * lighting::flickerFactor(lc.flicker, this->time, entity.getId() + 7919);
+        float ff = lighting::flickerFactor(lc.flicker, this->time, entity.getId() + 7919);
+        float a = lc.intensity * ff;
         if (a <= 0.0f) continue;
         glm::vec2 c = entityCenter(entity) + lc.offset;
         if (!lighting::circleVisible(c.x, c.y, lc.radius, camera.x, camera.y, camera.w, camera.h)) continue;
-        this->drawLight(renderer, c.x - camera.x, c.y - camera.y, lc.radius, lc.r, lc.g, lc.b, a);
+        float radius = lc.radius * lighting::radiusFactor(ff);
+        this->drawLight(renderer, c.x - camera.x, c.y - camera.y, radius, lc.r, lc.g, lc.b, a);
       }
 
       // SDL restaura viewport, escala y tamano logico al volver al target anterior

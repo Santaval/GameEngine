@@ -48,6 +48,7 @@ scene = {
         { name = "debug_toggle", key = 102 }, -- f
         { name = "back", key = 48 },        -- 0
         { name = "toggle_time", key = 110 }, -- n: dia / noche
+        { name = "foco", key = 103 },  -- g: foco
         { name = "debug_overlay", key = 1073741884 }, -- F3: overlay de flags y misiones
         { name = "story_pause", key = 32 },      -- Espacio: pausa / reanudar la historia
         { name = "story_stop", key = 8 },        -- Retroceso: detener (Esc cierra el motor)

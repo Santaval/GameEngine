@@ -37,6 +37,7 @@ local llogic = require("leads_logic")
 local consequences = require("consequences")
 local lighting = require("lighting")
 local tod = require("time_of_day")
+local foco = require("foco")
 
 local M = {}
 
@@ -94,6 +95,7 @@ function M.make_update(cfg)
   local was_debug = false
   local was_back = false
   local was_time = false
+  local was_foco = false                  -- flanco de la tecla G (foco, issue #67)
   local toast = { text = nil, left = 0 }  -- aviso de zona (arriba)
   local line = { text = nil, left = 0 }   -- frase de puerta cerrada / depuracion (abajo)
   local saved_input = nil
@@ -233,10 +235,18 @@ function M.make_update(cfg)
     consequences.validate()
     interaction.from_map(m)
     lighting.init()
+    foco.init()
     tod.init(m)
     tod.on_day = function(d) line.text, line.left = "Día " .. d, c.line_time end
     interaction.on_sleep = function()
-      if not tod.sleep() then line.text, line.left = "Todavía no tengo sueño", c.line_time end
+      if not tod.sleep() then
+        line.text, line.left = "Todavía no tengo sueño", c.line_time
+      else
+        foco.recharge()
+      end
+    end
+    interaction.on_recharge = function(what)
+      if what == "foco" then foco.recharge(); line.text, line.left = "Foco cargado", c.line_time end
     end
     footsteps.set_source(surfaces.build(m))
     local n, cerr = load_tmx_colliders(c.map)
@@ -489,6 +499,14 @@ function M.make_update(cfg)
         print("[time_of_day] hora: " .. tod.get())
       end
       was_time = tdown
+
+      -- G enciende / apaga el foco (issue #67); sin bateria avisa
+      local fodown = is_action_activated("foco")
+      if fodown and not was_foco and not dlg_open and not ov.open and not story.is_open() and not tod.is_busy() and fade.alpha() == 0 then
+        local ok, msg = foco.toggle()
+        if not ok then line.text, line.left = msg, c.line_time end
+      end
+      was_foco = fodown
       amb.tick(dt)
       -- Pistas: no se evaluan con pantalla ocupada (no se pierden, esperan)
       local hidden = dlg_open or transition or ov.open or story.is_open() or fade.alpha() > 0 or tod.is_busy()
@@ -499,6 +517,7 @@ function M.make_update(cfg)
     -- Iluminacion: ambiente segun la hora y linterna del jugador
     lighting.tick()
     tod.tick(dt)
+    foco.tick(dt)
 
     -- F3: overlay de depuracion (tambien captura teclas mientras esta abierto)
     update_overlay(dlg_open)
@@ -529,6 +548,7 @@ function M.make_update(cfg)
       elseif prompt then
         draw_centered(prompt, 226)
       end
+      foco.draw_hud()
     end
 
     draw_overlay()

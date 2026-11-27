@@ -52,6 +52,10 @@ inline float flickerFactor(float flicker, double time, int seed) {
   return 1.0f - f * static_cast<float>(0.5 + 0.5 * n);
 }
 
+// Factor del radio con el parpadeo: el radio parpadea menos que la intensidad (calma, no frenetico).
+// En [0.75, 1] para flickerFactor en [0, 1]
+inline float radiusFactor(float flickerFactor) { return 0.75f + 0.25f * flickerFactor; }
+
 // true si el circulo (cx, cy, r) toca el rectangulo de la camara
 inline bool circleVisible(float cx, float cy, float r, int camX, int camY, int camW, int camH) {
   return cx + r > camX && cx - r < camX + camW && cy + r > camY && cy - r < camY + camH;

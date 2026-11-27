@@ -62,6 +62,17 @@ static void testCircleVisible() {
   CHECK(!circleVisible(100, 300, 10, 0, 0, 480, 270));
 }
 
+static void testRadiusFactor() {
+  CHECK(radiusFactor(1.0f) == 1.0f);
+  CHECK(std::fabs(radiusFactor(0.0f) - 0.75f) < 1e-6f);
+  float prev = radiusFactor(0.0f);
+  for (int i = 1; i <= 100; i++) {
+    float v = radiusFactor(i / 100.0f);
+    CHECK(v >= prev);
+    prev = v;
+  }
+}
+
 static void testIsWhite() {
   CHECK(isWhite(255, 255, 255));
   CHECK(!isWhite(255, 255, 200));
@@ -74,6 +85,7 @@ int main() {
   testFlicker();
   testTween();
   testCircleVisible();
+  testRadiusFactor();
   testIsWhite();
   if (failures == 0) std::cout << "LightingTest: OK" << std::endl;
   return failures == 0 ? 0 : 1;

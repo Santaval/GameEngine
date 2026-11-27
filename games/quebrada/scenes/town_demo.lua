@@ -2,6 +2,7 @@
 -- WASD o flechas para andar, Shift corre, E / Enter interactua con la puerta,
 -- F alterna el flag unlock.house.chayo (depuracion), 0 vuelve a la escena principal,
 -- N alterna dia / noche (ambiente, issue #65; al amanecer pasa al dia siguiente, issue #70), F3 abre el overlay de flags y misiones (issue #51).
+-- G enciende / apaga el foco del jugador (issue #67).
 -- Pensado para 480x270 logico (pixel_perfect). Teclas SDL: Right 1073741903,
 -- Left 1073741904, Down 1073741905, Up 1073741906, LShift 1073742049, RShift 1073742053.
 scene = {
@@ -70,6 +71,7 @@ scene = {
         { name = "debug_toggle", key = 102 }, -- f
         { name = "back", key = 48 },        -- 0
         { name = "toggle_time", key = 110 }, -- n: dia / noche
+        { name = "foco", key = 103 },  -- g: foco
         { name = "debug_overlay", key = 1073741884 }, -- F3: overlay de flags y misiones
     },
     entities = {
