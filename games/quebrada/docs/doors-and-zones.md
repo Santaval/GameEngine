@@ -28,6 +28,7 @@ top-left).
 | Zone | rect | `zone` | `zones` | `zone` (id), `title` (toast text), optional `ambience` (ambience set key: pueblo, monte, quebrada, casa, ...; fed to `scripts/ambience.lua` by the map controller, see [audio.md](audio.md)), optional `save` (bool, informational) |
 | Surface | rect | `surface` | `surfaces` | `surface` (lastre, zacate, madera or concreto); decides the footstep sound, see [audio.md](audio.md). The map property `surface` is the default for cells without a surface |
 | Emitter | rect or point | `emitter` | `emitters` | `sound` (required), `radius` / `max_distance`, `min_distance`, `volume`, `loop` (default true), `rolloff`; started by `emitters_from_map(map)`, see [Spatial audio](../../../engine/docs/lua-api.md#spatial-audio) |
+| Interactable | rect or point | `interactable` | `interactables` | `npc` (NPC id) or `interact` (`npc` or `object`; `door` is not supported here), `label`, `target`, `radius` (default 24), `line`, `set_flag`, `enabled` (condition syntax `a`, `!a`, `a,!b`); see [interaction.md](interaction.md) |
 | Wall | rect | any | `collision` | read by `load_tmx_colliders` |
 
 Rules:
@@ -40,6 +41,9 @@ Rules:
   bottom edges are outside).
 - Place exit spawns a few px outside the door rect. After arriving, the controller
   ignores interaction until the foot box has left every door rect once.
+- An overlapped door suppresses interactables: while the foot box is inside a
+  door rect, no interactable prompt or press is handled (see
+  [interaction.md](interaction.md#doors-take-precedence)).
 
 ## Lock syntax
 

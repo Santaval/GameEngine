@@ -1,0 +1,127 @@
+# Proximity interaction (issue #49)
+
+`scripts/interaction.lua` lets the player press `E` next to NPCs and objects.
+Pure logic (distance, cone, tie-breaks, edge detection) lives in
+`scripts/interaction_logic.lua` and has no engine calls.
+
+## Target selection
+
+Each frame, `interaction.update` takes the enabled interactables and keeps the
+ones that are:
+
+- **in range**: the distance from the player's foot-box center to the closest
+  point of the interactable rect is within `radius` (default 24 px);
+- **in front**: the direction from the player to the interactable center is
+  within a ±60° cone around the walker's facing (cosine >= 0.5). Centers closer
+  than 4 px always count as in front.
+
+Among those, the closest one wins. Ties go to the nearest center, then to
+registration order.
+
+## Registration API
+
+```lua
+local interaction = require("interaction")
+
+interaction.register({
+  rect = { x = 48, y = 60, w = 16, h = 16 },  -- or entity = e, size = { w, h }
+  radius = 24,                                -- optional
+  label = "Hablar",                           -- HUD verb
+  target = "mamá",                            -- HUD object (optional)
+  on_interact = function(it) ... end,         -- called on the key edge
+  enabled = function() return true end,       -- optional filter
+})
+interaction.unregister(it)   -- removes one entry
+interaction.clear()          -- removes all and resets the key edge
+interaction.from_map(map)    -- builds entries from the TMX (see below)
+interaction.update(dt, o)    -- once per frame; o = { x, y, facing, suppress }
+```
+
+- `rect` is in world coordinates. With `entity`, the rect is read from
+  `get_position` each frame; if the entity no longer exists, the entry is
+  skipped.
+- `interaction.clear()` runs in the controller's `init`, so a scene reload never
+  leaves stale rects or duplicates.
+
+## Per-frame behavior
+
+`interaction.update` returns the HUD text of the current target, or `nil`:
+
+- Label: `E — <label> con <target>` (for example `E — Hablar con mamá`).
+- A bobbing `!` is drawn above the target with `draw_text_world` (no asset).
+- The town controller shows the text in its prompt slot, only when no door
+  prompt is active.
+
+Nothing is drawn or fired when `o.suppress` is true or the interaction is blocked.
+
+## Key edge
+
+Keys: `interact` or `interact_alt` (the same keys as doors: `E` / `Enter`).
+
+- Edge-triggered: `on_interact` fires once on the frame the key goes down.
+  Holding the key does not repeat it.
+- The key state keeps updating while suppressed or blocked. Closing a dialogue
+  with `E` therefore does not trigger a new interaction.
+
+## Blocking
+
+Interaction is blocked while either world flag is set:
+
+- `dialogue.open` (set by the future dialogue system, issue later)
+- `libreta.open` (set by the future notebook UI)
+
+While blocked, the indicator and the HUD text are hidden and `E` does nothing.
+
+## Hooks
+
+- `interaction.on_npc(name, obj)`: called for `npc` interactables. The future
+  dialogue system sets it. Without it, the NPC's `line` property is shown.
+- `interaction.say(text)`: shows a one-line message. The town controller sets it
+  to its line slot. Without it, the text is printed as `[interaction] ...`.
+
+Interactables with `set_flag` set that world flag to `true` when used.
+
+## TMX: `interactable` objects
+
+Put interactables in an object layer (the examples use `interactables`) with
+`class="interactable"`. Each object's position is its rect (`x`, `y`, `width`,
+`height`); a point object gets a 0x0 rect.
+
+| Property | Meaning |
+| --- | --- |
+| `npc` | NPC id. Makes the kind `npc` (default verb "Hablar"). |
+| `interact` | `npc` or `object`. `door` is not supported here: doors belong in the `doors` layer, and a warning is printed. |
+| `label` | HUD verb (default "Hablar" for NPCs, "Examinar" for objects). |
+| `target` | HUD object, for example `mamá`. |
+| `radius` | Range in px (default 24). |
+| `line` | One-line message (default `...`). |
+| `set_flag` | Flag set to `true` on use (objects). |
+| `enabled` | Condition in the door lock syntax (`a`, `!a`, `a,!b`). Missing means enabled. |
+
+## Doors take precedence
+
+Doors stay in `scripts/town_controller.lua`. The controller passes
+`suppress = true` to `interaction.update` when:
+
+- the foot box overlaps a door rect,
+- a door transition is running,
+- `ignore_until_clear` is set (after arriving, until the player leaves every door),
+- a fade is in progress (`fade.alpha() > 0`).
+
+So a press never fires a door and an interactable at the same time.
+
+## Manual checklist
+
+Automated tests are not used for this feature. Check in the game after building:
+
+1. In the house, next to mama and facing her: the bobbing `!` and the HUD text
+   `E — Hablar con mamá` appear. One `E` shows her line; holding `E` fires once;
+   release and press again fires again.
+2. Between mama and the radio: facing left selects mama, facing right selects
+   the radio, facing down selects neither.
+3. `world_state.set("dialogue.open", true)` (or `libreta.open`) hides the
+   indicator and the prompt, and `E` does nothing.
+4. Doors: the exit prompt `E: salir` still works. After arriving through a door,
+   no interactable fires until the player leaves the door area. Nothing fires
+   during fades.
+5. Leave and re-enter the house: no duplicate entries and no duplicate prompts.

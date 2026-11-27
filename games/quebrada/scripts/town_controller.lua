@@ -19,6 +19,7 @@ local fade = require("fade")
 local surfaces = require("surface_logic")
 local footsteps = require("footsteps")
 local amb = require("ambience")
+local interaction = require("interaction")
 
 local M = {}
 
@@ -106,6 +107,8 @@ function M.make_update(cfg)
     ws.on_change(function(name, new, old)
       print("[doors] flag " .. name .. ": " .. tostring(old) .. " -> " .. tostring(new))
     end)
+    interaction.clear()
+    interaction.say = function(t) line.text, line.left = t, c.line_time end
     player_walker = nil -- un walker de la escena anterior no vale
     local m, err = load_tmx(c.map)
     if not m then
@@ -115,6 +118,7 @@ function M.make_update(cfg)
     end
     map = m
     idx = logic.index_objects(m)
+    interaction.from_map(m)
     footsteps.set_source(surfaces.build(m))
     local n, cerr = load_tmx_colliders(c.map)
     if not n then print("[town] colliders: " .. tostring(cerr)) end
@@ -269,6 +273,7 @@ function M.make_update(cfg)
       local foot = logic.foot_box(px, py, c.box)
       local fcx, fcy = foot.x + foot.w / 2, foot.y + foot.h / 2
       local door = logic.find_door(idx.doors, foot)
+      local door_raw = door
 
       -- Tras llegar, no se puede interactuar hasta salir una vez de toda puerta
       if ignore_until_clear then
@@ -306,6 +311,13 @@ function M.make_update(cfg)
           prompt = door.properties.prompt or c.default_prompt
         end
       end
+
+      -- Interactuables (NPCs/objetos): nunca a la vez que una puerta ni en transicion
+      local suppress = transition or ignore_until_clear or door_raw ~= nil or fade.alpha() > 0
+      local ihint = interaction.update(dt, {
+        x = fcx, y = fcy, facing = player_walker:get_facing(), suppress = suppress,
+      })
+      if ihint and not prompt then prompt = ihint end
 
       -- Depuracion: F alterna el flag (la puerta cambia al frame siguiente)
       local fdown = is_action_activated("debug_toggle")

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Interior de la casa (issue #62): solo capas de objetos, sin tileset. 12x9 tiles de 16 px = 192x144. -->
-<map version="1.10" tiledversion="1.10.2" orientation="orthogonal" renderorder="right-down" width="12" height="9" tilewidth="16" tileheight="16" infinite="0" nextlayerid="5" nextobjectid="20">
+<map version="1.10" tiledversion="1.10.2" orientation="orthogonal" renderorder="right-down" width="12" height="9" tilewidth="16" tileheight="16" infinite="0" nextlayerid="6" nextobjectid="22">
  <properties>
   <property name="surface" value="madera"/>
  </properties>
@@ -34,6 +34,23 @@
     <property name="zone" value="casa_mama"/>
     <property name="title" value="Casa de Mamá"/>
     <property name="ambience" value="casa"/>
+   </properties>
+  </object>
+ </objectgroup>
+ <objectgroup id="5" name="interactables">
+  <object id="20" name="mama" class="interactable" x="48" y="60" width="16" height="16">
+   <properties>
+    <property name="npc" value="mama"/>
+    <property name="label" value="Hablar"/>
+    <property name="target" value="mamá"/>
+    <property name="line" value="Mamá: ¿Ya vas a salir?"/>
+   </properties>
+  </object>
+  <object id="21" name="radio" class="interactable" x="72" y="60" width="16" height="16">
+   <properties>
+    <property name="interact" value="object"/>
+    <property name="label" value="Escuchar la radio"/>
+    <property name="line" value="Solo estática."/>
    </properties>
   </object>
  </objectgroup>
