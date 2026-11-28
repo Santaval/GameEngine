@@ -27,6 +27,7 @@ import { renderSchoolSheet, S_TILES, S_COLS, S_ROWS, schoolBuildingCanvas } from
 import { renderEbaisSheet, E_TILES, E_COLS, E_ROWS, ebaisBuildingCanvas } from "./catalog_ebais.mjs";
 import { renderMonteSheet, M_TILES, M_COLS, M_ROWS, turbineCanvas, MONTE_TILE_COUNT, MONTE_ROTOR_TILE_COUNT } from "./catalog_monte.mjs";
 import { renderRioSheet, R_TILES, R_COLS, R_ROWS, RIO_TILE_COUNT } from "./catalog_rio.mjs";
+import { renderVidaSheet, V_TILES, V_COLS, V_ROWS, VIDA_TILE_COUNT } from "./catalog_vida.mjs";
 import { buildTmx as buildBuildingsTmx, renderBuildingsMap } from "./buildings_map.mjs";
 import { buildTmx as buildInteriorTmx, renderInterior } from "./interior_map.mjs";
 import { MAMA_AT, BERTA_X, CALILES_X, SIDEWALK_N_Y, COL_X0, COL_Y0, COL_W, COL_H, CAF_Y0, buildTmx as buildZona1Tmx, renderZona1, baseReport, routeLength, pointAt, WALK_SPEED, RUN_SPEED, MAP_W, MAP_H, EXT_PAVER_X1, EXT_LASTRE_X1, LEFT_PAD, SCHOOL_FIRSTGID, EBAIS_FIRSTGID, MONTE_FIRSTGID, RIO_FIRSTGID, TOP_PAD, BRIDGE, RIVER, RIVER_ZONES, RIVER_CHURCH_M, RIVER_CAFETAL_M, RIVER_MAMA_M, MONTE_REPORT, MONTE_X0, MONTE_X1, MONTE_W, ROAD_X1, ROAD_Y0, TRAIL_X0, TRAIL_Y0, TRAIL_LEN, TURBINE_AT, TURBINE_BBOX, EB_X0, EB_X1, EB_Y0, EB_Y1, EB_AT, PLOT_X0, PLOT_X1, ESC_Y0, ESC_Y1, OLG_Y0, OLG_AT, ESC_A_AT, ESC_B_AT, ESC_GATE, OLG_GATE } from "./zona1_map.mjs";
@@ -49,6 +50,8 @@ const out = {
   mtsx: join(game, "tilesets", "monte.tsx"),
   rpng: join(game, "tilesets", "rio.png"),
   rtsx: join(game, "tilesets", "rio.tsx"),
+  vpng: join(game, "tilesets", "vida.png"),
+  vtsx: join(game, "tilesets", "vida.tsx"),
   btmx: join(game, "maps", "buildings_demo.tmx"),
   house: join(game, "maps", "house_mama.tmx"),
   zona1: join(game, "maps", "zona1.tmx"),
@@ -72,6 +75,8 @@ const products = () => [
   [out.mtsx, Buffer.from(buildTsxFor({ name: "monte", image: "monte.png", tiles: M_TILES, cols: M_COLS, rows: M_ROWS }))],
   [out.rpng, pngOf(renderRioSheet())],
   [out.rtsx, Buffer.from(buildTsxFor({ name: "rio", image: "rio.png", tiles: R_TILES, cols: R_COLS, rows: R_ROWS }))],
+  [out.vpng, pngOf(renderVidaSheet())],
+  [out.vtsx, Buffer.from(buildTsxFor({ name: "vida", image: "vida.png", tiles: V_TILES, cols: V_COLS, rows: V_ROWS }))],
   [out.consts, Buffer.from(buildZona1ConstsLua())],
   [out.btmx, Buffer.from(buildBuildingsTmx())],
   [out.house, Buffer.from(buildInteriorTmx())],
@@ -111,7 +116,7 @@ if (args.includes("--check")) {
     }
   }
   if (bad) process.exit(1);
-  console.log(`tilegen: ${TILES.length} town + ${B_TILES.length} buildings + ${PARK_TILES.length} park + ${S_TILES.length} school + ${E_TILES.length} ebais + ${M_TILES.length} monte tiles up to date`);
+  console.log(`tilegen: ${TILES.length} town + ${B_TILES.length} buildings + ${PARK_TILES.length} park + ${S_TILES.length} school + ${E_TILES.length} ebais + ${M_TILES.length} monte + ${V_TILES.length} vida tiles up to date`);
 } else if (args.includes("--rio-preview")) { // only the river previews (faster than --preview)
   const dir = resolve(args[args.indexOf("--rio-preview") + 1] ?? ".");
   mkdirSync(dir, { recursive: true });
@@ -131,6 +136,7 @@ if (args.includes("--check")) {
   writeFileSync(join(dir, "buildings_demo_night.png"), pngOf(renderBuildingsMap({ night: true, roofs: true }).scaled(2)));
   writeFileSync(join(dir, "house_mama.png"), pngOf(renderInterior().scaled(4)));
   const grass = [96, 150, 70, 255];
+  writeFileSync(join(dir, "vida_sheet_x4.png"), pngOf(renderVidaSheet().onBackground([60, 60, 70, 255]).scaled(4)));
   { // every glyph of the shared font, x8
     const keys = Object.keys(GLYPHS), per = 16, f = new Frame(per * ADVANCE + 2, Math.ceil(keys.length / per) * 7 + 2);
     keys.forEach((k, i) => drawText(f, k === " " ? "-" : k, 1 + (i % per) * ADVANCE, 1 + Math.floor(i / per) * 7, rgb("#f1f1ec")));
@@ -216,7 +222,7 @@ if (args.includes("--check")) {
     writeFileSync(path, data);
     console.log(`tilegen: wrote ${path} (${data.length} bytes)`);
   }
-  console.log(`tilegen: ${TILES.length} town + ${B_TILES.length} buildings + ${PARK_TILES.length} park + ${S_TILES.length} school + ${E_TILES.length} ebais + ${MONTE_TILE_COUNT} monte tiles (ebais firstgid ${EBAIS_FIRSTGID}, monte firstgid ${MONTE_FIRSTGID})`);
+  console.log(`tilegen: ${TILES.length} town + ${B_TILES.length} buildings + ${PARK_TILES.length} park + ${S_TILES.length} school + ${E_TILES.length} ebais + ${MONTE_TILE_COUNT} monte + ${VIDA_TILE_COUNT} vida tiles (ebais firstgid ${EBAIS_FIRSTGID}, monte firstgid ${MONTE_FIRSTGID})`);
   const r = baseReport(); // throws if the street is not 50 tiles = 100 m or the church is not centred on it
   console.log(`tilegen: zona1 ${MAP_W}x${MAP_H} tiles; scale ${r.metresPerTile} m = 1 tile; street ${r.lengthTiles} tiles = ${r.lengthMetres} m (cols ${r.x0}-${r.x1}, rows ${r.y0}-${r.y1}, ${r.width} wide)`);
   console.log(`tilegen: zona1 extension west (to the right): paver cols ${r.ext.paverX0}-${r.ext.paverX1} = ${r.ext.paverTiles} t = ${r.ext.paverMetres} m, lastre cols ${r.ext.lastreX0}-${r.ext.lastreX1} = ${r.ext.lastreTiles} t = ${r.ext.lastreMetres} m, total ${r.ext.totalTiles} t = ${r.ext.totalMetres} m`);

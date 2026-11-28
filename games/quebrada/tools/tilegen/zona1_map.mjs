@@ -33,6 +33,7 @@ import { SCHOOL_BUILDINGS, SCHOOL_BUILDING_BY_NAME, SCHOOL_OBJECT_BY_NAME, S_TIL
 import { EBAIS_BUILDINGS, EBAIS_BUILDING_BY_NAME, E_TILES, E_COLS, E_ROWS, eIdByName, renderEbaisSheet } from "./catalog_ebais.mjs";
 import { M_TILES, M_COLS, M_ROWS, mIdByName, renderMonteSheet, ROTOR_CELLS, TOWER_H, ROTOR_N } from "./catalog_monte.mjs";
 import { R_TILES, R_COLS, R_ROWS, rIdByName, renderRioSheet, RIO_SOLID_NAMES } from "./catalog_rio.mjs";
+import { V_TILES, V_COLS, V_ROWS, vIdByName, V_OBJECT_BY_NAME, renderVidaSheet } from "./catalog_vida.mjs";
 import { makeRiver } from "./river.mjs";
 import { Frame } from "./draw.mjs";
 import { noise as rawNoise } from "./rng.mjs";
@@ -98,7 +99,8 @@ export const PARK_FIRSTGID = B_FIRSTGID + B_COLS * B_ROWS; // 529 (town tilecoun
 export const SCHOOL_FIRSTGID = PARK_FIRSTGID + P_COLS * P_ROWS; // 721 (town + buildings + park tilecounts + 1)
 export const EBAIS_FIRSTGID = SCHOOL_FIRSTGID + S_COLS * S_ROWS; // 945 (+ school tilecount 224)
 export const MONTE_FIRSTGID = EBAIS_FIRSTGID + E_COLS * E_ROWS; // 1201 (+ ebais tilecount 256)
-export const RIO_FIRSTGID = MONTE_FIRSTGID + M_COLS * M_ROWS; // 1457 (+ monte capacity 256)
+export const RIO_FIRSTGID = MONTE_FIRSTGID + M_COLS * M_ROWS; // computed (+ monte capacity 256)
+export const VIDA_FIRSTGID = RIO_FIRSTGID + R_COLS * R_ROWS; // computed (+ rio capacity 64): name plaques and street life, appended last so no earlier gid moves
 
 // ---- base layout constants (tiles) ----
 export const STREET_W = 4; // 4 tiles = ~8 m real at this scale (known distortion; kept for walkability)
@@ -785,13 +787,17 @@ const rgid = (name) => {
   if (!rIdByName.has(name)) throw new Error(`unknown rio tile ${name}`);
   return rIdByName.get(name) + RIO_FIRSTGID;
 };
+const vgid = (name) => {
+  if (!vIdByName.has(name)) throw new Error(`unknown vida tile ${name}`);
+  return vIdByName.get(name) + VIDA_FIRSTGID;
+};
 const mgid = (name) => {
   if (!mIdByName.has(name)) throw new Error(`unknown monte tile ${name}`);
   return mIdByName.get(name) + MONTE_FIRSTGID;
 };
 /** gid of a tile by name in any of the six sheets (park_ names live in the park sheet, escuela_ in the school sheet, ebais_ in the ebais sheet, monte_ names in the monte sheet unless the town has the same name
  *  (monte_trunk, monte_canopy_*), buildings names in buildings). */
-const anyGid = (name) => (name.startsWith("rio_") ? rgid(name) : name.startsWith("park_") ? pgid(name) : name.startsWith("escuela_") ? sgid(name) : name.startsWith("ebais_") ? egid(name) : byName.has(name) ? gid(name) : mIdByName.has(name) ? mgid(name) : bgid(name));
+const anyGid = (name) => (name.startsWith("vida_") ? vgid(name) : name.startsWith("rio_") ? rgid(name) : name.startsWith("park_") ? pgid(name) : name.startsWith("escuela_") ? sgid(name) : name.startsWith("ebais_") ? egid(name) : byName.has(name) ? gid(name) : mIdByName.has(name) ? mgid(name) : bgid(name));
 const ALL_BUILDINGS = [...BUILDINGS, ...SCHOOL_BUILDINGS, ...EBAIS_BUILDINGS];
 const BUILDING_ANY = (name) => BUILDING_BY_NAME.get(name) ?? SCHOOL_BUILDING_BY_NAME.get(name) ?? EBAIS_BUILDING_BY_NAME.get(name);
 const pick = (names, x, y, salt = "pk") => names[Math.floor(noise(salt, x, y) * names.length) % names.length];
@@ -1016,8 +1022,8 @@ export function buildZona1(elements = ELEMENTS) {
     for (const c of CIRCLE_CELLS) put("ground", e.circle[0] + c.cx, e.circle[1] + c.cy, c.name);
   }
   for (const e of elements.filter((e) => e.kind === "object")) {
-    const o = PARK_OBJECT_BY_NAME.get(e.name) ?? SCHOOL_OBJECT_BY_NAME.get(e.name);
-    if (!o) throw new Error(`element ${e.id}: unknown park object ${e.name}`);
+    const o = PARK_OBJECT_BY_NAME.get(e.name) ?? SCHOOL_OBJECT_BY_NAME.get(e.name) ?? V_OBJECT_BY_NAME.get(e.name);
+    if (!o) throw new Error(`element ${e.id}: unknown object ${e.name}`);
     for (const c of o.cells) {
       const x = e.at[0] + c.cx, y = e.at[1] + c.cy;
       if (c.layer === "above") put("canopy", x, y, c.name);
@@ -1201,7 +1207,7 @@ const prop = (name, value, type) => `    <property name="${name}"${type ? ` type
 // ---- generation-time collision-trap check: flood fill (tile resolution) from the church spawn over every non-solid tile ----
 function checkWalkable(L, placed, defs, turbines = [], river = {}) {
   const solidGids = new Set([...TILES.filter((t) => t.solid).map((t) => t.id + TOWN_FIRSTGID), ...B_TILES.filter((t) => t.solid).map((t) => t.id + B_FIRSTGID),
-    ...PARK_TILES.filter((t) => t.solid).map((t) => t.id + PARK_FIRSTGID), ...S_TILES.filter((t) => t.solid).map((t) => t.id + SCHOOL_FIRSTGID), ...E_TILES.filter((t) => t.solid).map((t) => t.id + EBAIS_FIRSTGID), ...M_TILES.filter((t) => t.solid).map((t) => t.id + MONTE_FIRSTGID), ...R_TILES.filter((t) => t.solid).map((t) => t.id + RIO_FIRSTGID)]);
+    ...PARK_TILES.filter((t) => t.solid).map((t) => t.id + PARK_FIRSTGID), ...S_TILES.filter((t) => t.solid).map((t) => t.id + SCHOOL_FIRSTGID), ...E_TILES.filter((t) => t.solid).map((t) => t.id + EBAIS_FIRSTGID), ...M_TILES.filter((t) => t.solid).map((t) => t.id + MONTE_FIRSTGID), ...R_TILES.filter((t) => t.solid).map((t) => t.id + RIO_FIRSTGID), ...V_TILES.filter((t) => t.solid).map((t) => t.id + VIDA_FIRSTGID)]);
   const blocked = new Uint8Array(MAP_W * MAP_H);
   for (let i = 0; i < blocked.length; i++) if (solidGids.has(L.objects[i]) || solidGids.has(L.buildings[i]) || solidGids.has(L.ground[i])) blocked[i] = 1; // water is a solid GROUND tile
   for (const p of placed) { // footprint rows (same rect as the collision object)
@@ -1403,7 +1409,7 @@ ${props([prop("radius", radius, "int"), prop("r", rgbv[0], "int"), prop("g", rgb
   return `<?xml version="1.0" encoding="UTF-8"?>
 <!-- GENERATED by games/quebrada/tools/tilegen (make tiles): zone 1 rebuilt element by element (issue #78).
      ${MAP_W}x${MAP_H} tiles of ${SIZE} px, ${METRES_PER_TILE} m = 1 tile. Base: ${rep.lengthTiles} tiles (${rep.lengthMetres} m) paver street (cols ${rep.x0}-${rep.x1}, rows ${rep.y0}-${rep.y1}) with the
-     church centred on it. Tilesets: town (firstgid 1), buildings (firstgid ${B_FIRSTGID}), park (firstgid ${PARK_FIRSTGID}), school (firstgid ${SCHOOL_FIRSTGID}), ebais (firstgid ${EBAIS_FIRSTGID}), monte (firstgid ${MONTE_FIRSTGID}) and rio (firstgid ${RIO_FIRSTGID}). Tile layers as in buildings_demo.tmx
+     church centred on it. Tilesets: town (firstgid 1), buildings (firstgid ${B_FIRSTGID}), park (firstgid ${PARK_FIRSTGID}), school (firstgid ${SCHOOL_FIRSTGID}), ebais (firstgid ${EBAIS_FIRSTGID}), monte (firstgid ${MONTE_FIRSTGID}) and rio (firstgid ${RIO_FIRSTGID}) and vida (firstgid ${VIDA_FIRSTGID}). Tile layers as in buildings_demo.tmx
      (ground, overlay, objects, buildings, windows_lit, roof_<name>, canopy) + rotors (above, animated turbine rotors). Object layers: collision, doors, interactables,
      spawns, zones, surfaces, roofs, lights, emitters, triggers (Chequelo night, see scripts/triggers.lua), route (the walk, ${walkPx} px),
      edges. See games/quebrada/docs/zona1.md. -->
@@ -1422,6 +1428,7 @@ ${prop("walk_speed", WALK_SPEED, "int")}
  <tileset firstgid="${EBAIS_FIRSTGID}" source="../tilesets/ebais.tsx"/>
  <tileset firstgid="${MONTE_FIRSTGID}" source="../tilesets/monte.tsx"/>
  <tileset firstgid="${RIO_FIRSTGID}" source="../tilesets/rio.tsx"/>
+ <tileset firstgid="${VIDA_FIRSTGID}" source="../tilesets/vida.tsx"/>
 ${layers.join("\n")}
 ${groups.join("\n")}
 </map>
@@ -1437,12 +1444,13 @@ export function renderZona1({ night = false, roofs = true, triggers = false, glo
   const esheet = renderEbaisSheet();
   const msheet = renderMonteSheet();
   const rsheet = renderRioSheet();
+  const vsheet = renderVidaSheet();
   const { L, turbines } = buildZona1(elements);
   const draw = (out, name) => {
     for (let i = 0; i < L[name].length; i++) {
       const g = L[name][i];
       if (!g) continue;
-      const [sheet, id, cols] = g >= RIO_FIRSTGID ? [rsheet, g - RIO_FIRSTGID, R_COLS] : g >= MONTE_FIRSTGID ? [msheet, g - MONTE_FIRSTGID, M_COLS] : g >= EBAIS_FIRSTGID ? [esheet, g - EBAIS_FIRSTGID, E_COLS] : g >= SCHOOL_FIRSTGID ? [ssheet, g - SCHOOL_FIRSTGID, S_COLS] : g >= PARK_FIRSTGID ? [psheet, g - PARK_FIRSTGID, P_COLS] : g >= B_FIRSTGID ? [bsheet, g - B_FIRSTGID, B_COLS] : [town, g - TOWN_FIRSTGID, COLS];
+      const [sheet, id, cols] = g >= VIDA_FIRSTGID ? [vsheet, g - VIDA_FIRSTGID, V_COLS] : g >= RIO_FIRSTGID ? [rsheet, g - RIO_FIRSTGID, R_COLS] : g >= MONTE_FIRSTGID ? [msheet, g - MONTE_FIRSTGID, M_COLS] : g >= EBAIS_FIRSTGID ? [esheet, g - EBAIS_FIRSTGID, E_COLS] : g >= SCHOOL_FIRSTGID ? [ssheet, g - SCHOOL_FIRSTGID, S_COLS] : g >= PARK_FIRSTGID ? [psheet, g - PARK_FIRSTGID, P_COLS] : g >= B_FIRSTGID ? [bsheet, g - B_FIRSTGID, B_COLS] : [town, g - TOWN_FIRSTGID, COLS];
       out.blit(sheet.slice((id % cols) * SIZE, Math.floor(id / cols) * SIZE, SIZE, SIZE), (i % MAP_W) * SIZE, Math.floor(i / MAP_W) * SIZE);
     }
   };

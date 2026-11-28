@@ -5,7 +5,7 @@
 -- Convenciones en games/quebrada/docs/zona1.md.
 -- DESPLAZAMIENTO (LEFT_PAD = 255): todo el layout original esta corrido 255 columnas a la derecha (sitio para los lotes de la escuela y la casa de Olguita al ESTE = izquierda de
 -- la calle de asfalto, y para EL MONTE: 500 m = 250 tiles al este de la puerta de la iglesia). Las columnas de este archivo son PAD + (columna original); los literales que antes eran
--- absolutos (con PAD = 16) llevan + D, con D = PAD - 16. Mapa 700x187 (TOP_PAD = 93 filas nuevas arriba), siete tilesets (town 1, buildings 145, park 529, school 721, ebais 945, monte 1201, rio 1457).
+-- absolutos (con PAD = 16) llevan + D, con D = PAD - 16. Mapa 700x187 (TOP_PAD = 93 filas nuevas arriba), ocho tilesets (town 1, buildings 145; los demas firstgids se calculan: ver zona1_consts.lua).
 -- DESPLAZAMIENTO VERTICAL (TOP_PAD = 93, ver docs/rio.md): el rio, su tierra norte y el puente se agregaron ARRIBA. Los literales de FILA de este archivo siguen en el marco ORIGINAL (sin las 93 filas):
 -- cell() suma TOP, los objetos del TMX se normalizan restando TOP * 16 px a su y (salvo los que abarcan todo el alto, listados abajo) y map_h es el alto ORIGINAL (94); real_h es el real (187).
 -- Las filas nuevas (rio, orillas, puente, calle de asfalto prolongada) se validan con coordenadas absolutas en la seccion "la quebrada" al final.
@@ -66,12 +66,12 @@ local FG = {}
 for g, n in tmx:gmatch('<tileset firstgid="(%d+)" source="%.%./tilesets/(%w+)%.tsx"/>') do FG[n] = tonumber(g) end
 do
   local expect = 1
-  for _, n in ipairs({ "town", "buildings", "park", "school", "ebais", "monte", "rio" }) do
+  for _, n in ipairs({ "town", "buildings", "park", "school", "ebais", "monte", "rio", "vida" }) do
     check(FG[n] == expect, "firstgid de " .. n .. " en el TMX = " .. tostring(FG[n]) .. ", esperado 1 + tilecounts anteriores = " .. expect)
     expect = expect + tonumber(attr(read_file("games/quebrada/tilesets/" .. n .. ".tsx"):match("<tileset ([^>]*)>"), "tilecount"))
   end
 end
-check(FG.park == Z.PARK_FIRSTGID and FG.school == Z.SCHOOL_FIRSTGID and FG.ebais == Z.EBAIS_FIRSTGID and FG.monte == Z.MONTE_FIRSTGID and FG.rio == Z.RIO_FIRSTGID, "los firstgids del TMX no coinciden con zona1_consts.lua (correr make tiles)")
+check(FG.park == Z.PARK_FIRSTGID and FG.school == Z.SCHOOL_FIRSTGID and FG.ebais == Z.EBAIS_FIRSTGID and FG.monte == Z.MONTE_FIRSTGID and FG.rio == Z.RIO_FIRSTGID and FG.vida == Z.VIDA_FIRSTGID, "los firstgids del TMX no coinciden con zona1_consts.lua (correr make tiles)")
 FG = nil
 local PARK_FIRSTGID, SCHOOL_FIRSTGID, EBAIS_FIRSTGID, MONTE_FIRSTGID = Z.PARK_FIRSTGID, Z.SCHOOL_FIRSTGID, Z.EBAIS_FIRSTGID, Z.MONTE_FIRSTGID
 local PARK_X, PARK_Y, PARK_W, PARK_H = PAD + 10, 27, 50, 37 -- el parque: una cuadra (50 tiles), una fila de cesped bajo la acera sur
@@ -93,7 +93,7 @@ check(tmx:match('<tileset firstgid="' .. MONTE_FIRSTGID .. '" source="%.%./tiles
 local RIO_FIRSTGID = Z.RIO_FIRSTGID
 check(RIO_FIRSTGID == MONTE_FIRSTGID + 256, "rio firstgid = monte + 256 (capacidad 16 x 16 ids)")
 check(tmx:match('<tileset firstgid="' .. RIO_FIRSTGID .. '" source="%.%./tilesets/rio%.tsx"/>') ~= nil, "falta el tileset rio (firstgid " .. RIO_FIRSTGID .. ")")
-check(n_tilesets == 7, "el mapa debe declarar 7 tilesets (town, buildings, park, school, ebais, monte, rio), tiene " .. n_tilesets)
+check(n_tilesets == 8, "el mapa debe declarar 8 tilesets (town, buildings, park, school, ebais, monte, rio, vida), tiene " .. n_tilesets)
 
 local layers, ground = {}, {}
 for lname, lbody in tmx:gmatch('<layer id="%d+" name="([^"]+)"[^>]*>(.-)</layer>') do
