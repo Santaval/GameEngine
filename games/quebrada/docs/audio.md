@@ -135,3 +135,16 @@ A paused voice keeps the ducking active. The player stops a paused recording wit
 - Changing scenes does not reset the time of day; the state is global and lasts for
   the whole session.
 - The walk demo has no map, so all of its steps are `lastre`.
+
+## Village animal emitters (zona 1, `VIDA_EMITTERS` in `zona1_map.mjs`)
+
+One fixed sound every `interval` seconds (emitters.lua has no randomness), so the emitters use co-prime intervals. `only` = time of day, `when` = flags. All sounds are registered in `scenes/zona1.lua`
+(`tests/zona1_check.lua` checks that every emitter's `sound` has its `assetId`).
+
+| Emitter | Sound | Interval (s) | When |
+| --- | --- | --- | --- |
+| `gallinas_paula`, `gallinas_paula_2` | chickens_01, chickens_03 | 19, 31 | day (Abuela Paula's yard) |
+| `gallinas_enrique` | chickens_02 | 23 | day (Tío Enrique's yard) |
+| `gallo_paula`, `gallo_caliles` | rooster_far_03, rooster_far_04 | 13, 17 | dawn |
+| `perro_abastecedor` | dog_far_03 | 37 | day |
+| `perros_caliles` | dogs_chorus_far_04 | 47 | night, off while `mission.chequelo.night_active` (it would mask the mission's sound cues) |

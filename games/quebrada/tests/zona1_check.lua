@@ -435,6 +435,22 @@ for x in pairs(lamp_x) do -- ninguna farola dentro de un edificio / camino de la
   local side, col = x:sub(1, 1), tonumber(x:sub(2))
   for _, r in ipairs(Z.PLACE_RANGES[side]) do check(col < r[1] or col > r[2], "la farola " .. x .. " cae dentro de un edificio o camino (cols " .. r[1] .. "-" .. r[2] .. ")") end
 end
+do -- emisores de sonido: cada sonido esta registrado en la escena y los de animales de noche respetan la mision del Chequelo
+  local scene = read_file("games/quebrada/scenes/zona1.lua")
+  local n_vida, perros = 0, nil
+  for _, o in ipairs(objects) do
+    if o.class == "emitter" then
+      local snd = o.props.sound
+      check(scene:find('assetId = "' .. tostring(snd) .. '"', 1, true) ~= nil, "emisor " .. tostring(o.name) .. ": el sonido " .. tostring(snd) .. " no esta registrado en scenes/zona1.lua")
+      if o.name and o.name:match("^gallinas_") then check(o.props.only == "day", o.name .. ": las gallinas suenan de dia") end
+      if o.name and o.name:match("^gallo_") then check(o.props.only == "dawn", o.name .. ": los gallos suenan al amanecer") end
+      if o.name == "perros_caliles" then perros = o end
+      if o.name and (o.name:match("^gallinas_") or o.name:match("^gallo_") or o.name:match("^perro")) then n_vida = n_vida + 1 end
+    end
+  end
+  check(n_vida >= 7, "faltan emisores de animales (" .. n_vida .. ")")
+  check(perros ~= nil and perros.props.only == "night" and perros.props.when == "!mission.chequelo.night_active", "perros_caliles: de noche y apagado durante la mision del Chequelo")
+end
 do -- placas con el nombre de las casas (hoja vida): la primera celda de cada rotulo esta en su sitio, las siguientes seguidas, y ninguna cae sobre un camino
   local vid = {}
   for tid, body in read_file("games/quebrada/tilesets/vida.tsx"):gmatch('<tile id="(%d+)">(.-)</tile>') do vid[body:match('name="name" value="([^"]*)"')] = tonumber(tid) end

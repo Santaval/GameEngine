@@ -243,9 +243,22 @@ const PLAQUE_ELEMENTS = [
   plaque("ingracia", AB_X + 4, PL_S), plaque("guarderia", BAR_X + 6, PL_S), plaque("caliles", CALILES_X + 4, PL_S), plaque("enrique", ENR_LANE_X + 2, PL_S),
   plaque("paula", PAULA_PLAQUE_X, PAULA_PY1),
 ];
+// village sounds (emitters.lua: one fixed sound every `interval` seconds, so several emitters with co-prime intervals; `only` = time of day, `when` = flags)
+const emit = (name, sound, x, y, interval, only, extra = {}) => ({ id: `vida_${name}`, kind: "emitter", name, x: x * SIZE, y: y * SIZE,
+  props: { sound, interval, min_distance: 32, max_distance: 220, bus: "sfx", only, ...extra } });
+const VIDA_EMITTERS = [
+  emit("gallinas_paula", "chickens_01", PAULA_PX0 + 2, PAULA_PY1 - 2, 19, "day"),
+  emit("gallinas_paula_2", "chickens_03", PAULA_PX0 + 4, PAULA_PY1 - 2, 31, "day"),
+  emit("gallinas_enrique", "chickens_02", ENR_LANE_X - 4, PL_SOUTH_Y + 16, 23, "day"),
+  emit("gallo_paula", "rooster_far_03", PAULA_PX0 + 3, PAULA_PY1 - 3, 13, "dawn", { max_distance: 500 }),
+  emit("gallo_caliles", "rooster_far_04", CALILES_X + 2, SIDEWALK_S_Y + 22, 17, "dawn", { max_distance: 500 }),
+  emit("perro_abastecedor", "dog_far_03", AB_X + 6, SIDEWALK_N_Y - 1, 37, "day"),
+  emit("perros_caliles", "dogs_chorus_far_04", CALILES_X + 2, SIDEWALK_S_Y + 20, 47, "night", { when: "!mission.chequelo.night_active", max_distance: 400 }), // off during the Chequelo night: it would mask the mission's sound cues
+];
 const LAME = "Está cerrado.";
 const PLACE_ELEMENTS = [
   ...PLAQUE_ELEMENTS,
+  ...VIDA_EMITTERS,
   ...northHouse("berta", BERTA_X, "casa_1", "Casa de Berta. No hay nadie.", "Casa de Berta"),
   ...northHouse("abastecedor", AB_X, "abastecedor", `Abastecedor El Jardín. ${LAME}`, "Abastecedor El Jardín"),
   ...northHouse("maria_juvenal", AB_X + 8, "casa_2", "Casa de María y Juvenal. No hay nadie."),
