@@ -129,6 +129,11 @@ export const WEST_SW_X = PARK_X1 + 1; // 60
 export const WEST_X = WEST_SW_X + 1, WEST_W = 4, WEST_X1 = WEST_X + WEST_W - 1; // 61..64
 export const SOUTH_SW_Y = PARK_Y1 + 1; // 64: sidewalk on the park side only
 export const SOUTH_Y = SOUTH_SW_Y + 1, SOUTH_W = 4, SOUTH_Y1 = SOUTH_Y + SOUTH_W - 1; // rows 65..68
+// the south street continues WEST (to the right of the screen) past the west street as a LASTRE street, 50 m = 25 tiles; Lito's house stands on its south
+// side 20 m = 10 tiles west of the junction (its door faces south: footpath at the house's west end down to a lastre yard, like mama's)
+export const LITO_STREET_X0 = WEST_X1 + 1, LITO_STREET_LEN = 25;
+export const LITO_N = "casa_3";
+export const LITO_AT = [LITO_STREET_X0 + 10, SOUTH_Y1 + 2];
 const pk = (lx, ly) => [PARK_X + lx, PARK_Y + ly]; // park-local tile -> absolute tile
 
 const doorCx = (name) => BUILDING_BY_NAME.get(name).door.cx * SIZE + SIZE; // door centre, px from the building's left edge
@@ -234,6 +239,7 @@ PLACE_RANGES.n.push([PAULA_PX0, PAULA_PX1]);
 PLACE_FOOTS.n.push([PAULA_LANE[0], PAULA_LANE[1]]);
 const PAULA_DOOR = doorRect("casa_paula", PAULA_X, PAULA_Y);
 PLACE_DOORS.push([PAULA_DOOR.x + 16, PAULA_DOOR.y + 8]);
+PLACE_DOORS.push([doorRect(LITO_N, LITO_AT[0], LITO_AT[1]).x + 16, doorRect(LITO_N, LITO_AT[0], LITO_AT[1]).y + 8]); // Lito's door
 // name plaques (vida sheet): on the verge row beside each footpath (north verge row = SIDEWALK_N_Y - 1, south = SIDEWALK_S_Y + 1); never on a PLACE_FOOTS column
 export const PLAQUE_AT = {}; // key -> [col, row] of the plaque's first cell
 const plaque = (key, x, y) => { PLAQUE_AT[key] = [x, y]; return { id: `rotulo_${key}`, kind: "object", name: `vida_rotulo_${key}`, at: [x, y] }; };
@@ -353,6 +359,12 @@ const PLACE_ELEMENTS = [
   { id: "paula_arbol_3", kind: "tree", tree: "platano", at: [PAULA_PX1 - 3, PAULA_PY1 - 2] },
   { id: "paula_buganvilia_1", kind: "prop", name: "bougainvillea", at: [PAULA_X + 1, PAULA_PY1 - 1] },
   { id: "paula_buganvilia_2", kind: "prop", name: "bougainvillea", at: [PAULA_X + 6, PAULA_PY1 - 1] },
+  // ---- CASA DE LITO: south side of the new lastre street, 20 m west of the junction; 2-wide footpath at its west end down to a 3-row lastre yard in front of the door ----
+  { id: "casa_lito", kind: "building", name: LITO_N, at: LITO_AT },
+  { id: "casa_lito_puerta", kind: "interactable", name: "casa_lito_puerta", ...doorRect(LITO_N, LITO_AT[0], LITO_AT[1]), props: { interact: "object", label: "Mirar la puerta", line: "Casa de Lito. Nadie contesta todavía." } },
+  { id: "lito_camino", kind: "path", surface: "lastre", x: LITO_AT[0] + placeW(LITO_N) + 1, y: SOUTH_Y1 + 1, w: 2, h: 1 + 5 + 1 + PL_YARD },
+  { id: "lito_patio", kind: "path", surface: "lastre", x: LITO_AT[0], y: LITO_AT[1] + 5, w: placeW(LITO_N) + 3, h: PL_YARD },
+  { id: "zona_lito", kind: "zone", zone: "casa_lito", x: (LITO_AT[0] - 1) * SIZE, y: (LITO_AT[1] - 1) * SIZE, w: (placeW(LITO_N) + 5) * SIZE, h: (PL_YARD + 7) * SIZE, title: "Casa de Lito", ambience: "pueblo" },
   { id: "door_paula", kind: "door", name: "door_paula", x: PAULA_DOOR.x, y: PAULA_DOOR.y, w: 32, h: 12, props: { target_map: "maps/house_paula.tmx", target_spawn: "inside_door", exit_spawn: "exit_paula", prompt: "E: entrar",
     locked: "!mission.chequelo.next_day", locked_line: "Está cerrado. Hoy solo mamá está en casa." } },
   { id: "spawn_exit_paula", kind: "spawn", name: "exit_paula", x: PAULA_X * SIZE + 64, y: PAULA_DOOR.y + 24, facing: "down" },
@@ -537,6 +549,7 @@ export const ELEMENTS = [
   // SOUTH street (below the park): paver rows 65-68, from the east asphalt street (col 9 is its mouth, no sidewalk) to the west street; sidewalk only on the park side (row 64)
   { id: "calle_parque_sur", kind: "street", surface: "paver", x: EAST_SW_PARK, y: SOUTH_Y, length: WEST_X - EAST_SW_PARK, width: SOUTH_W },
   { id: "acera_parque_sur", kind: "path", surface: "sidewalk", x: STREET_X, y: SOUTH_SW_Y, w: PARK_W, h: 1 },
+  { id: "calle_sur_oeste_lastre", kind: "street", surface: "lastre", x: LITO_STREET_X0, y: SOUTH_Y, length: LITO_STREET_LEN, width: SOUTH_W },
   // EAST street (left of the park): ASPHALT cols 5-8 over the full map height, double yellow centre line (interrupted at the two junctions), sidewalks both sides
   { id: "calle_parque_este", kind: "street", surface: "asphalt", dir: "v", x: EAST_X, y: 0, length: MAP_H, width: EAST_W, line: EAST_LINE_X, gaps: [[STREET_Y, STREET_Y + STREET_W - 1], [SOUTH_Y, SOUTH_Y1]] },
   { id: "calle_principal_boca_este", kind: "path", surface: "paver", x: EAST_SW_PARK, y: STREET_Y, w: 1, h: STREET_W }, // the main street's mouth into the asphalt street (col 9)

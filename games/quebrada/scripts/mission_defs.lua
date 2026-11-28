@@ -38,4 +38,8 @@ return {
   papa = {
     title = "Avisarle a papá que ya casi está la comida (está en el patio)",
   },
+  -- Papa va a apear limones y manda por la escalera (mandados.after_papa)
+  escalera = {
+    title = "Pedirle prestada la escalera a Tío Enrique",
+  },
 }

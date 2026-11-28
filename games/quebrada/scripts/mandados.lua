@@ -4,6 +4,7 @@
 --   papas:  mama la pide (chequelo_day) -> Doña Maria vende (flag papas.compradas) -> se las llevas a mama
 --   lito:   Doña Maria manda a preguntarle a Lito por "come mono" (mision aparte; su casa llega despues)
 --   papa:   al recibir las papas mama manda a avisarle a papa (en el patio) que ya casi esta la comida
+--   escalera: papa (en el patio) manda a pedirle prestada la escalera a Tio Enrique (la casa de Enrique llega despues)
 --   Llegar tarde: si antes de entregar las papas se visito a Lito (flag lito.visitado, lo pondra su casa),
 --   mama regana y se gana el logro "Castigados".
 local ws = require("world_state")
@@ -40,6 +41,15 @@ function M.after_mama()
   -- Mama manda a avisarle a papa, que esta en el patio (mision aparte; el patio llega despues)
   missions.offer("papa")
   missions.accept("papa")
+  save.autosave()
+end
+
+-- Fin del aviso a papa (patio): se cierra la mision `papa` y papa manda por la escalera de Tio Enrique
+function M.after_papa()
+  if missions.state("papa") ~= "accepted" then return end
+  missions.jump("papa", "done", "Le avisaste a papá")
+  missions.offer("escalera")
+  missions.accept("escalera")
   save.autosave()
 end
 

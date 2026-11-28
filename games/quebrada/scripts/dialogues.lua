@@ -72,6 +72,16 @@ return {
       text = "¿Todavía por aquí, mijo? Si busca a Lito, vaya a su casa. Y no se tarde, que su mamá espera las papas." },
     { when = m.not_flag("papas.compradas"), speaker = "Doña María", text = "¡Buenas, mijo! Mire lo que necesite." },
   },
+  -- Papa en el patio (day_npcs.lua): salta solo al acercarse con la mision `papa`; mandados.after_papa abre la de la escalera
+  papa_patio = {
+    { speaker = "Yo", text = "Pa, ya va a estar la comida." },
+    { speaker = "Papá", text = "Mmmm ya casi voy, que tengo que apear unos limones. ¿Por qué no vas donde tu tío Enrique y le pedís prestada la escalera?" },
+  },
+  -- Hablarle de nuevo
+  papa = {
+    { when = m.mission_is("escalera", "accepted"), speaker = "Papá",
+      text = "¿Ya fuiste donde tu tío Enrique por la escalera? Los limones no se apean solos." },
+  },
   -- Sin el foco no sale (chequelo_day.on_door)
   mama_foco = {
     { speaker = "Mamá", text = "¿Y el foco, mijo? No vas a salir a oscuras. Tomalo de la repisa." },
