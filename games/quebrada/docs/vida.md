@@ -7,7 +7,8 @@ Sheet: 16 x 16 tiles of 16 px (256 ids). Every tile name starts with `vida_`. Pr
 | Ids | Content |
 | --- | --- |
 | 0-63 | name plaques `vida_rotulo_<key>_<cx>_0` (ysort, solid), 1 row tall and 3-4 tiles wide, text with the shared 3x5 pixel font (`tools/tilegen/font.mjs`) |
-| 64-255 | reserved for street life (animals, bus stop, laundry, moto, poles, signs) |
+| 64-77 | animals: `vida_gallina_a/_b` (+ `_f1` peck frames), `vida_gallo` (+ `_f1`), `vida_perro_echado`, `vida_perro_sentado`, `vida_vaca_pinta/_negra` and `vida_caballo` (2x1, cells `_0_0`, `_1_0`) |
+| 78-255 | reserved for street furniture (bus stop, laundry, moto, poles, signs) |
 
 ## Name plaques
 
@@ -20,3 +21,10 @@ Keys: `berta`, `maria_juvenal`, `isabel`, `carmen`, `machillos`, `ingracia`, `gu
 On the verge row beside each footpath (north verge row `SIDEWALK_N_Y - 1`, south `SIDEWALK_S_Y + 1`), never on a footpath column: `berta` (`BERTA_X + 4`), `maria_juvenal` (`AB_X + 12`), `isabel` (`BAR_X + 15`), `carmen` (`BAR_X + 35`),
 `machillos` (`BAR_X + 44`) on the north side; `ingracia` (`AB_X + 4`), `guarderia` (`BAR_X + 6`), `caliles` (`CALILES_X + 4`), `enrique` (`ENR_LANE_X + 2`) on the south side; `paula` hangs in the yard fence beside the gate
 (the fence skips those four cells). `tests/zona1_check.lua` checks every plaque's cells and that none sits on a footpath.
+
+## Animals
+
+Hens and the rooster are animated through `anim` (tile ids of this sheet, see `tsx.mjs`): hen A shows its peck frame in step 2 of 4 and hen B in step 3, so two hens do not move in lockstep (every copy of one anchor tile shares the clock);
+the rooster crows (frame 2) every fourth 700 ms step. They are `ysort` without `solid`; dogs, cows and the horse are `ysort` and `solid`.
+Placement (`ANIMAL_ELEMENTS` in `zona1_map.mjs`): three hens and a rooster plus a sitting dog in Abuela Paula's yard, three hens in Tío Enrique's yard, a lying dog beside the abastecedor and a sitting dog beside the bar, three cows and a horse in the potrero.
+`tests/vida_check.lua` checks the animation frames and the solidity of every animal.

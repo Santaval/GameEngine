@@ -1,7 +1,7 @@
 // Vida sheet (vida.png + vida.tsx): name plaques for the houses of the main street, and (later) street life: animals, bus stop, laundry, motorbike, poles, signs.
 // Eighth tileset of zona1.tmx (appended after rio, so no earlier firstgid moves). Sheet: 16 columns x 16 rows of 16x16 tiles, id = row * 16 + col. Every tile name starts with `vida_`.
 //   ids 0-63    name plaques  vida_rotulo_<key>_<cx>_0   (1 row tall, 3-4 tiles wide; ysort, solid: a board on two posts, or mounted on a fence)
-//   ids 64-255  reserved for street life (see docs/vida.md)
+//   ids 64-...  street life: hens / rooster (animated, 2 variants with offset frame lists), dogs, cows and a horse (see docs/vida.md)
 // Property scheme as town.tsx: name, layer (ground|overlay|ysort|above), surface (non-solid ground only), solid, sort_offset (and `anim` for animated tiles, see tsx.mjs).
 import { Frame, rgb, withAlpha } from "./draw.mjs";
 import { C } from "./palette.mjs";
@@ -61,8 +61,95 @@ for (const p of PLAQUES) {
 }
 if (nextId > V_PLAQUE_IDS) throw new Error(`too many plaque cells: ${nextId} > ${V_PLAQUE_IDS}`);
 
+// ---------------------------------------------------------------- animals (ids from V_PROP_BASE)
+let propId = V_PROP_BASE;
+const singles = [];
+const addSingle = (name, layer, props, draw) => { const t = { id: propId++, name, layer, ...props, draw }; singles.push(t); return t; };
+const SHADOW = withAlpha([0, 0, 0, 255], 60);
+const col = { red: rgb("#c1272f"), orange: rgb("#e8a02e"), black: rgb("#26231f"), cream: rgb("#ece6d8"), creamShade: rgb("#c9c1ad"), brown: rgb("#8a4b2a"), brownLight: rgb("#b06a3a"), brownDark: rgb("#5e3119") };
+
+/** Hen seen from the side, facing right; `peck` lowers the head to the ground. */
+function hen(f, body, light, dark, peck) {
+  f.ellipse(8, 14, 6, 1.8, SHADOW);
+  f.ellipse(8, 10, 4.8, 3.6, body); f.ellipse(7, 9, 3, 2, light); f.hline(4, 12, 8, dark); // body, wing highlight, belly shade
+  f.line(3, 8, 1, 6, dark); f.line(3, 9, 1, 8, dark); f.px(2, 7, body); // tail feathers
+  const hx = peck ? 13 : 12, hy = peck ? 10 : 6;
+  if (peck) f.line(11, 8, 12, 9, body); else f.line(11, 8, 12, 7, body);
+  f.ellipse(hx, hy, 2.2, 2.2, body); f.px(hx, hy - 3, col.red); f.px(hx + 1, hy - 3, col.red); f.px(hx + 1, hy - 1, col.black); // comb and eye
+  f.px(hx + 2, hy, col.orange); f.px(hx + 3, hy + (peck ? 1 : 0), col.orange); f.px(hx + 1, hy + 2, col.red); // beak and wattle
+  f.vline(7, 13, 2, col.orange); f.vline(10, 13, 2, col.orange); f.px(6, 15, col.orange); f.px(11, 15, col.orange); // legs
+}
+addSingle("vida_gallina_a", "ysort", {}, (f) => hen(f, col.brown, col.brownLight, col.brownDark, false));
+const gallinaA1 = addSingle("vida_gallina_a_f1", "ysort", {}, (f) => hen(f, col.brown, col.brownLight, col.brownDark, true));
+addSingle("vida_gallina_b", "ysort", {}, (f) => hen(f, col.cream, rgb("#f6f2e8"), col.creamShade, false));
+const gallinaB1 = addSingle("vida_gallina_b_f1", "ysort", {}, (f) => hen(f, col.cream, rgb("#f6f2e8"), col.creamShade, true));
+/** Rooster: bigger comb, arched tail of green/black feathers. */
+function rooster(f, crow) {
+  f.ellipse(8, 14, 6, 1.8, SHADOW);
+  f.ellipse(8, 10, 4.8, 3.8, rgb("#a8472a")); f.ellipse(7, 9.5, 3, 2.2, rgb("#c4693a")); f.hline(4, 12, 8, col.brownDark);
+  for (const [x, y, c] of [[3, 7, col.black], [2, 5, rgb("#2f7a33")], [1, 4, rgb("#2f7a33")], [3, 5, col.black], [2, 8, rgb("#2f7a33")], [1, 7, col.black]]) f.px(x, y, c);
+  f.line(11, 8, 12, crow ? 3 : 5, rgb("#a8472a"));
+  const hy = crow ? 3 : 5;
+  f.ellipse(12, hy, 2, 2, rgb("#c4693a")); f.rect(11, hy - 4, 3, 2, col.red); f.px(11, hy - 5, col.red); f.px(13, hy - 5, col.red); f.px(13, hy - 1, col.black);
+  f.px(14, hy, col.orange); f.px(15, hy + (crow ? -1 : 0), col.orange); f.px(13, hy + 2, col.red);
+  f.vline(7, 13, 2, col.orange); f.vline(10, 13, 2, col.orange); f.px(6, 15, col.orange); f.px(11, 15, col.orange);
+}
+addSingle("vida_gallo", "ysort", {}, (f) => rooster(f, false));
+const galloF1 = addSingle("vida_gallo_f1", "ysort", {}, (f) => rooster(f, true));
+// animations (tile ids of this sheet): two hens with offset frame lists so they do not move in lockstep; the rooster crows now and then
+const byNameSingle = (n) => singles.find((t) => t.name === n);
+byNameSingle("vida_gallina_a").anim = [0, 1, 0, 0].map((k) => ({ id: k ? gallinaA1.id : byNameSingle("vida_gallina_a").id, duration: 450 }));
+byNameSingle("vida_gallina_b").anim = [0, 0, 1, 0].map((k) => ({ id: k ? gallinaB1.id : byNameSingle("vida_gallina_b").id, duration: 450 }));
+byNameSingle("vida_gallo").anim = [0, 0, 0, 1].map((k) => ({ id: k ? galloF1.id : byNameSingle("vida_gallo").id, duration: 700 }));
+// dogs (solid)
+const dogCol = { fur: rgb("#b98b4e"), light: rgb("#d8b27a"), dark: rgb("#7a5630"), ear: rgb("#5e3f20") };
+addSingle("vida_perro_echado", "ysort", { solid: true }, (f) => {
+  f.ellipse(8, 14, 7, 2, SHADOW);
+  f.ellipse(7, 11, 6, 3.2, dogCol.fur); f.ellipse(6, 10, 4, 1.8, dogCol.light); f.hline(2, 13, 11, dogCol.dark);
+  f.line(2, 12, 0, 10, dogCol.fur); f.px(0, 9, dogCol.dark); // tail
+  f.ellipse(12, 10, 3, 2.6, dogCol.fur); f.px(11, 7, dogCol.ear); f.px(12, 7, dogCol.ear); f.rect(14, 10, 2, 2, dogCol.dark); f.px(12, 9, col.black); // head, ear, snout, eye
+  f.rect(10, 12, 4, 2, dogCol.light); // paws
+});
+addSingle("vida_perro_sentado", "ysort", { solid: true }, (f) => {
+  f.ellipse(8, 14, 5, 1.8, SHADOW);
+  f.ellipse(7, 10, 3.6, 4.6, dogCol.fur); f.ellipse(6, 10, 2, 3, dogCol.light); f.rect(8, 12, 3, 3, dogCol.fur); f.rect(5, 13, 3, 2, dogCol.dark); // body, chest, paws
+  f.line(3, 13, 1, 12, dogCol.fur); f.px(1, 11, dogCol.dark);
+  f.ellipse(9, 5, 3.2, 3, dogCol.fur); f.rect(8, 2, 2, 3, dogCol.ear); f.rect(11, 5, 3, 2, dogCol.dark); f.px(10, 4, col.black); f.px(13, 5, col.black); // head, ear, snout
+});
+
+// cows and a horse: 2x1 solid ysort objects (cells vida_<name>_<cx>_0), ids after the singles
+const cowDraw = (spots, face) => (f) => {
+  f.ellipse(16, 14, 13, 2.2, SHADOW);
+  f.ellipse(14, 9, 11, 5, spots ? col.cream : col.black); f.hline(5, 13, 18, spots ? col.creamShade : rgb("#161412")); f.hline(6, 5, 16, spots ? rgb("#f6f2e8") : rgb("#3a3733"));
+  if (spots) for (const [cx, cy, rx, ry] of [[9, 8, 3.5, 3], [17, 7, 3, 2.5], [21, 11, 3, 2], [12, 12, 2.5, 1.6]]) f.ellipse(cx, cy, rx, ry, col.black);
+  f.line(3, 7, 1, 13, spots ? col.black : rgb("#161412")); f.px(1, 14, col.black); // tail
+  for (const x of [6, 10, 19, 23]) { f.rect(x, 12, 2, 4, spots ? col.creamShade : rgb("#161412")); f.rect(x, 15, 2, 1, col.black); } // legs and hooves
+  f.ellipse(27, 8, 4, 3.2, spots ? col.cream : col.black); f.rect(28, 9, 4, 3, face); f.px(30, 10, col.black); f.px(29, 6, col.black); // head, muzzle, nostril, eye
+  f.rect(24, 4, 2, 2, col.cream); f.rect(29, 3, 2, 3, col.cream); f.px(27, 5, col.black); // horns and ear
+  f.rect(23, 11, 4, 3, spots ? col.creamShade : rgb("#161412")); // dewlap
+};
+const horseDraw = (f) => {
+  const body = rgb("#7a4a27"), light = rgb("#95602f"), dark = rgb("#4a2c14"), mane = rgb("#231a12");
+  f.ellipse(16, 14, 13, 2.2, SHADOW);
+  f.ellipse(14, 8, 10, 4, body); f.hline(5, 11, 18, dark); f.hline(6, 5, 16, light);
+  f.line(3, 6, 1, 12, mane); f.line(4, 7, 2, 13, mane); // tail
+  for (const x of [6, 10, 19, 23]) { f.rect(x, 10, 2, 6, body); f.rect(x, 15, 2, 1, mane); f.hline(x, 12, 2, dark); }
+  f.line(22, 6, 27, 2, body); f.line(23, 7, 28, 3, body); f.line(22, 5, 27, 1, mane); f.line(21, 5, 25, 1, mane); // neck and mane
+  f.ellipse(28, 4, 3.2, 2.6, body); f.rect(29, 5, 3, 2, light); f.px(31, 6, col.black); f.px(28, 3, col.black); f.rect(27, 0, 2, 2, mane); // head, muzzle, eye, ear
+  f.rect(15, 5, 6, 2, rgb("#a8472a")); f.hline(15, 5, 6, rgb("#c4584a")); // saddle blanket
+};
+const animalObjects = [
+  { name: "vida_vaca_pinta", draw: cowDraw(true, rgb("#e8b8b0")) },
+  { name: "vida_vaca_negra", draw: cowDraw(false, rgb("#4a4540")) },
+  { name: "vida_caballo", draw: horseDraw },
+];
+for (const a of animalObjects) {
+  const cells = [0, 1].map((cx) => ({ cx, cy: 0, id: propId++, name: `${a.name}_${cx}_0`, layer: "ysort", solid: true }));
+  O.push({ name: a.name, w: 2, h: 1, cells, draw: a.draw });
+}
 export const V_TILES = [];
 for (const o of O) for (const c of o.cells) V_TILES.push({ ...c, object: o.name });
+for (const t of singles) V_TILES.push(t);
 V_TILES.sort((a, b) => a.id - b.id);
 {
   const ids = new Set(), names = new Set();
@@ -82,6 +169,7 @@ export const VIDA_TILE_COUNT = V_TILES.length;
 export function renderVidaSheet() {
   const sheet = new Frame(V_COLS * SIZE, V_ROWS * SIZE);
   const put = (tid, fr) => sheet.blit(fr, (tid % V_COLS) * SIZE, Math.floor(tid / V_COLS) * SIZE);
+  for (const t of singles) { const f = new Frame(SIZE, SIZE); t.draw(f, tileRng(t.name)); put(t.id, f); }
   for (const o of O) {
     const canvas = new Frame(o.w * SIZE, o.h * SIZE);
     o.draw(canvas, tileRng(o.name));

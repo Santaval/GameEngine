@@ -291,11 +291,21 @@ const LAND_ELEMENTS = [
 const WIRE_SPANS = [["n", 465, 490], ["n", 490, 515], ["n", 515, 540], ["s", 515, 540], ["s", 540, 565]].map(([side, x0, x1]) => ({
   id: `cable_${side}_${x0}_${x1}`, kind: "wire", row: side === "n" ? SIDEWALK_N_Y - 3 : SIDEWALK_S_Y - 1, x0, x1, a: `farola_${side}_${x0}`, b: `farola_${side}_${x1}` }));
 export const WIRE_CELLS = WIRE_SPANS.reduce((n, w) => n + (w.x1 - w.x0 - 1), 0);
+// ---- animals (vida sheet): hens and a rooster in Paula's and Tío Enrique's yards, dogs at the abastecedor, the bar and Paula's porch, cows and a horse in the potrero ----
+const animal = (id, name, x, y) => ({ id: `animal_${id}`, kind: "object", name, at: [x, y] });
+const ANIMAL_ELEMENTS = [
+  stampOf("animales_paula", "objects", [["vida_gallina_a", PAULA_PX0 + 2, PAULA_PY1 - 5], ["vida_gallina_b", PAULA_PX0 + 5, PAULA_PY1 - 3], ["vida_gallina_a", PAULA_PX0 + 3, PAULA_PY1 - 4], ["vida_gallo", PAULA_PX1 - 3, PAULA_PY1 - 6], ["vida_perro_sentado", PAULA_PX1 - 5, PAULA_Y + 6]].map(([name, x, y]) => ({ name, at: [x, y] }))),
+  stampOf("animales_enrique", "objects", [["vida_gallina_a", ENR_LANE_X - 6, PL_SOUTH_Y + 16], ["vida_gallina_b", ENR_LANE_X - 4, PL_SOUTH_Y + 17], ["vida_gallina_a", ENR_LANE_X - 2, PL_SOUTH_Y + 16]].map(([name, x, y]) => ({ name, at: [x, y] }))),
+  stampOf("perros_calle", "objects", [["vida_perro_echado", AB_X + 5, PL_N], ["vida_perro_sentado", BAR_X + 7, PL_N]].map(([name, x, y]) => ({ name, at: [x, y] }))),
+  animal("vaca_1", "vida_vaca_pinta", POT_CX - 10, POT_CY - 1), animal("vaca_2", "vida_vaca_negra", POT_CX + 3, POT_CY + 2), animal("vaca_3", "vida_vaca_pinta", POT_CX + 14, POT_CY),
+  animal("caballo", "vida_caballo", POT_CX - 18, POT_CY + 2),
+];
 const LAME = "Está cerrado.";
 const PLACE_ELEMENTS = [
   ...PLAQUE_ELEMENTS,
   ...VIDA_EMITTERS,
   ...LAND_ELEMENTS,
+  ...ANIMAL_ELEMENTS,
   ...WIRE_SPANS,
   ...northHouse("berta", BERTA_X, "casa_1", "Casa de Berta. No hay nadie.", "Casa de Berta"),
   ...northHouse("abastecedor", AB_X, "abastecedor", `Abastecedor El Jardín. ${LAME}`, "Abastecedor El Jardín"),

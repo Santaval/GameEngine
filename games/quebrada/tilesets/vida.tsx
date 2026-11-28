@@ -254,4 +254,114 @@
    <property name="solid" type="bool" value="true"/>
   </properties>
  </tile>
+ <tile id="64">
+  <properties>
+   <property name="name" value="vida_gallina_a"/>
+   <property name="layer" value="ysort"/>
+  </properties>
+  <animation>
+   <frame tileid="64" duration="450"/>
+   <frame tileid="65" duration="450"/>
+   <frame tileid="64" duration="450"/>
+   <frame tileid="64" duration="450"/>
+  </animation>
+ </tile>
+ <tile id="65">
+  <properties>
+   <property name="name" value="vida_gallina_a_f1"/>
+   <property name="layer" value="ysort"/>
+  </properties>
+ </tile>
+ <tile id="66">
+  <properties>
+   <property name="name" value="vida_gallina_b"/>
+   <property name="layer" value="ysort"/>
+  </properties>
+  <animation>
+   <frame tileid="66" duration="450"/>
+   <frame tileid="66" duration="450"/>
+   <frame tileid="67" duration="450"/>
+   <frame tileid="66" duration="450"/>
+  </animation>
+ </tile>
+ <tile id="67">
+  <properties>
+   <property name="name" value="vida_gallina_b_f1"/>
+   <property name="layer" value="ysort"/>
+  </properties>
+ </tile>
+ <tile id="68">
+  <properties>
+   <property name="name" value="vida_gallo"/>
+   <property name="layer" value="ysort"/>
+  </properties>
+  <animation>
+   <frame tileid="68" duration="700"/>
+   <frame tileid="68" duration="700"/>
+   <frame tileid="68" duration="700"/>
+   <frame tileid="69" duration="700"/>
+  </animation>
+ </tile>
+ <tile id="69">
+  <properties>
+   <property name="name" value="vida_gallo_f1"/>
+   <property name="layer" value="ysort"/>
+  </properties>
+ </tile>
+ <tile id="70">
+  <properties>
+   <property name="name" value="vida_perro_echado"/>
+   <property name="layer" value="ysort"/>
+   <property name="solid" type="bool" value="true"/>
+  </properties>
+ </tile>
+ <tile id="71">
+  <properties>
+   <property name="name" value="vida_perro_sentado"/>
+   <property name="layer" value="ysort"/>
+   <property name="solid" type="bool" value="true"/>
+  </properties>
+ </tile>
+ <tile id="72">
+  <properties>
+   <property name="name" value="vida_vaca_pinta_0_0"/>
+   <property name="layer" value="ysort"/>
+   <property name="solid" type="bool" value="true"/>
+  </properties>
+ </tile>
+ <tile id="73">
+  <properties>
+   <property name="name" value="vida_vaca_pinta_1_0"/>
+   <property name="layer" value="ysort"/>
+   <property name="solid" type="bool" value="true"/>
+  </properties>
+ </tile>
+ <tile id="74">
+  <properties>
+   <property name="name" value="vida_vaca_negra_0_0"/>
+   <property name="layer" value="ysort"/>
+   <property name="solid" type="bool" value="true"/>
+  </properties>
+ </tile>
+ <tile id="75">
+  <properties>
+   <property name="name" value="vida_vaca_negra_1_0"/>
+   <property name="layer" value="ysort"/>
+   <property name="solid" type="bool" value="true"/>
+  </properties>
+ </tile>
+ <tile id="76">
+  <properties>
+   <property name="name" value="vida_caballo_0_0"/>
+   <property name="layer" value="ysort"/>
+   <property name="solid" type="bool" value="true"/>
+  </properties>
+ </tile>
+ <tile id="77">
+  <properties>
+   <property name="name" value="vida_caballo_1_0"/>
+   <property name="layer" value="ysort"/>
+   <property name="solid" type="bool" value="true"/>
+  </properties>
+ </tile>
 </tileset>

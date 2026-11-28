@@ -73,7 +73,7 @@ for tid, body in tsx:gmatch('<tile id="(%d+)">(.-)</tile>') do
   if t.props.solid then check(layer == "ysort", "solid solo en ysort: " .. tostring(n)) end
   if layer == "above" then check(not t.props.solid, "solid en tile above: " .. tostring(n)) end
 end
-check(n_tiles >= 36, "vida.tsx con pocos tiles (" .. n_tiles .. ")")
+check(n_tiles >= 50, "vida.tsx con pocos tiles (" .. n_tiles .. ", se esperan >= 50)")
 
 -- rotulos: ids 0-63, ysort y solidos, celdas seguidas de izquierda a derecha (vida_rotulo_<clave>_<cx>_0), de 3 o 4 tiles de ancho
 local plaques = {}
@@ -95,6 +95,29 @@ for key, cells in pairs(plaques) do
   for cx = 1, w - 1 do check(cells[cx] == cells[cx - 1] + 1, "rotulo " .. key .. ": ids seguidos en la hoja") end
 end
 check(n_plaques == 10, "deben ser 10 rotulos, hay " .. n_plaques)
+
+-- animales (ids 64+): gallinas y gallo animados (frames de esta hoja, duraciones > 0, las dos gallinas con listas desfasadas), perros / vacas / caballo solidos
+local anim = {}
+for tid, body in tsx:gmatch('<tile id="(%d+)">(.-)</tile>') do
+  local frames = {}
+  for fid, dur in body:gmatch('<frame tileid="(%d+)" duration="(%d+)"/>') do frames[#frames + 1] = { tonumber(fid), tonumber(dur) } end
+  if #frames > 0 then anim[by_id[tonumber(tid)].props.name] = frames end
+end
+for _, n in ipairs({ "vida_gallina_a", "vida_gallina_b", "vida_gallo" }) do
+  local fr = anim[n]
+  check(fr ~= nil and #fr == 4, n .. ": animacion de 4 frames")
+  for _, f in ipairs(fr or {}) do
+    check(by_id[f[1]] ~= nil and f[2] > 0, n .. ": frame " .. f[1] .. " debe existir en la hoja y durar > 0")
+  end
+  check(by_name[n] and not by_name[n].props.solid and by_name[n].props.layer == "ysort", n .. ": ysort sin solid (las gallinas no bloquean)")
+end
+check(anim.vida_gallina_a and anim.vida_gallina_b and anim.vida_gallina_a[2][1] ~= anim.vida_gallina_a[1][1] and anim.vida_gallina_b[2][1] == anim.vida_gallina_b[1][1], "las dos gallinas deben tener frames desfasados")
+local n_anim = 0
+for _ in pairs(anim) do n_anim = n_anim + 1 end
+check(n_anim == 3, "solo gallina_a, gallina_b y gallo llevan animacion (" .. n_anim .. ")")
+for _, n in ipairs({ "vida_perro_echado", "vida_perro_sentado", "vida_vaca_pinta_0_0", "vida_vaca_pinta_1_0", "vida_vaca_negra_0_0", "vida_vaca_negra_1_0", "vida_caballo_0_0", "vida_caballo_1_0" }) do
+  check(by_name[n] and by_name[n].props.layer == "ysort" and by_name[n].props.solid == true and by_name[n].id >= 64, n .. ": ysort y solid (ids 64+)")
+end
 
 if failures > 0 then
   print(failures .. " fallos")
