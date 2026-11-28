@@ -42,4 +42,12 @@ return {
   escalera = {
     title = "Pedirle prestada la escalera a Tío Enrique",
   },
+  -- Nace al oir la historia de Tio Enrique (legends/camisa_blanca.lua): buscar a quien ve en la finca
+  camisa_blanca = {
+    title = "Buscar al hombre de camisa blanca",
+  },
+  -- Obligatoria: papa manda a pagarle a Doña Maria las papas (mandados.after_papa_escalera); el pueblo ya de noche
+  pagar_maria = {
+    title = "Pagarle a Doña María lo de las papas",
+  },
 }

@@ -40,6 +40,9 @@ scene = {
         { assetId = "sfx_libreta_new", filePath = "sounds/sfx/sfx_new.mp3" }, -- aviso "Nuevo" (issue #80)
         -- Grabacion de la leyenda para volver a oirla desde la libreta (issue #80)
         { assetId = "story_chequelo", filePath = "sounds/stories/chequelo.mp3", stream = true },
+        { assetId = "story_come_monos", filePath = "sounds/stories/come-mono.mp3", stream = true },
+        { assetId = "story_camisa_blanca", filePath = "sounds/stories/camisa-blanca.mp3", stream = true },
+        { assetId = "story_mono", filePath = "sounds/stories/mono.mp3", stream = true },
         { assetId = "amb_pueblo_night", filePath = "sounds/amb/amb_pueblo_night.mp3", stream = true },
         { assetId = "amb_monte_day", filePath = "sounds/amb/amb_monte_day.mp3", stream = true },
         { assetId = "amb_monte_night", filePath = "sounds/amb/amb_monte_night.mp3", stream = true },

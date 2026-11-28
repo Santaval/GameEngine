@@ -174,6 +174,8 @@ local function close(reason)
   unlock_input(s)
   ws.set("story.open", false)
   st.sess = nil
+  -- Lo escuchado (progreso, "escuchada", misiones que abre on_heard) se guarda al cerrar la historia
+  if reason ~= "lost" then pcall(function() require("save").autosave() end) end
   local lg = M.legends[s.id]
   if lg and reason ~= "lost" and not s.replay and (newly or reason == "ended") then
     local script = concat(lg.closing, lg.recommendations)

@@ -32,6 +32,9 @@ scene = {
         { assetId = "sfx_libreta_new", filePath = "sounds/sfx/sfx_new.mp3" }, -- aviso "Nuevo" (issue #80)
         -- Grabacion completa de la leyenda (issue #68): en streaming
         { assetId = "story_chequelo", filePath = "sounds/stories/chequelo.mp3", stream = true },
+        { assetId = "story_come_monos", filePath = "sounds/stories/come-mono.mp3", stream = true },
+        { assetId = "story_camisa_blanca", filePath = "sounds/stories/camisa-blanca.mp3", stream = true },
+        { assetId = "story_mono", filePath = "sounds/stories/mono.mp3", stream = true },
     },
     keys = {
         [0] =

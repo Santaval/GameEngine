@@ -68,14 +68,39 @@ return {
       set_flag = "lito.pista" },
     { when = m.all(m.mission_is("papas", "accepted"), m.not_flag("papas.compradas")), speaker = "",
       text = "(Tengo las papas. Mamá espera, pero la curiosidad... ¿voy donde Lito o vuelvo a casa?)" },
-    { when = m.flag("papas.compradas"), speaker = "Doña María",
+    -- De noche, a pagar las papas (mision pagar_maria; mandados.after_maria la cierra al terminar)
+    { when = m.mission_is("pagar_maria", "accepted"), speaker = "Yo",
+      text = "Buenas noches, Doña María. Disculpe la hora, vengo a pagarle lo de las papas." },
+    { when = m.mission_is("pagar_maria", "accepted"), speaker = "Doña María",
+      text = "Ay, mijo, a esta hora y con la noche como está. No era para tanto, pero se lo agradezco. Son tres mil colones." },
+    { when = m.mission_is("pagar_maria", "accepted"), speaker = "Yo", text = "Aquí tiene.", set_flag = "maria.pagado" },
+    { when = m.mission_is("pagar_maria", "accepted"), speaker = "Doña María",
+      text = "Gracias, mijo. Váyase con cuidado y dígale a su papá que aquí tiene su cuenta al día." },
+    { when = m.all(m.mission_is("papas", "accepted"), m.flag("papas.compradas")), speaker = "Doña María",
       text = "¿Todavía por aquí, mijo? Si busca a Lito, vaya a su casa. Y no se tarde, que su mamá espera las papas." },
-    { when = m.not_flag("papas.compradas"), speaker = "Doña María", text = "¡Buenas, mijo! Mire lo que necesite." },
+    { when = m.all(m.not_(m.mission_is("papas", "accepted")), m.not_(m.mission_is("pagar_maria", "accepted"))),
+      speaker = "Doña María", text = "¡Buenas, mijo! Mire lo que necesite." },
   },
   -- Papa en el patio (day_npcs.lua): salta solo al acercarse con la mision `papa`; mandados.after_papa abre la de la escalera
   papa_patio = {
     { speaker = "Yo", text = "Pa, ya va a estar la comida." },
     { speaker = "Papá", text = "Mmmm ya casi voy, que tengo que apear unos limones. ¿Por qué no vas donde tu tío Enrique y le pedís prestada la escalera?" },
+  },
+  -- Vuelve con la escalera (day_npcs.lua): salta solo; mandados.after_papa_escalera cierra la mision y abre la de pagar
+  papa_mono = {
+    { speaker = "Yo", text = "Pa, aquí está la escalera." },
+    { speaker = "Papá", text = "Gracias, mijo. Ahora sí puedo apear esos limones." },
+    { speaker = "Yo", text = "Pa', vieras lo que me contó el tío... la historia del hombre de camisa blanca." },
+    { speaker = "Papá", text = "Ah sí, acá a veces pasan cosas raras, como cuando me encontré un mono. ¿La querés escuchar?",
+      choices = {
+        { text = "Sí, cuéntemela", call = function() require("mandados").want_mono() end },
+        { text = "Ahora no, pa" },
+      } },
+  },
+  -- Despues de la historia del mono (o si no la quiso oir): la excusa para mandarlo al pueblo de noche
+  papa_pagar = {
+    { speaker = "Papá", text = "Antes de que se me olvide, mijo: ándese a pagarle a Doña María lo de las papas, que quedamos debiendo." },
+    { speaker = "Papá", text = "Vaya ahora, que se hace tarde. Y ojo: el pueblo de noche no es el mismo." },
   },
   -- Hablarle de nuevo
   papa = {
