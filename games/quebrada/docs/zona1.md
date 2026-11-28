@@ -375,7 +375,9 @@ Street lamps whose column falls inside a building or a path are skipped.
 ### Casa de Abuela Paula y Abuelo Pepe
 
 Wooden house (`casa_paula`, buildings sheet rows 36-41, 8x6) on the NORTH side, straight across the street from mama's house (same columns). A ~15 m lastre lane (8 tiles from the street's sidewalk to the porch) runs between two halves of a wire-fenced yard (gate at the sidewalk end, the house is the back fence).
-Details drawn: old rusty zinc roof with a stove chimney, vertical plank walls with replaced greyer boards, deep porch with turned posts and railings, turquoise shutters and flower boxes, dark wooden door with a lamp and doormat, a rocking chair, a rolled hammock, firewood stack, hanging plants, cloth over the beam. Yard: platanos, a guanacaste, two bougainvilleas. Door text mentions wood smoke and coffee. Zone `casa_paula`.
+Details drawn: old rusty zinc roof with a stove chimney, vertical plank walls with replaced greyer boards, deep porch with turned posts and railings, turquoise shutters and flower boxes, dark wooden door with a lamp and doormat, a rocking chair, a rolled hammock, firewood stack, hanging plants, cloth over the beam. Yard: platanos, a guanacaste, two bougainvilleas. Zone `casa_paula`.
+
+**Door and interior:** `door_paula` (always open, `E: entrar`) leads to `maps/house_paula.tmx` (16x11, see [buildings.md](buildings.md)); the exit spawn `exit_paula` is on the lane just below the porch steps. The interior scene is `scenes/house_paula.lua` with its own controller (`scripts/house_paula_scene.lua`) and player (`scripts/house_paula_player.lua`, no fixed camera `bounds`: the camera is limited to the map). `zona1_scene.lua` knows the scene.
 
 ### Name plaques
 

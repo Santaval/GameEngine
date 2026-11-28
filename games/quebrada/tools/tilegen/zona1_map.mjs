@@ -219,7 +219,7 @@ export const BAR_X = AB_X + 8 + 6;
 export const CALILES_X = EXT_PAVER_X1 + 1 + 10; // the barrio's street: 4-wide lastre going south, 20 m (10 tiles) after the main street turns to lastre (the cafetal and the colegio lie between Los Machillos and here)
 export const CAL_THIRD_X = CALILES_X + 4 + 10 + 12 + 3 + 10, ENR_LANE_X = CAL_THIRD_X + 10; // third house west of the mouth; Tío Enrique's lane 4 tiles past its footpath
 // CASA DE ABUELA PAULA Y ABUELO PEPE: wooden house on the NORTH side, straight across the street from mama's house, set back by a ~15 m (8-tile, verge row included) fenced lane
-const PAULA_X = MAMA_AT[0], PAULA_Y = SIDEWALK_N_Y - 1 - 7 - 6; // building 8x6, door faces the street
+export const PAULA_X = MAMA_AT[0], PAULA_Y = SIDEWALK_N_Y - 1 - 7 - 6; // building 8x6, door faces the street
 const PAULA_PX0 = PAULA_X - 3, PAULA_PX1 = PAULA_X + 10, PAULA_PY0 = PAULA_Y, PAULA_PY1 = SIDEWALK_N_Y - 1; // yard fence rectangle (14 wide)
 const PAULA_LANE = [PAULA_X + 3, PAULA_X + 4];
 const PAULA_PLAQUE_X = PAULA_LANE[1] + 1; // the name plaque (4 tiles wide) hangs in the fence just beside the gate
@@ -328,7 +328,8 @@ const PLACE_ELEMENTS = [
   { id: "paula_arbol_3", kind: "tree", tree: "platano", at: [PAULA_PX1 - 3, PAULA_PY1 - 2] },
   { id: "paula_buganvilia_1", kind: "prop", name: "bougainvillea", at: [PAULA_X + 1, PAULA_PY1 - 1] },
   { id: "paula_buganvilia_2", kind: "prop", name: "bougainvillea", at: [PAULA_X + 6, PAULA_PY1 - 1] },
-  { id: "paula_puerta", kind: "interactable", name: "paula_puerta", ...PAULA_DOOR, props: { interact: "object", label: "Mirar la puerta", line: "La casa de Abuela Paula y Abuelo Pepe. Huele a leña, a café recién colado y a hierba buena." } },
+  { id: "door_paula", kind: "door", name: "door_paula", x: PAULA_DOOR.x, y: PAULA_DOOR.y, w: 32, h: 12, props: { target_map: "maps/house_paula.tmx", target_spawn: "inside_door", exit_spawn: "exit_paula", prompt: "E: entrar" } },
+  { id: "spawn_exit_paula", kind: "spawn", name: "exit_paula", x: PAULA_X * SIZE + 64, y: PAULA_DOOR.y + 24, facing: "down" },
   { id: "zona_paula", kind: "zone", zone: "casa_paula", x: (PAULA_PX0 - 1) * SIZE, y: (PAULA_PY0 - 1) * SIZE, w: (PAULA_PX1 - PAULA_PX0 + 3) * SIZE, h: (PAULA_PY1 - PAULA_PY0 + 3) * SIZE, title: "Casa de Abuela Paula y Abuelo Pepe", ambience: "pueblo" },
   ...southBlock("enrique", ENR_LANE_X - 8, [{ id: "casa", n: "casa_2", line: "Casa de Tío Enrique. No hay nadie." }], { dy: 10, foot: false, yardTo: ENR_LANE_X + 1, title: "Casa de Tío Enrique" }),
 ];
@@ -1366,7 +1367,7 @@ function checkWalkable(L, placed, defs, turbines = [], river = {}) {
     ["colegio gate (2 tiles)", tile(COL_GATE[0] * SIZE + 8, COL_Y0 * SIZE + 8) && tile(COL_GATE[1] * SIZE + 8, COL_Y0 * SIZE + 8)], ["colegio patio", tile((COL_X0 + 6) * SIZE + 8, (COL_Y0 + 9) * SIZE + 8)],
     ["colegio corridor", tile((COL_AT[0] + 4) * SIZE + 8, (COL_AT[1] + 5) * SIZE + 8)], ["colegio yard in front of the aulas", tile((COL_AT[0] + 4) * SIZE + 8, (COL_AT[1] + 6) * SIZE + 8)],
     ...PLACE_DOORS.map(([x, y], i) => [`place door ${i}`, tile(x, y)]),
-    ["potrero gate", tile(POTRERO.gate[0] * SIZE + 8, POTRERO.y1 * SIZE + 8) && tile(POTRERO.gate[1] * SIZE + 8, POTRERO.y1 * SIZE + 8)], ["potrero inside", tile(POT_CX * SIZE + 8, POT_CY * SIZE + 8)],
+    ["exit paula", tile(PAULA_X * SIZE + 64, (PAULA_DOOR.y + 24) / 1)], ["potrero gate", tile(POTRERO.gate[0] * SIZE + 8, POTRERO.y1 * SIZE + 8) && tile(POTRERO.gate[1] * SIZE + 8, POTRERO.y1 * SIZE + 8)], ["potrero inside", tile(POT_CX * SIZE + 8, POT_CY * SIZE + 8)],
     ...schoolMust, ["footpath mama", tile(MAMA_FOOT_X * SIZE + 8, (30 + TOP_PAD) * SIZE) && tile((MAMA_FOOT_X + 1) * SIZE + 8, (30 + TOP_PAD) * SIZE)], ["footpath chayo", tile(CHAYO_FOOT_X * SIZE + 8, (28 + TOP_PAD) * SIZE) && tile((CHAYO_FOOT_X + 1) * SIZE + 8, (28 + TOP_PAD) * SIZE)]];
   for (const [what, ok] of must) if (!ok) throw new Error(`zona1: ${what} is not reachable from the church spawn (collision trap)`);
   for (const d of defs) for (const r of d.rects) if (!reach(r)) throw new Error(`zona1: trigger ${d.id} rect (${r.x},${r.y}) is not reachable`);

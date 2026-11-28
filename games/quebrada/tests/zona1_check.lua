@@ -623,6 +623,28 @@ if spawn.exit_mama then
   check(spawn.exit_mama.props.facing == "down", "exit_mama mira hacia abajo")
   check(kind_at(spawn.exit_mama.x // 16, spawn.exit_mama.y // 16) == "lastre", "exit_mama debe caer en el patio de lastre")
 end
+do -- la puerta de la casa de Abuela Paula y Abuelo Pepe, su spawn de salida, su escena y sus dialogos
+  local d = by_name.door_paula
+  check(d ~= nil and d.class == "door", "falta la puerta door_paula")
+  local ptmx = read_file("games/quebrada/maps/house_paula.tmx")
+  if d then
+    check(d.props.target_map == "maps/house_paula.tmx" and exists("games/quebrada/" .. d.props.target_map), "door_paula: target_map maps/house_paula.tmx (debe existir)")
+    check(d.props.target_spawn == "inside_door" and ptmx:find('name="inside_door"', 1, true) ~= nil, "door_paula: el spawn inside_door debe existir en house_paula.tmx")
+    check(d.props.exit_spawn == "exit_paula" and spawn.exit_paula ~= nil, "door_paula: exit_spawn exit_paula debe existir en zona1")
+    check(d.y == (Z.PAULA_Y - TOP + 6) * 16 and d.x + d.w / 2 == Z.PAULA_X * 16 + 64, "door_paula debe estar justo bajo la puerta dibujada de la casa de Paula")
+    check(d.props.locked == nil, "door_paula: siempre abierta")
+  end
+  if spawn.exit_paula then
+    check(spawn.exit_paula.props.facing == "down", "exit_paula mira hacia abajo")
+    check(kind_at(spawn.exit_paula.x // 16, spawn.exit_paula.y // 16) == "lastre", "exit_paula debe caer en el camino de lastre")
+  end
+  local ps = read_file("games/quebrada/scripts/house_paula_scene.lua")
+  check(ps:find('map = "maps/house_paula.tmx"', 1, true) ~= nil and ps:find('["maps/zona1.tmx"] = "scenes/zona1.lua"', 1, true) ~= nil, "house_paula_scene.lua: su mapa y la vuelta a zona1")
+  check(read_file("games/quebrada/scripts/zona1_scene.lua"):find('["maps/house_paula.tmx"] = "scenes/house_paula.lua"', 1, true) ~= nil, "zona1_scene.lua debe conocer la escena de la casa de Paula")
+  check(exists("games/quebrada/scenes/house_paula.lua") and exists("games/quebrada/scripts/house_paula_player.lua"), "faltan scenes/house_paula.lua o scripts/house_paula_player.lua")
+  local dl = read_file("games/quebrada/scripts/dialogues.lua")
+  check(dl:find("abuela_paula = {", 1, true) ~= nil and dl:find("abuelo_pepe = {", 1, true) ~= nil, "dialogues.lua: faltan abuela_paula / abuelo_pepe")
+end
 -- la escena de la casa vuelve a zona1 (@return) y zona1_scene la conoce
 local hs = read_file("games/quebrada/scripts/house_scene.lua")
 check(hs:find('["maps/zona1.tmx"] = "scenes/zona1.lua"', 1, true) ~= nil, "house_scene.lua debe conocer maps/zona1.tmx")

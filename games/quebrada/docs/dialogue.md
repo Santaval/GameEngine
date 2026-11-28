@@ -107,3 +107,8 @@ See [consequences.md](consequences.md).
 - Glyph coverage is whatever DejaVu Sans Mono has (covers á é í ó ú ñ ¿ ¡).
 - The Lua environment has no `utf8` library, so the module counts UTF-8
   characters with patterns.
+
+## Abuela Paula and Abuelo Pepe
+
+`npc = abuela_paula` and `npc = abuelo_pepe` (interactables in `maps/house_paula.tmx`) have scripts in `scripts/dialogues.lua`: Abuela Paula warns about the monte during the Chequelo night (`when = mission_is("chequelo", "night_active")`) and otherwise talks about the coffee and her crochet;
+Abuelo Pepe talks about the old monte and the cafetal. No flags or missions; they are placeholder figures (`figure = "r,g,b"`) like mama.

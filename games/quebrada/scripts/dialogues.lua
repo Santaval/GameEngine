@@ -27,4 +27,15 @@ return {
     { when = m.mission_is("chequelo", "night_active", "done", "failed"), speaker = "Mamá",
       text = "Ten cuidado, mijo. La noche es larga." },
   },
+  -- Casa de Abuela Paula y Abuelo Pepe (maps/house_paula.tmx)
+  abuela_paula = {
+    { when = m.mission_is("chequelo", "night_active"), speaker = "Abuela Paula",
+      text = "Después de las ocho no se anda por el monte, mijo. Lléveselo bien tapado y no le conteste a nadie que lo llame." },
+    { speaker = "Abuela Paula", text = "Siéntese un ratito, mijo, que ya está el café. Lo colé hace nada." },
+    { speaker = "Abuela Paula", text = "Estoy tejiendo la cobija nueva para su mamá. Le faltan dos cuadros todavía." },
+  },
+  abuelo_pepe = {
+    { speaker = "Abuelo Pepe", text = "Ya no se oye el monte como antes. Cuando yo era chiquillo, de aquí se oían hasta los monos." },
+    { speaker = "Abuelo Pepe", text = "El cafetal de la esquina lo sembró mi papá, y yo le acarreaba el abono en carreta. Qué tiempos." },
+  },
 }

@@ -11,6 +11,7 @@ update = require("town_controller").make_update({
   scenes = {
     ["maps/zona1.tmx"] = "scenes/zona1.lua",
     ["maps/house_mama.tmx"] = "scenes/house_demo.lua",
+    ["maps/house_paula.tmx"] = "scenes/house_paula.lua",
   },
   -- Entrada desde el lanzador (tecla z): si la mision aun no se decidio, la deja aceptada como si
   -- mama ya hubiera hablado (los hooks reales ponen la noche y flags). Si ya esta decidida, usa F3.

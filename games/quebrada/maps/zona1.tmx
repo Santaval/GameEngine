@@ -5,7 +5,7 @@
      (ground, overlay, objects, buildings, windows_lit, roof_<name>, canopy) + rotors (above, animated turbine rotors). Object layers: collision, doors, interactables,
      spawns, zones, surfaces, roofs, lights, emitters, triggers (Chequelo night, see scripts/triggers.lua), route (the walk, 4756 px),
      edges. See games/quebrada/docs/zona1.md. -->
-<map version="1.10" tiledversion="1.10.2" orientation="orthogonal" renderorder="right-down" width="580" height="187" tilewidth="16" tileheight="16" infinite="0" nextlayerid="33" nextobjectid="295">
+<map version="1.10" tiledversion="1.10.2" orientation="orthogonal" renderorder="right-down" width="580" height="187" tilewidth="16" tileheight="16" infinite="0" nextlayerid="33" nextobjectid="296">
  <properties>
     <property name="street_tiles" type="int" value="50"/>
     <property name="metres_per_tile" type="int" value="2"/>
@@ -3956,6 +3956,14 @@
     <property name="locked_line" value="Mamá cerró con llave: hoy no quiere ver a nadie. Mañana será otro día."/>
    </properties>
   </object>
+  <object id="132" name="door_paula" class="door" x="8976" y="1680" width="32" height="12">
+   <properties>
+    <property name="target_map" value="maps/house_paula.tmx"/>
+    <property name="target_spawn" value="inside_door"/>
+    <property name="exit_spawn" value="exit_paula"/>
+    <property name="prompt" value="E: entrar"/>
+   </properties>
+  </object>
  </objectgroup>
  <objectgroup id="23" name="interactables">
   <object id="36" name="iglesia_puerta" class="interactable" x="4616" y="1776" width="48" height="16">
@@ -4176,14 +4184,7 @@
     <property name="line" value="No hay nadie."/>
    </properties>
   </object>
-  <object id="67" name="paula_puerta" class="interactable" x="8976" y="1680" width="32" height="16">
-   <properties>
-    <property name="interact" value="object"/>
-    <property name="label" value="Mirar la puerta"/>
-    <property name="line" value="La casa de Abuela Paula y Abuelo Pepe. Huele a leña, a café recién colado y a hierba buena."/>
-   </properties>
-  </object>
-  <object id="68" name="enrique_casa_puerta" class="interactable" x="8368" y="2160" width="32" height="16">
+  <object id="67" name="enrique_casa_puerta" class="interactable" x="8368" y="2160" width="32" height="16">
    <properties>
     <property name="interact" value="object"/>
     <property name="label" value="Mirar la puerta"/>
@@ -4192,13 +4193,19 @@
   </object>
  </objectgroup>
  <objectgroup id="24" name="spawns">
-  <object id="69" name="default" class="spawn" x="4640" y="1796">
+  <object id="68" name="default" class="spawn" x="4640" y="1796">
    <properties>
     <property name="facing" value="down"/>
    </properties>
    <point/>
   </object>
-  <object id="70" name="exit_mama" class="spawn" x="9016" y="2040">
+  <object id="69" name="exit_mama" class="spawn" x="9016" y="2040">
+   <properties>
+    <property name="facing" value="down"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="70" name="exit_paula" class="spawn" x="8992" y="1704">
    <properties>
     <property name="facing" value="down"/>
    </properties>
@@ -4588,191 +4595,191 @@
   </object>
  </objectgroup>
  <objectgroup id="26" name="surfaces">
-  <object id="132" name="porche_mama" class="surface" x="9024" y="2000" width="32" height="16">
+  <object id="133" name="porche_mama" class="surface" x="9024" y="2000" width="32" height="16">
    <properties>
     <property name="surface" value="madera"/>
    </properties>
   </object>
-  <object id="133" name="escuela_corredor_a" class="surface" x="3920" y="2176" width="160" height="16">
+  <object id="134" name="escuela_corredor_a" class="surface" x="3920" y="2176" width="160" height="16">
    <properties>
     <property name="surface" value="concreto"/>
    </properties>
   </object>
-  <object id="134" name="escuela_corredor_b" class="surface" x="3920" y="2384" width="160" height="16">
+  <object id="135" name="escuela_corredor_b" class="surface" x="3920" y="2384" width="160" height="16">
    <properties>
     <property name="surface" value="concreto"/>
    </properties>
   </object>
-  <object id="135" name="colegio_corredor" class="surface" x="7120" y="2032" width="160" height="16">
+  <object id="136" name="colegio_corredor" class="surface" x="7120" y="2032" width="160" height="16">
    <properties>
     <property name="surface" value="concreto"/>
    </properties>
   </object>
-  <object id="136" name="paula_porche" class="surface" x="8928" y="1664" width="128" height="16">
+  <object id="137" name="paula_porche" class="surface" x="8928" y="1664" width="128" height="16">
    <properties>
     <property name="surface" value="madera"/>
    </properties>
   </object>
  </objectgroup>
  <objectgroup id="27" name="roofs">
-  <object id="149" name="roof_iglesia" class="roof" x="4560" y="1584" width="160" height="192">
+  <object id="150" name="roof_iglesia" class="roof" x="4560" y="1584" width="160" height="192">
    <properties>
     <property name="roof_of" value="iglesia"/>
    </properties>
   </object>
-  <object id="150" name="roof_casa_2" class="roof" x="8544" y="1920" width="96" height="80">
+  <object id="151" name="roof_casa_2" class="roof" x="8544" y="1920" width="96" height="80">
    <properties>
     <property name="roof_of" value="casa_2"/>
    </properties>
   </object>
-  <object id="151" name="roof_casa_mama" class="roof" x="8928" y="1920" width="128" height="96">
+  <object id="152" name="roof_casa_mama" class="roof" x="8928" y="1920" width="128" height="96">
    <properties>
     <property name="roof_of" value="casa_mama"/>
    </properties>
   </object>
-  <object id="152" name="roof_casa_3" class="roof" x="3952" y="1936" width="96" height="80">
+  <object id="153" name="roof_casa_3" class="roof" x="3952" y="1936" width="96" height="80">
    <properties>
     <property name="roof_of" value="casa_3"/>
    </properties>
   </object>
-  <object id="153" name="roof_escuela_aulas_a" class="roof" x="3920" y="2096" width="160" height="96">
+  <object id="154" name="roof_escuela_aulas_a" class="roof" x="3920" y="2096" width="160" height="96">
    <properties>
     <property name="roof_of" value="escuela_aulas_a"/>
    </properties>
   </object>
-  <object id="154" name="roof_escuela_aulas_b" class="roof" x="3920" y="2304" width="160" height="96">
+  <object id="155" name="roof_escuela_aulas_b" class="roof" x="3920" y="2304" width="160" height="96">
    <properties>
     <property name="roof_of" value="escuela_aulas_b"/>
    </properties>
   </object>
-  <object id="155" name="roof_ebais_edificio" class="roof" x="4784" y="2640" width="192" height="112">
+  <object id="156" name="roof_ebais_edificio" class="roof" x="4784" y="2640" width="192" height="112">
    <properties>
     <property name="roof_of" value="ebais_edificio"/>
    </properties>
   </object>
-  <object id="156" name="roof_escuela_colegio" class="roof" x="7120" y="1952" width="160" height="96">
+  <object id="157" name="roof_escuela_colegio" class="roof" x="7120" y="1952" width="160" height="96">
    <properties>
     <property name="roof_of" value="escuela_colegio"/>
    </properties>
   </object>
-  <object id="157" name="roof_casa_1" class="roof" x="5136" y="1712" width="96" height="80">
+  <object id="158" name="roof_casa_1" class="roof" x="5136" y="1712" width="96" height="80">
    <properties>
     <property name="roof_of" value="casa_1"/>
    </properties>
   </object>
-  <object id="158" name="roof_abastecedor" class="roof" x="5360" y="1712" width="128" height="80">
+  <object id="159" name="roof_abastecedor" class="roof" x="5360" y="1712" width="128" height="80">
    <properties>
     <property name="roof_of" value="abastecedor"/>
    </properties>
   </object>
-  <object id="159" name="roof_casa_2" class="roof" x="5488" y="1712" width="96" height="80">
+  <object id="160" name="roof_casa_2" class="roof" x="5488" y="1712" width="96" height="80">
    <properties>
     <property name="roof_of" value="casa_2"/>
    </properties>
   </object>
-  <object id="160" name="roof_bar" class="roof" x="5584" y="1712" width="128" height="80">
+  <object id="161" name="roof_bar" class="roof" x="5584" y="1712" width="128" height="80">
    <properties>
     <property name="roof_of" value="bar"/>
    </properties>
   </object>
-  <object id="161" name="roof_casa_3" class="roof" x="5376" y="1920" width="96" height="80">
+  <object id="162" name="roof_casa_3" class="roof" x="5376" y="1920" width="96" height="80">
    <properties>
     <property name="roof_of" value="casa_3"/>
    </properties>
   </object>
-  <object id="162" name="roof_guarderia" class="roof" x="5584" y="1920" width="128" height="80">
+  <object id="163" name="roof_guarderia" class="roof" x="5584" y="1920" width="128" height="80">
    <properties>
     <property name="roof_of" value="guarderia"/>
    </properties>
   </object>
-  <object id="163" name="roof_casa_1" class="roof" x="5760" y="1712" width="96" height="80">
+  <object id="164" name="roof_casa_1" class="roof" x="5760" y="1712" width="96" height="80">
    <properties>
     <property name="roof_of" value="casa_1"/>
    </properties>
   </object>
-  <object id="164" name="roof_casa_2" class="roof" x="6080" y="1712" width="96" height="80">
+  <object id="165" name="roof_casa_2" class="roof" x="6080" y="1712" width="96" height="80">
    <properties>
     <property name="roof_of" value="casa_2"/>
    </properties>
   </object>
-  <object id="165" name="roof_casa_3" class="roof" x="6224" y="1712" width="96" height="80">
+  <object id="166" name="roof_casa_3" class="roof" x="6224" y="1712" width="96" height="80">
    <properties>
     <property name="roof_of" value="casa_3"/>
    </properties>
   </object>
-  <object id="166" name="roof_casa_1" class="roof" x="6320" y="1712" width="96" height="80">
+  <object id="167" name="roof_casa_1" class="roof" x="6320" y="1712" width="96" height="80">
    <properties>
     <property name="roof_of" value="casa_1"/>
    </properties>
   </object>
-  <object id="167" name="roof_casa_2" class="roof" x="6416" y="1712" width="96" height="80">
+  <object id="168" name="roof_casa_2" class="roof" x="6416" y="1712" width="96" height="80">
    <properties>
     <property name="roof_of" value="casa_2"/>
    </properties>
   </object>
-  <object id="168" name="roof_casa_3" class="roof" x="6480" y="1920" width="96" height="80">
+  <object id="169" name="roof_casa_3" class="roof" x="6480" y="1920" width="96" height="80">
    <properties>
     <property name="roof_of" value="casa_3"/>
    </properties>
   </object>
-  <object id="169" name="roof_casa_1" class="roof" x="7536" y="1920" width="96" height="80">
+  <object id="170" name="roof_casa_1" class="roof" x="7536" y="1920" width="96" height="80">
    <properties>
     <property name="roof_of" value="casa_1"/>
    </properties>
   </object>
-  <object id="170" name="roof_casa_3" class="roof" x="7776" y="1984" width="96" height="80">
+  <object id="171" name="roof_casa_3" class="roof" x="7776" y="1984" width="96" height="80">
    <properties>
     <property name="roof_of" value="casa_3"/>
    </properties>
   </object>
-  <object id="171" name="roof_casa_1" class="roof" x="7776" y="2144" width="96" height="80">
+  <object id="172" name="roof_casa_1" class="roof" x="7776" y="2144" width="96" height="80">
    <properties>
     <property name="roof_of" value="casa_1"/>
    </properties>
   </object>
-  <object id="172" name="roof_casa_2" class="roof" x="7776" y="2304" width="96" height="80">
+  <object id="173" name="roof_casa_2" class="roof" x="7776" y="2304" width="96" height="80">
    <properties>
     <property name="roof_of" value="casa_2"/>
    </properties>
   </object>
-  <object id="173" name="roof_casa_2" class="roof" x="7552" y="2112" width="96" height="80">
+  <object id="174" name="roof_casa_2" class="roof" x="7552" y="2112" width="96" height="80">
    <properties>
     <property name="roof_of" value="casa_2"/>
    </properties>
   </object>
-  <object id="174" name="roof_casa_3" class="roof" x="7552" y="2272" width="96" height="80">
+  <object id="175" name="roof_casa_3" class="roof" x="7552" y="2272" width="96" height="80">
    <properties>
     <property name="roof_of" value="casa_3"/>
    </properties>
   </object>
-  <object id="175" name="roof_casa_2" class="roof" x="7904" y="1920" width="96" height="80">
+  <object id="176" name="roof_casa_2" class="roof" x="7904" y="1920" width="96" height="80">
    <properties>
     <property name="roof_of" value="casa_2"/>
    </properties>
   </object>
-  <object id="176" name="roof_casa_3" class="roof" x="8000" y="1920" width="96" height="80">
+  <object id="177" name="roof_casa_3" class="roof" x="8000" y="1920" width="96" height="80">
    <properties>
     <property name="roof_of" value="casa_3"/>
    </properties>
   </object>
-  <object id="177" name="roof_casa_1" class="roof" x="8304" y="1920" width="96" height="80">
+  <object id="178" name="roof_casa_1" class="roof" x="8304" y="1920" width="96" height="80">
    <properties>
     <property name="roof_of" value="casa_1"/>
    </properties>
   </object>
-  <object id="178" name="roof_casa_paula" class="roof" x="8928" y="1584" width="128" height="96">
+  <object id="179" name="roof_casa_paula" class="roof" x="8928" y="1584" width="128" height="96">
    <properties>
     <property name="roof_of" value="casa_paula"/>
    </properties>
   </object>
-  <object id="179" name="roof_casa_2" class="roof" x="8336" y="2080" width="96" height="80">
+  <object id="180" name="roof_casa_2" class="roof" x="8336" y="2080" width="96" height="80">
    <properties>
     <property name="roof_of" value="casa_2"/>
    </properties>
   </object>
  </objectgroup>
  <objectgroup id="28" name="lights">
-  <object id="194" name="luz_iglesia_puerta" class="light" x="4636" y="1730" width="8" height="8">
+  <object id="195" name="luz_iglesia_puerta" class="light" x="4636" y="1730" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="40"/>
     <property name="r" type="int" value="255"/>
@@ -4783,7 +4790,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="195" name="luz_casa_2_1" class="light" x="8557.5" y="1978" width="8" height="8">
+  <object id="196" name="luz_casa_2_1" class="light" x="8557.5" y="1978" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="30"/>
     <property name="r" type="int" value="255"/>
@@ -4794,7 +4801,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="196" name="luz_casa_2_2" class="light" x="8618.5" y="1978" width="8" height="8">
+  <object id="197" name="luz_casa_2_2" class="light" x="8618.5" y="1978" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="30"/>
     <property name="r" type="int" value="255"/>
@@ -4805,7 +4812,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="197" name="luz_casa_mama_1" class="light" x="8980" y="1996" width="8" height="8">
+  <object id="198" name="luz_casa_mama_1" class="light" x="8980" y="1996" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="36"/>
     <property name="r" type="int" value="255"/>
@@ -4816,7 +4823,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="198" name="luz_casa_mama_2" class="light" x="8949.5" y="1996" width="8" height="8">
+  <object id="199" name="luz_casa_mama_2" class="light" x="8949.5" y="1996" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="36"/>
     <property name="r" type="int" value="255"/>
@@ -4827,7 +4834,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="199" name="luz_casa_3_1" class="light" x="3971.5" y="1994" width="8" height="8">
+  <object id="200" name="luz_casa_3_1" class="light" x="3971.5" y="1994" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="30"/>
     <property name="r" type="int" value="255"/>
@@ -4838,7 +4845,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="200" name="luz_casa_3_2" class="light" x="4020.5" y="1994" width="8" height="8">
+  <object id="201" name="luz_casa_3_2" class="light" x="4020.5" y="1994" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="30"/>
     <property name="r" type="int" value="255"/>
@@ -4849,7 +4856,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="201" name="luz_escuela_aulas_a_1" class="light" x="3930" y="2164.5" width="8" height="8">
+  <object id="202" name="luz_escuela_aulas_a_1" class="light" x="3930" y="2164.5" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="30"/>
     <property name="r" type="int" value="255"/>
@@ -4860,7 +4867,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="202" name="luz_escuela_aulas_a_2" class="light" x="3983" y="2164.5" width="8" height="8">
+  <object id="203" name="luz_escuela_aulas_a_2" class="light" x="3983" y="2164.5" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="30"/>
     <property name="r" type="int" value="255"/>
@@ -4871,7 +4878,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="203" name="luz_escuela_aulas_a_3" class="light" x="4010" y="2164.5" width="8" height="8">
+  <object id="204" name="luz_escuela_aulas_a_3" class="light" x="4010" y="2164.5" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="30"/>
     <property name="r" type="int" value="255"/>
@@ -4882,7 +4889,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="204" name="luz_escuela_aulas_a_4" class="light" x="4063" y="2164.5" width="8" height="8">
+  <object id="205" name="luz_escuela_aulas_a_4" class="light" x="4063" y="2164.5" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="30"/>
     <property name="r" type="int" value="255"/>
@@ -4893,7 +4900,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="205" name="luz_escuela_aulas_b_1" class="light" x="3930" y="2372.5" width="8" height="8">
+  <object id="206" name="luz_escuela_aulas_b_1" class="light" x="3930" y="2372.5" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="30"/>
     <property name="r" type="int" value="255"/>
@@ -4904,7 +4911,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="206" name="luz_escuela_aulas_b_2" class="light" x="3983" y="2372.5" width="8" height="8">
+  <object id="207" name="luz_escuela_aulas_b_2" class="light" x="3983" y="2372.5" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="30"/>
     <property name="r" type="int" value="255"/>
@@ -4915,7 +4922,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="207" name="luz_escuela_aulas_b_3" class="light" x="4010" y="2372.5" width="8" height="8">
+  <object id="208" name="luz_escuela_aulas_b_3" class="light" x="4010" y="2372.5" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="30"/>
     <property name="r" type="int" value="255"/>
@@ -4926,7 +4933,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="208" name="luz_escuela_aulas_b_4" class="light" x="4063" y="2372.5" width="8" height="8">
+  <object id="209" name="luz_escuela_aulas_b_4" class="light" x="4063" y="2372.5" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="30"/>
     <property name="r" type="int" value="255"/>
@@ -4937,7 +4944,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="209" name="luz_ebais_edificio_1" class="light" x="4789" y="2703" width="8" height="8">
+  <object id="210" name="luz_ebais_edificio_1" class="light" x="4789" y="2703" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="30"/>
     <property name="r" type="int" value="255"/>
@@ -4948,7 +4955,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="210" name="luz_ebais_edificio_2" class="light" x="4803" y="2703" width="8" height="8">
+  <object id="211" name="luz_ebais_edificio_2" class="light" x="4803" y="2703" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="30"/>
     <property name="r" type="int" value="255"/>
@@ -4959,7 +4966,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="211" name="luz_ebais_edificio_3" class="light" x="4949" y="2703" width="8" height="8">
+  <object id="212" name="luz_ebais_edificio_3" class="light" x="4949" y="2703" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="30"/>
     <property name="r" type="int" value="255"/>
@@ -4970,7 +4977,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="212" name="luz_ebais_edificio_4" class="light" x="4963" y="2703" width="8" height="8">
+  <object id="213" name="luz_ebais_edificio_4" class="light" x="4963" y="2703" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="30"/>
     <property name="r" type="int" value="255"/>
@@ -4981,7 +4988,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="213" name="luz_ebais_puerta" class="light" x="4876" y="2734" width="8" height="8">
+  <object id="214" name="luz_ebais_puerta" class="light" x="4876" y="2734" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="40"/>
     <property name="r" type="int" value="255"/>
@@ -4992,7 +4999,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="214" name="luz_escuela_colegio_1" class="light" x="7130" y="2020.5" width="8" height="8">
+  <object id="215" name="luz_escuela_colegio_1" class="light" x="7130" y="2020.5" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="30"/>
     <property name="r" type="int" value="255"/>
@@ -5003,7 +5010,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="215" name="luz_escuela_colegio_2" class="light" x="7183" y="2020.5" width="8" height="8">
+  <object id="216" name="luz_escuela_colegio_2" class="light" x="7183" y="2020.5" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="30"/>
     <property name="r" type="int" value="255"/>
@@ -5014,7 +5021,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="216" name="luz_escuela_colegio_3" class="light" x="7210" y="2020.5" width="8" height="8">
+  <object id="217" name="luz_escuela_colegio_3" class="light" x="7210" y="2020.5" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="30"/>
     <property name="r" type="int" value="255"/>
@@ -5025,7 +5032,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="217" name="luz_escuela_colegio_4" class="light" x="7263" y="2020.5" width="8" height="8">
+  <object id="218" name="luz_escuela_colegio_4" class="light" x="7263" y="2020.5" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="30"/>
     <property name="r" type="int" value="255"/>
@@ -5036,7 +5043,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="218" name="luz_casa_1_1" class="light" x="5151.5" y="1770" width="8" height="8">
+  <object id="219" name="luz_casa_1_1" class="light" x="5151.5" y="1770" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="30"/>
     <property name="r" type="int" value="255"/>
@@ -5047,7 +5054,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="219" name="luz_casa_1_2" class="light" x="5208.5" y="1770" width="8" height="8">
+  <object id="220" name="luz_casa_1_2" class="light" x="5208.5" y="1770" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="30"/>
     <property name="r" type="int" value="255"/>
@@ -5058,7 +5065,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="220" name="luz_abastecedor_1" class="light" x="5374" y="1778" width="8" height="8">
+  <object id="221" name="luz_abastecedor_1" class="light" x="5374" y="1778" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="30"/>
     <property name="r" type="int" value="255"/>
@@ -5069,7 +5076,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="221" name="luz_abastecedor_2" class="light" x="5454" y="1778" width="8" height="8">
+  <object id="222" name="luz_abastecedor_2" class="light" x="5454" y="1778" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="30"/>
     <property name="r" type="int" value="255"/>
@@ -5080,7 +5087,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="222" name="luz_casa_2_1" class="light" x="5501.5" y="1770" width="8" height="8">
+  <object id="223" name="luz_casa_2_1" class="light" x="5501.5" y="1770" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="30"/>
     <property name="r" type="int" value="255"/>
@@ -5091,7 +5098,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="223" name="luz_casa_2_2" class="light" x="5562.5" y="1770" width="8" height="8">
+  <object id="224" name="luz_casa_2_2" class="light" x="5562.5" y="1770" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="30"/>
     <property name="r" type="int" value="255"/>
@@ -5102,7 +5109,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="224" name="luz_bar_1" class="light" x="5601" y="1778" width="8" height="8">
+  <object id="225" name="luz_bar_1" class="light" x="5601" y="1778" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="30"/>
     <property name="r" type="int" value="255"/>
@@ -5113,7 +5120,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="225" name="luz_bar_2" class="light" x="5675" y="1778" width="8" height="8">
+  <object id="226" name="luz_bar_2" class="light" x="5675" y="1778" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="30"/>
     <property name="r" type="int" value="255"/>
@@ -5124,7 +5131,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="226" name="luz_bar_3" class="light" x="5694" y="1778" width="8" height="8">
+  <object id="227" name="luz_bar_3" class="light" x="5694" y="1778" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="30"/>
     <property name="r" type="int" value="255"/>
@@ -5135,7 +5142,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="227" name="luz_casa_3_1" class="light" x="5395.5" y="1978" width="8" height="8">
+  <object id="228" name="luz_casa_3_1" class="light" x="5395.5" y="1978" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="30"/>
     <property name="r" type="int" value="255"/>
@@ -5146,7 +5153,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="228" name="luz_casa_3_2" class="light" x="5444.5" y="1978" width="8" height="8">
+  <object id="229" name="luz_casa_3_2" class="light" x="5444.5" y="1978" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="30"/>
     <property name="r" type="int" value="255"/>
@@ -5157,7 +5164,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="229" name="luz_guarderia_1" class="light" x="5602" y="1986" width="8" height="8">
+  <object id="230" name="luz_guarderia_1" class="light" x="5602" y="1986" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="30"/>
     <property name="r" type="int" value="255"/>
@@ -5168,7 +5175,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="230" name="luz_guarderia_2" class="light" x="5686" y="1986" width="8" height="8">
+  <object id="231" name="luz_guarderia_2" class="light" x="5686" y="1986" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="30"/>
     <property name="r" type="int" value="255"/>
@@ -5179,7 +5186,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="231" name="luz_casa_1_1" class="light" x="5775.5" y="1770" width="8" height="8">
+  <object id="232" name="luz_casa_1_1" class="light" x="5775.5" y="1770" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="30"/>
     <property name="r" type="int" value="255"/>
@@ -5190,7 +5197,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="232" name="luz_casa_1_2" class="light" x="5832.5" y="1770" width="8" height="8">
+  <object id="233" name="luz_casa_1_2" class="light" x="5832.5" y="1770" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="30"/>
     <property name="r" type="int" value="255"/>
@@ -5201,7 +5208,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="233" name="luz_casa_2_1" class="light" x="6093.5" y="1770" width="8" height="8">
+  <object id="234" name="luz_casa_2_1" class="light" x="6093.5" y="1770" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="30"/>
     <property name="r" type="int" value="255"/>
@@ -5212,7 +5219,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="234" name="luz_casa_2_2" class="light" x="6154.5" y="1770" width="8" height="8">
+  <object id="235" name="luz_casa_2_2" class="light" x="6154.5" y="1770" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="30"/>
     <property name="r" type="int" value="255"/>
@@ -5223,7 +5230,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="235" name="luz_casa_3_1" class="light" x="6243.5" y="1770" width="8" height="8">
+  <object id="236" name="luz_casa_3_1" class="light" x="6243.5" y="1770" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="30"/>
     <property name="r" type="int" value="255"/>
@@ -5234,7 +5241,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="236" name="luz_casa_3_2" class="light" x="6292.5" y="1770" width="8" height="8">
+  <object id="237" name="luz_casa_3_2" class="light" x="6292.5" y="1770" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="30"/>
     <property name="r" type="int" value="255"/>
@@ -5245,7 +5252,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="237" name="luz_casa_1_1" class="light" x="6335.5" y="1770" width="8" height="8">
+  <object id="238" name="luz_casa_1_1" class="light" x="6335.5" y="1770" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="30"/>
     <property name="r" type="int" value="255"/>
@@ -5256,7 +5263,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="238" name="luz_casa_1_2" class="light" x="6392.5" y="1770" width="8" height="8">
+  <object id="239" name="luz_casa_1_2" class="light" x="6392.5" y="1770" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="30"/>
     <property name="r" type="int" value="255"/>
@@ -5267,7 +5274,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="239" name="luz_casa_2_1" class="light" x="6429.5" y="1770" width="8" height="8">
+  <object id="240" name="luz_casa_2_1" class="light" x="6429.5" y="1770" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="30"/>
     <property name="r" type="int" value="255"/>
@@ -5278,7 +5285,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="240" name="luz_casa_2_2" class="light" x="6490.5" y="1770" width="8" height="8">
+  <object id="241" name="luz_casa_2_2" class="light" x="6490.5" y="1770" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="30"/>
     <property name="r" type="int" value="255"/>
@@ -5289,7 +5296,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="241" name="luz_casa_3_1" class="light" x="6499.5" y="1978" width="8" height="8">
+  <object id="242" name="luz_casa_3_1" class="light" x="6499.5" y="1978" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="30"/>
     <property name="r" type="int" value="255"/>
@@ -5300,7 +5307,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="242" name="luz_casa_3_2" class="light" x="6548.5" y="1978" width="8" height="8">
+  <object id="243" name="luz_casa_3_2" class="light" x="6548.5" y="1978" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="30"/>
     <property name="r" type="int" value="255"/>
@@ -5311,7 +5318,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="243" name="luz_casa_1_1" class="light" x="7551.5" y="1978" width="8" height="8">
+  <object id="244" name="luz_casa_1_1" class="light" x="7551.5" y="1978" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="30"/>
     <property name="r" type="int" value="255"/>
@@ -5322,7 +5329,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="244" name="luz_casa_1_2" class="light" x="7608.5" y="1978" width="8" height="8">
+  <object id="245" name="luz_casa_1_2" class="light" x="7608.5" y="1978" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="30"/>
     <property name="r" type="int" value="255"/>
@@ -5333,7 +5340,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="245" name="luz_casa_3_1" class="light" x="7795.5" y="2042" width="8" height="8">
+  <object id="246" name="luz_casa_3_1" class="light" x="7795.5" y="2042" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="30"/>
     <property name="r" type="int" value="255"/>
@@ -5344,7 +5351,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="246" name="luz_casa_3_2" class="light" x="7844.5" y="2042" width="8" height="8">
+  <object id="247" name="luz_casa_3_2" class="light" x="7844.5" y="2042" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="30"/>
     <property name="r" type="int" value="255"/>
@@ -5355,7 +5362,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="247" name="luz_casa_1_1" class="light" x="7791.5" y="2202" width="8" height="8">
+  <object id="248" name="luz_casa_1_1" class="light" x="7791.5" y="2202" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="30"/>
     <property name="r" type="int" value="255"/>
@@ -5366,7 +5373,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="248" name="luz_casa_1_2" class="light" x="7848.5" y="2202" width="8" height="8">
+  <object id="249" name="luz_casa_1_2" class="light" x="7848.5" y="2202" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="30"/>
     <property name="r" type="int" value="255"/>
@@ -5377,7 +5384,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="249" name="luz_casa_2_1" class="light" x="7789.5" y="2362" width="8" height="8">
+  <object id="250" name="luz_casa_2_1" class="light" x="7789.5" y="2362" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="30"/>
     <property name="r" type="int" value="255"/>
@@ -5388,7 +5395,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="250" name="luz_casa_2_2" class="light" x="7850.5" y="2362" width="8" height="8">
+  <object id="251" name="luz_casa_2_2" class="light" x="7850.5" y="2362" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="30"/>
     <property name="r" type="int" value="255"/>
@@ -5399,7 +5406,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="251" name="luz_casa_2_1" class="light" x="7565.5" y="2170" width="8" height="8">
+  <object id="252" name="luz_casa_2_1" class="light" x="7565.5" y="2170" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="30"/>
     <property name="r" type="int" value="255"/>
@@ -5410,7 +5417,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="252" name="luz_casa_2_2" class="light" x="7626.5" y="2170" width="8" height="8">
+  <object id="253" name="luz_casa_2_2" class="light" x="7626.5" y="2170" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="30"/>
     <property name="r" type="int" value="255"/>
@@ -5421,7 +5428,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="253" name="luz_casa_3_1" class="light" x="7571.5" y="2330" width="8" height="8">
+  <object id="254" name="luz_casa_3_1" class="light" x="7571.5" y="2330" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="30"/>
     <property name="r" type="int" value="255"/>
@@ -5432,7 +5439,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="254" name="luz_casa_3_2" class="light" x="7620.5" y="2330" width="8" height="8">
+  <object id="255" name="luz_casa_3_2" class="light" x="7620.5" y="2330" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="30"/>
     <property name="r" type="int" value="255"/>
@@ -5443,7 +5450,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="255" name="luz_casa_2_1" class="light" x="7917.5" y="1978" width="8" height="8">
+  <object id="256" name="luz_casa_2_1" class="light" x="7917.5" y="1978" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="30"/>
     <property name="r" type="int" value="255"/>
@@ -5454,7 +5461,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="256" name="luz_casa_2_2" class="light" x="7978.5" y="1978" width="8" height="8">
+  <object id="257" name="luz_casa_2_2" class="light" x="7978.5" y="1978" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="30"/>
     <property name="r" type="int" value="255"/>
@@ -5465,7 +5472,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="257" name="luz_casa_3_1" class="light" x="8019.5" y="1978" width="8" height="8">
+  <object id="258" name="luz_casa_3_1" class="light" x="8019.5" y="1978" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="30"/>
     <property name="r" type="int" value="255"/>
@@ -5476,7 +5483,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="258" name="luz_casa_3_2" class="light" x="8068.5" y="1978" width="8" height="8">
+  <object id="259" name="luz_casa_3_2" class="light" x="8068.5" y="1978" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="30"/>
     <property name="r" type="int" value="255"/>
@@ -5487,7 +5494,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="259" name="luz_casa_1_1" class="light" x="8319.5" y="1978" width="8" height="8">
+  <object id="260" name="luz_casa_1_1" class="light" x="8319.5" y="1978" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="30"/>
     <property name="r" type="int" value="255"/>
@@ -5498,7 +5505,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="260" name="luz_casa_1_2" class="light" x="8376.5" y="1978" width="8" height="8">
+  <object id="261" name="luz_casa_1_2" class="light" x="8376.5" y="1978" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="30"/>
     <property name="r" type="int" value="255"/>
@@ -5509,7 +5516,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="261" name="luz_casa_paula_1" class="light" x="8943.5" y="1658" width="8" height="8">
+  <object id="262" name="luz_casa_paula_1" class="light" x="8943.5" y="1658" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="30"/>
     <property name="r" type="int" value="255"/>
@@ -5520,7 +5527,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="262" name="luz_casa_paula_2" class="light" x="9017.5" y="1658" width="8" height="8">
+  <object id="263" name="luz_casa_paula_2" class="light" x="9017.5" y="1658" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="30"/>
     <property name="r" type="int" value="255"/>
@@ -5531,7 +5538,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="263" name="luz_casa_2_1" class="light" x="8349.5" y="2138" width="8" height="8">
+  <object id="264" name="luz_casa_2_1" class="light" x="8349.5" y="2138" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="30"/>
     <property name="r" type="int" value="255"/>
@@ -5542,7 +5549,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="264" name="luz_casa_2_2" class="light" x="8410.5" y="2138" width="8" height="8">
+  <object id="265" name="luz_casa_2_2" class="light" x="8410.5" y="2138" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="30"/>
     <property name="r" type="int" value="255"/>
@@ -5553,7 +5560,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="265" name="luz_aerogenerador_1" class="light" x="308" y="1581" width="8" height="8">
+  <object id="266" name="luz_aerogenerador_1" class="light" x="308" y="1581" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="20"/>
     <property name="r" type="int" value="255"/>
@@ -5564,7 +5571,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="266" name="luz_aerogenerador_2" class="light" x="644" y="1565" width="8" height="8">
+  <object id="267" name="luz_aerogenerador_2" class="light" x="644" y="1565" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="20"/>
     <property name="r" type="int" value="255"/>
@@ -5575,7 +5582,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="267" name="luz_aerogenerador_3" class="light" x="980" y="1581" width="8" height="8">
+  <object id="268" name="luz_aerogenerador_3" class="light" x="980" y="1581" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="20"/>
     <property name="r" type="int" value="255"/>
@@ -5586,7 +5593,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="268" name="luz_aerogenerador_4" class="light" x="388" y="1901" width="8" height="8">
+  <object id="269" name="luz_aerogenerador_4" class="light" x="388" y="1901" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="20"/>
     <property name="r" type="int" value="255"/>
@@ -5597,7 +5604,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="269" name="luz_aerogenerador_5" class="light" x="676" y="1917" width="8" height="8">
+  <object id="270" name="luz_aerogenerador_5" class="light" x="676" y="1917" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="20"/>
     <property name="r" type="int" value="255"/>
@@ -5608,7 +5615,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="270" name="luz_aerogenerador_6" class="light" x="964" y="1901" width="8" height="8">
+  <object id="271" name="luz_aerogenerador_6" class="light" x="964" y="1901" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="20"/>
     <property name="r" type="int" value="255"/>
@@ -5619,7 +5626,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="271" name="luz_farola_n_265" class="light" x="4250" y="1767" width="8" height="8">
+  <object id="272" name="luz_farola_n_265" class="light" x="4250" y="1767" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="52"/>
     <property name="r" type="int" value="255"/>
@@ -5630,7 +5637,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="272" name="luz_farola_n_315" class="light" x="5050" y="1767" width="8" height="8">
+  <object id="273" name="luz_farola_n_315" class="light" x="5050" y="1767" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="52"/>
     <property name="r" type="int" value="255"/>
@@ -5641,7 +5648,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="273" name="luz_farola_n_415" class="light" x="6650" y="1767" width="8" height="8">
+  <object id="274" name="luz_farola_n_415" class="light" x="6650" y="1767" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="52"/>
     <property name="r" type="int" value="255"/>
@@ -5652,7 +5659,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="274" name="luz_farola_n_465" class="light" x="7450" y="1767" width="8" height="8">
+  <object id="275" name="luz_farola_n_465" class="light" x="7450" y="1767" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="52"/>
     <property name="r" type="int" value="255"/>
@@ -5663,7 +5670,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="275" name="luz_farola_n_490" class="light" x="7850" y="1767" width="8" height="8">
+  <object id="276" name="luz_farola_n_490" class="light" x="7850" y="1767" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="52"/>
     <property name="r" type="int" value="255"/>
@@ -5674,7 +5681,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="276" name="luz_farola_n_515" class="light" x="8250" y="1767" width="8" height="8">
+  <object id="277" name="luz_farola_n_515" class="light" x="8250" y="1767" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="52"/>
     <property name="r" type="int" value="255"/>
@@ -5685,7 +5692,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="277" name="luz_farola_n_540" class="light" x="8650" y="1767" width="8" height="8">
+  <object id="278" name="luz_farola_n_540" class="light" x="8650" y="1767" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="52"/>
     <property name="r" type="int" value="255"/>
@@ -5696,7 +5703,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="278" name="luz_farola_s_265" class="light" x="4250" y="1879" width="8" height="8">
+  <object id="279" name="luz_farola_s_265" class="light" x="4250" y="1879" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="52"/>
     <property name="r" type="int" value="255"/>
@@ -5707,7 +5714,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="279" name="luz_farola_s_290" class="light" x="4650" y="1879" width="8" height="8">
+  <object id="280" name="luz_farola_s_290" class="light" x="4650" y="1879" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="52"/>
     <property name="r" type="int" value="255"/>
@@ -5718,7 +5725,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="280" name="luz_farola_s_365" class="light" x="5850" y="1879" width="8" height="8">
+  <object id="281" name="luz_farola_s_365" class="light" x="5850" y="1879" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="52"/>
     <property name="r" type="int" value="255"/>
@@ -5729,7 +5736,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="281" name="luz_farola_s_390" class="light" x="6250" y="1879" width="8" height="8">
+  <object id="282" name="luz_farola_s_390" class="light" x="6250" y="1879" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="52"/>
     <property name="r" type="int" value="255"/>
@@ -5740,7 +5747,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="282" name="luz_farola_s_415" class="light" x="6650" y="1879" width="8" height="8">
+  <object id="283" name="luz_farola_s_415" class="light" x="6650" y="1879" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="52"/>
     <property name="r" type="int" value="255"/>
@@ -5751,7 +5758,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="283" name="luz_farola_s_440" class="light" x="7050" y="1879" width="8" height="8">
+  <object id="284" name="luz_farola_s_440" class="light" x="7050" y="1879" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="52"/>
     <property name="r" type="int" value="255"/>
@@ -5762,7 +5769,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="284" name="luz_farola_s_465" class="light" x="7450" y="1879" width="8" height="8">
+  <object id="285" name="luz_farola_s_465" class="light" x="7450" y="1879" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="52"/>
     <property name="r" type="int" value="255"/>
@@ -5773,7 +5780,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="285" name="luz_farola_s_515" class="light" x="8250" y="1879" width="8" height="8">
+  <object id="286" name="luz_farola_s_515" class="light" x="8250" y="1879" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="52"/>
     <property name="r" type="int" value="255"/>
@@ -5784,7 +5791,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="286" name="luz_farola_s_540" class="light" x="8650" y="1879" width="8" height="8">
+  <object id="287" name="luz_farola_s_540" class="light" x="8650" y="1879" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="52"/>
     <property name="r" type="int" value="255"/>
@@ -5795,7 +5802,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="287" name="luz_farola_s_565" class="light" x="9050" y="1879" width="8" height="8">
+  <object id="288" name="luz_farola_s_565" class="light" x="9050" y="1879" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="52"/>
     <property name="r" type="int" value="255"/>
@@ -5806,7 +5813,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="288" name="luz_farola_camino_b_31" class="light" x="4746" y="1927" width="8" height="8">
+  <object id="289" name="luz_farola_camino_b_31" class="light" x="4746" y="1927" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="52"/>
     <property name="r" type="int" value="255"/>
@@ -5817,7 +5824,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="289" name="luz_farola_camino_a_25" class="light" x="4650" y="1895" width="8" height="8">
+  <object id="290" name="luz_farola_camino_a_25" class="light" x="4650" y="1895" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="52"/>
     <property name="r" type="int" value="255"/>
@@ -5828,7 +5835,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="290" name="luz_farola_camino_b_25" class="light" x="4650" y="1959" width="8" height="8">
+  <object id="291" name="luz_farola_camino_b_25" class="light" x="4650" y="1959" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="52"/>
     <property name="r" type="int" value="255"/>
@@ -5839,7 +5846,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="291" name="luz_farola_camino_a_19" class="light" x="4554" y="1975" width="8" height="8">
+  <object id="292" name="luz_farola_camino_a_19" class="light" x="4554" y="1975" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="52"/>
     <property name="r" type="int" value="255"/>
@@ -5850,7 +5857,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="292" name="luz_farola_camino_b_19" class="light" x="4554" y="2039" width="8" height="8">
+  <object id="293" name="luz_farola_camino_b_19" class="light" x="4554" y="2039" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="52"/>
     <property name="r" type="int" value="255"/>
@@ -5861,7 +5868,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="293" name="luz_farola_camino_a_14" class="light" x="4474" y="2039" width="8" height="8">
+  <object id="294" name="luz_farola_camino_a_14" class="light" x="4474" y="2039" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="52"/>
     <property name="r" type="int" value="255"/>
@@ -5872,7 +5879,7 @@
     <property name="only" value="dusk,night"/>
    </properties>
   </object>
-  <object id="294" name="luz_farola_camino_b_14" class="light" x="4474" y="2103" width="8" height="8">
+  <object id="295" name="luz_farola_camino_b_14" class="light" x="4474" y="2103" width="8" height="8">
    <properties>
     <property name="radius" type="int" value="52"/>
     <property name="r" type="int" value="255"/>
@@ -5885,7 +5892,7 @@
   </object>
  </objectgroup>
  <objectgroup id="29" name="emitters">
-  <object id="137" name="rumor_cafetal" class="emitter" x="7104" y="1680">
+  <object id="138" name="rumor_cafetal" class="emitter" x="7104" y="1680">
    <properties>
     <property name="sound" value="leaves_rustle"/>
     <property name="loop" value="true"/>
@@ -5897,7 +5904,7 @@
    </properties>
    <point/>
   </object>
-  <object id="138" name="crujido_puerta" class="emitter" x="8592" y="1992">
+  <object id="139" name="crujido_puerta" class="emitter" x="8592" y="1992">
    <properties>
     <property name="sound" value="door_creak_far"/>
     <property name="interval" value="9"/>
@@ -5909,7 +5916,7 @@
    </properties>
    <point/>
   </object>
-  <object id="139" name="gallinas_paula" class="emitter" x="8912" y="1760">
+  <object id="140" name="gallinas_paula" class="emitter" x="8912" y="1760">
    <properties>
     <property name="sound" value="chickens_01"/>
     <property name="interval" value="19"/>
@@ -5920,7 +5927,7 @@
    </properties>
    <point/>
   </object>
-  <object id="140" name="gallinas_paula_2" class="emitter" x="8944" y="1760">
+  <object id="141" name="gallinas_paula_2" class="emitter" x="8944" y="1760">
    <properties>
     <property name="sound" value="chickens_03"/>
     <property name="interval" value="31"/>
@@ -5931,7 +5938,7 @@
    </properties>
    <point/>
   </object>
-  <object id="141" name="gallinas_enrique" class="emitter" x="8400" y="2176">
+  <object id="142" name="gallinas_enrique" class="emitter" x="8400" y="2176">
    <properties>
     <property name="sound" value="chickens_02"/>
     <property name="interval" value="23"/>
@@ -5942,7 +5949,7 @@
    </properties>
    <point/>
   </object>
-  <object id="142" name="gallo_paula" class="emitter" x="8928" y="1744">
+  <object id="143" name="gallo_paula" class="emitter" x="8928" y="1744">
    <properties>
     <property name="sound" value="rooster_far_03"/>
     <property name="interval" value="13"/>
@@ -5953,7 +5960,7 @@
    </properties>
    <point/>
   </object>
-  <object id="143" name="gallo_caliles" class="emitter" x="7712" y="2240">
+  <object id="144" name="gallo_caliles" class="emitter" x="7712" y="2240">
    <properties>
     <property name="sound" value="rooster_far_04"/>
     <property name="interval" value="17"/>
@@ -5964,7 +5971,7 @@
    </properties>
    <point/>
   </object>
-  <object id="144" name="perro_abastecedor" class="emitter" x="5456" y="1792">
+  <object id="145" name="perro_abastecedor" class="emitter" x="5456" y="1792">
    <properties>
     <property name="sound" value="dog_far_03"/>
     <property name="interval" value="37"/>
@@ -5975,7 +5982,7 @@
    </properties>
    <point/>
   </object>
-  <object id="145" name="perros_caliles" class="emitter" x="7712" y="2208">
+  <object id="146" name="perros_caliles" class="emitter" x="7712" y="2208">
    <properties>
     <property name="sound" value="dogs_chorus_far_04"/>
     <property name="interval" value="47"/>
@@ -5987,7 +5994,7 @@
    </properties>
    <point/>
   </object>
-  <object id="146" name="vacas_potrero" class="emitter" x="7792" y="1648">
+  <object id="147" name="vacas_potrero" class="emitter" x="7792" y="1648">
    <properties>
     <property name="sound" value="cow_far_02"/>
     <property name="interval" value="41"/>
@@ -5998,7 +6005,7 @@
    </properties>
    <point/>
   </object>
-  <object id="147" name="vacas_potrero_2" class="emitter" x="7888" y="1648">
+  <object id="148" name="vacas_potrero_2" class="emitter" x="7888" y="1648">
    <properties>
     <property name="sound" value="cow_far_03"/>
     <property name="interval" value="59"/>
@@ -6009,7 +6016,7 @@
    </properties>
    <point/>
   </object>
-  <object id="148" name="caballo_potrero" class="emitter" x="7696" y="1648">
+  <object id="149" name="caballo_potrero" class="emitter" x="7696" y="1648">
    <properties>
     <property name="sound" value="horse_neigh_far_01"/>
     <property name="interval" value="67"/>
@@ -6022,7 +6029,7 @@
   </object>
  </objectgroup>
  <objectgroup id="30" name="triggers">
-  <object id="180" name="walk_start" class="trigger" x="4608" y="1760" width="64" height="48">
+  <object id="181" name="walk_start" class="trigger" x="4608" y="1760" width="64" height="48">
    <properties>
     <property name="trigger" value="walk_start"/>
     <property name="mission" value="chequelo"/>
@@ -6030,35 +6037,35 @@
     <property name="sets" value="chequelo.walk_started"/>
    </properties>
   </object>
-  <object id="181" name="road_00" class="trigger" x="4620" y="1792" width="40" height="84">
+  <object id="182" name="road_00" class="trigger" x="4620" y="1792" width="40" height="84">
    <properties>
     <property name="trigger" value="road"/>
     <property name="mission" value="chequelo"/>
     <property name="requires" value="mission.chequelo.night_active"/>
    </properties>
   </object>
-  <object id="182" name="road_01" class="trigger" x="4604" y="1820" width="4520" height="72">
+  <object id="183" name="road_01" class="trigger" x="4604" y="1820" width="4520" height="72">
    <properties>
     <property name="trigger" value="road"/>
     <property name="mission" value="chequelo"/>
     <property name="requires" value="mission.chequelo.night_active"/>
    </properties>
   </object>
-  <object id="183" name="road_02" class="trigger" x="9068" y="1836" width="40" height="212">
+  <object id="184" name="road_02" class="trigger" x="9068" y="1836" width="40" height="212">
    <properties>
     <property name="trigger" value="road"/>
     <property name="mission" value="chequelo"/>
     <property name="requires" value="mission.chequelo.night_active"/>
    </properties>
   </object>
-  <object id="184" name="road_03" class="trigger" x="9016" y="2008" width="92" height="40">
+  <object id="185" name="road_03" class="trigger" x="9016" y="2008" width="92" height="40">
    <properties>
     <property name="trigger" value="road"/>
     <property name="mission" value="chequelo"/>
     <property name="requires" value="mission.chequelo.night_active"/>
    </properties>
   </object>
-  <object id="185" name="light_appears" class="trigger" x="6938" y="1808" width="32" height="96">
+  <object id="186" name="light_appears" class="trigger" x="6938" y="1808" width="32" height="96">
    <properties>
     <property name="trigger" value="light_appears"/>
     <property name="mission" value="chequelo"/>
@@ -6067,7 +6074,7 @@
     <property name="line" value="Una luz se enciende sobre el camino..."/>
    </properties>
   </object>
-  <object id="186" name="detour_cafetal" class="trigger" x="7072" y="1760" width="64" height="48">
+  <object id="187" name="detour_cafetal" class="trigger" x="7072" y="1760" width="64" height="48">
    <properties>
     <property name="trigger" value="detour_cafetal"/>
     <property name="mission" value="chequelo"/>
@@ -6075,7 +6082,7 @@
     <property name="sets" value="chequelo.detour_cafetal"/>
    </properties>
   </object>
-  <object id="187" name="detour_door" class="trigger" x="8568" y="1996" width="48" height="36">
+  <object id="188" name="detour_door" class="trigger" x="8568" y="1996" width="48" height="36">
    <properties>
     <property name="trigger" value="detour_door"/>
     <property name="mission" value="chequelo"/>
@@ -6083,7 +6090,7 @@
     <property name="sets" value="chequelo.detour_door"/>
    </properties>
   </object>
-  <object id="188" name="house_arrival" class="trigger" x="8984" y="2012" width="64" height="44">
+  <object id="189" name="house_arrival" class="trigger" x="8984" y="2012" width="64" height="44">
    <properties>
     <property name="trigger" value="house_arrival"/>
     <property name="mission" value="chequelo"/>
@@ -6093,19 +6100,19 @@
   </object>
  </objectgroup>
  <objectgroup id="31" name="route">
-  <object id="189" name="route_00" class="route" x="4640" y="1792">
+  <object id="190" name="route_00" class="route" x="4640" y="1792">
    <point/>
   </object>
-  <object id="190" name="route_01" class="route" x="4640" y="1856">
+  <object id="191" name="route_01" class="route" x="4640" y="1856">
    <point/>
   </object>
-  <object id="191" name="route_02" class="route" x="9088" y="1856">
+  <object id="192" name="route_02" class="route" x="9088" y="1856">
    <point/>
   </object>
-  <object id="192" name="route_03" class="route" x="9088" y="2028">
+  <object id="193" name="route_03" class="route" x="9088" y="2028">
    <point/>
   </object>
-  <object id="193" name="route_04" class="route" x="9016" y="2028">
+  <object id="194" name="route_04" class="route" x="9016" y="2028">
    <point/>
   </object>
  </objectgroup>
