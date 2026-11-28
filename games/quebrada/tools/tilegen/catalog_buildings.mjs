@@ -21,6 +21,7 @@ import { Frame, rgb, shade, withAlpha } from "./draw.mjs";
 import { C } from "./palette.mjs";
 import { noise } from "./rng.mjs";
 import * as D from "./building_draw.mjs";
+import { drawText, textWidth } from "./font.mjs";
 
 export const SIZE = 16;
 export const B_COLS = 16;
@@ -175,6 +176,11 @@ function shopBuilding({ wall, roof, door, sign, windows, deco, litWindows = wind
     D.plasterWall(f, 0, 48, 128, 32, wall);
     for (let y = 48; y < 51; y++) f.hline(0, y, 128, withAlpha([0, 0, 0, 255], 70 - (y - 48) * 18));
     f.rect(6, 51, 116, 7, sign.bg); f.hline(6, 51, 116, sign.light); f.hline(6, 57, 116, sign.dark);
+    if (sign.text) { // the name, 3x5 px letters centred in the 5 px free inside the band (x 6..121, y 52..56)
+      const w = textWidth(sign.text);
+      if (w > 112) throw new Error(`shop sign "${sign.text}" is ${w} px wide, the band takes 112`);
+      drawText(f, sign.text, 6 + Math.floor((116 - w) / 2), 52, sign.fg);
+    }
     for (const w of windows) { if (w.awning) { for (let x = w.x - 2; x < w.x + w.w + 2; x += 4) { f.rect(x, 58, 4, 5, ((x - w.x + 2) / 4) % 2 ? w.awning[1] : w.awning[0]); } f.hline(w.x - 2, 63, w.w + 4, withAlpha([0, 0, 0, 255], 70)); } D.plainWindow(f, w.x, w.y, w.w, w.h, { bar: true, shutters: w.shutters, tint: w.tint }); }
     D.door(f, doorX, 58, 12, 22, door);
     if (deco) deco(f);
@@ -291,7 +297,7 @@ const BUILDINGS = [
       wall: wallPal(B.yellowWall, B.yellowShade, B.creamHi, shade(B.yellowShade, 0.9), "ab"),
       roof: { base: B.zincBase, light: B.zincLight, dark: B.zincDark, line: B.zincLine, trim: B.greenTrim, trimDark: B.greenTrimDark },
       door: { base: B.greenTrim, light: shade(B.greenTrim, 1.25), dark: B.greenTrimDark },
-      sign: { bg: B.greenTrim, light: shade(B.greenTrim, 1.3), dark: B.greenTrimDark },
+      sign: { bg: B.greenTrim, light: shade(B.greenTrim, 1.3), dark: B.greenTrimDark, text: "ABASTECEDOR EL JARDIN", fg: B.whiteTrim },
       windows: [{ x: 12, y: 64, w: 12, h: 12 }, { x: 78, y: 64, w: 40, h: 12, awning: [B.redBase, B.whiteTrim], shutters: B.greenTrim }], salt: "abz",
     }),
   },
@@ -301,7 +307,7 @@ const BUILDINGS = [
       wall: wallPal(rgb("#b4d3a6"), rgb("#98b98a"), rgb("#d0e6c4"), rgb("#7a9a6d"), "br"),
       roof: { base: B.rustBase, light: B.rustLight, dark: B.rustDark, line: B.rustLine, trim: B.whiteTrim, trimDark: B.whiteTrimShade },
       door: { base: B.woodLight, light: shade(B.woodLight, 1.2), dark: B.woodDark },
-      sign: { bg: B.redBase, light: B.redLight, dark: B.redDark },
+      sign: { bg: B.redBase, light: B.redLight, dark: B.redDark, text: "BAR MATA DE CAÑA", fg: rgb("#f4e8a0") },
       windows: [{ x: 14, y: 64, w: 14, h: 12 }, { x: 88, y: 64, w: 14, h: 12 }, { x: 108, y: 64, w: 12, h: 12 }], salt: "brz",
       deco: (f) => { for (const x of [34, 38, 42]) { f.rect(x, 66, 3, 8, B.zincBase); f.rect(x + 1, 63, 1, 3, B.zincLight); f.px(x, 66, B.zincLight); } },
     }),
@@ -312,7 +318,7 @@ const BUILDINGS = [
       wall: wallPal(B.blueWall, B.blueWallShade, rgb("#d3e3f0"), shade(B.blueWallShade, 0.9), "gu"),
       roof: { base: B.redBase, light: B.redLight, dark: B.redDark, line: B.redLine, trim: B.whiteTrim, trimDark: B.whiteTrimShade },
       door: { base: rgb("#e8c442"), light: rgb("#f5dc72"), dark: rgb("#b8932a") },
-      sign: { bg: rgb("#2f8f9a"), light: rgb("#58b3bd"), dark: rgb("#1f6a74") },
+      sign: { bg: rgb("#2f8f9a"), light: rgb("#58b3bd"), dark: rgb("#1f6a74"), text: "BARQUITOS DE ESPERANZA", fg: B.whiteTrim },
       windows: [{ x: 16, y: 64, w: 12, h: 12 }, { x: 100, y: 64, w: 12, h: 12 }], salt: "guz",
       deco: (f) => { boat(f, 34, 60, B.redBase, rgb("#f4e8a0")); boat(f, 78, 62, rgb("#2f8f9a"), B.whiteTrim); f.hline(32, 74, 22, shade(B.blueWall, 0.8)); f.hline(76, 75, 24, shade(B.blueWall, 0.8)); },
     }),

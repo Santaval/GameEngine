@@ -91,3 +91,9 @@ the flashlight and charger 88-136,24). New group `seats` with `seat_mama` (class
 
 `zona1_map.mjs` places the same five buildings on a 90x54 map (issue #78, [zona1.md](zona1.md)). It has its own
 `PLACE` and copies of the autotiler helpers; `buildings_map.mjs` and the demo outputs are untouched.
+
+## Shops of the main street (`abastecedor`, `bar`, `guarderia`) and their names
+
+8x5 buildings in rows 24-35 of the sheet (plus `casa_paula` in rows 36-41), drawn by `shopBuilding()` in `catalog_buildings.mjs`. The sign band under the eave (x 6..121, y 51..57) carries the shop's name,
+painted with the shared 3x5 pixel font (`tools/tilegen/font.mjs`, 4 px advance, at most 28 characters = 112 px; a longer text throws): `ABASTECEDOR EL JARDIN`, `BAR MATA DE CAÑA` and `BARQUITOS DE ESPERANZA`
+(the word GUARDERIA goes on a name plaque, see [vida.md](vida.md) once it exists). The filler houses (`casa_1/2/3`) are shared by many places, so their names are plaques, not baked text.

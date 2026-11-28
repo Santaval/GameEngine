@@ -137,6 +137,7 @@ if (args.includes("--check")) {
     writeFileSync(join(dir, "font_x8.png"), pngOf(f.onBackground([40, 60, 110, 255]).scaled(8)));
   }
   writeFileSync(join(dir, "crop_iglesia_x4.png"), pngOf(buildingCanvas("iglesia").day.onBackground(grass).scaled(4)));
+  for (const n of ["abastecedor", "bar", "guarderia"]) writeFileSync(join(dir, `crop_${n}_x4.png`), pngOf(buildingCanvas(n).day.onBackground(grass).scaled(4)));
   writeFileSync(join(dir, "crop_casa_mama_x4.png"), pngOf(buildingCanvas("casa_mama").day.onBackground(grass).scaled(4)));
   writeFileSync(join(dir, "zona1.png"), pngOf(renderZona1({ night: false, roofs: true })));
   writeFileSync(join(dir, "zona1_night.png"), pngOf(renderZona1({ night: true, roofs: true })));
