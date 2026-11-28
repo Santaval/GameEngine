@@ -45,7 +45,7 @@ local M = {}
 
 M.DEFAULTS = {
   walk_speed = 60,
-  run_speed = 100,
+  run_speed = 400,
   accel_time = 0.08,
   decel_time = 0.05,
   tag_prefix = "",

@@ -11,9 +11,9 @@ local function walker(x, y, script)
         components = {
             transform = { position = { x = x, y = y }, scale = { x = 1, y = 1 } },
             rigid_body = {},
-            sprite = { assetId = "hero", width = 16, height = 16 },
-            animation = { atlas = "hero", tag = "idle_down" },
-            box_collider = { width = 10, height = 8, offset_x = 3, offset_y = 8, solid = true, mover = true },
+            sprite = { assetId = "dummy", width = 24, height = 38 },
+            animation = { atlas = "dummy", tag = "idle_down" },
+            box_collider = { width = 14, height = 8, offset_x = 5, offset_y = 28, solid = true, mover = true },
             script = { path = "scripts/" .. script .. ".lua" },
         },
     }
@@ -23,6 +23,7 @@ scene = {
     sprites = {
         [0] =
         { assetId = "hero", filePath = "sprites/hero.png", atlas = "sprites/hero.json" },
+        { assetId = "dummy", filePath = "sprites/dummy.png", atlas = "sprites/dummy.json" },
     },
     fonts = {},
     sounds = {
