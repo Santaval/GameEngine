@@ -27,6 +27,10 @@ Night darkness with light circles, built on the engine's
   (bottom left) shows the charge and hides when it is full and off. Logic: `scripts/foco_logic.lua`;
   controller: `scripts/foco.lua`.
 
+## Companion light (issue #81)
+
+The Luz de Chequelo night has a light that walks ahead of the player along the route (`vfx_luz` sprite + free light). See `docs/zona1.md` ("La luz"); code in `scripts/companion_light.lua`.
+
 ## Lit windows (issue #71)
 
 Buildings that use `tilesets/buildings.png` get their window glow in two parts: `light` objects with

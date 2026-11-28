@@ -9,6 +9,7 @@ update = require("town_controller").make_update({
   map = "maps/zona1.tmx",
   tile_map = true,
   world_debug = false,
+  companion = true, -- luz companera de la noche del chequelo (issue #81)
   scenes = {
     ["maps/zona1.tmx"] = "scenes/zona1.lua",
     ["maps/house_mama.tmx"] = "scenes/house_demo.lua",

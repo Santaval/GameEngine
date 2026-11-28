@@ -319,6 +319,17 @@ Real flow: accept at mama's house (`accepted`, night) -> walk to the church -> `
 -> walk home -> `house_arrival` (done + outcome, dawn). Demo: `z` on the main scene; if the mission is
 still `none` it is offered and accepted for you, otherwise use F3 to set `chequelo` to `accepted` at the church.
 
+## La luz (issue #81)
+
+The companion light of the Luz de Chequelo night. Logic: `scripts/companion_logic.lua` (pure); controller: `scripts/companion_light.lua`, driven by `town_controller` when the scene config has `companion = true` (only `zona1_scene.lua`). It reads the flags `chequelo.light_appears`, `chequelo.off_road`, `chequelo.arrived` and the mission state; it adds no flags and nothing to the save.
+
+- It only moves along the `route` objects (about 4756 px) at a fixed max speed (`speed = 62`), so walking (60 px/s) keeps it ahead and running (400 px/s) leaves it behind. It never moves backwards.
+- States: `hidden` -> `appearing` (spawns `lead_distance` ahead of the player) -> `guiding` <-> `waiting` (the player stopped: it settles `wait_distance` ahead and pulses) -> `leaving` (arrived, night over or end of route) or `extinguishing` (`chequelo.off_road`: flicker and fade) -> `gone` (until `light_appears` is cleared).
+- Near the `detour_*` triggers it occasionally drifts up to `drift_max` px toward the detour (noise-gated, stays inside the road trigger).
+- Tunables: `CONFIG` in `companion_logic.lua` (speeds, distances, radius, intensity, timings, drift, sound).
+- Sprite: `vfx_luz` (tags `appear`, `idle`, `fade`), registered in `scenes/zona1.lua`.
+- Sound placeholder: no hum asset exists, so `sound_id = nil` and no sound plays. To enable it, add `sounds/sfx/sfx_luz_hum.*`, a `sounds` entry in `scenes/zona1.lua` and set `CONFIG.sound_id`.
+
 ## Emitters
 
 `scripts/emitters.lua` plays class `emitter` objects with `play_sound_at`, only while `only` and `when`

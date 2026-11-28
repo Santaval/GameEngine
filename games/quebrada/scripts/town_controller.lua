@@ -49,6 +49,7 @@ local consequences = require("consequences")
 local lighting = require("lighting")
 local tod = require("time_of_day")
 local foco = require("foco")
+local companion = require("companion_light")
 local tools = require("tools")
 local libreta_ui = require("libreta_ui")
 local roofs = require("roofs")
@@ -73,6 +74,7 @@ M.DEFAULTS = {
   roofs = nil,      -- nil = sigue a tile_map; techos que se desvanecen + ventanas encendidas (issue #71)
   world_debug = true, -- false = sin rejilla / colisiones / puertas dibujadas (issue #71)
   on_start = nil,   -- funcion llamada una vez al colocar al jugador (issue #78)
+  companion = false, -- true = luz companera de la noche del chequelo (issue #81)
 }
 
 local FONT = "default"
@@ -261,6 +263,7 @@ function M.make_update(cfg)
     emitters.init(m)
     lighting.init()
     foco.init()
+    companion.init(m, c.companion)
     tod.init(m)
     save.note_map(c.map, c.scenes and c.scenes[c.map])
     tod.on_day = function(d)
@@ -589,6 +592,7 @@ function M.make_update(cfg)
     lighting.tick()
     tod.tick(dt)
     foco.tick(dt)
+    if placed then companion.tick(dt) end
 
     -- F3: overlay de depuracion (tambien captura teclas mientras esta abierto)
     update_overlay(dlg_open)

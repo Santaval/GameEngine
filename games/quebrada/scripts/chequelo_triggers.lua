@@ -48,6 +48,6 @@ M.house_arrival = {
   end,
 }
 
--- light_appears: solo flag y frase (la luz visible es otro issue); sin handler
+-- light_appears: flag y frase; la luz visible la dibuja companion_light.lua (issue #81); sin handler
 
 return M

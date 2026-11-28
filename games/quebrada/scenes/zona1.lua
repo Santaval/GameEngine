@@ -17,6 +17,7 @@ scene = {
         [0] =
         { assetId = "hero", filePath = "sprites/hero.png", atlas = "sprites/hero.json" },
         { assetId = "dummy", filePath = "sprites/dummy.png", atlas = "sprites/dummy.json" },
+        { assetId = "vfx_luz", filePath = "sprites/vfx_luz.png", atlas = "sprites/vfx_luz.json" },
     },
     fonts = {
         [0] =
