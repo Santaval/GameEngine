@@ -17,7 +17,7 @@ and `scripts/time_of_day_logic.lua` (pure, tested by `tests/time_of_day_logic.lu
 
 `set` applies the new phase at once (flags, `only` objects, ambience crossfade, lights) and fades the
 ambient colour over 4 s, covered by the title card. Calling it with the current phase does nothing.
-Colours: day `255,255,255`, dusk `150,120,130`, night `20,26,51`, dawn `70,70,100`.
+Colours: day `255,255,255`, dusk `150,120,130`, night `6,8,18`, dawn `70,70,100`.
 Entering `day` from night/dawn calls `consequences.advance_day()` (day counter).
 The state is a global (`time_state`) so it survives scene changes; `init(map)` reapplies it
 instantly on every scene load.

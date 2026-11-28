@@ -13,15 +13,30 @@ return {
   mama_luz = {
     { speaker = "Mamá", text = "Esperate, mijo. Esta noche se va la luz, como cada año." },
     { speaker = "Mamá", text = "Cuando se vaya, no sigás la luz que veás por el monte. Nunca la sigás." },
+    { speaker = "Mamá", text = "Y si oís un silbido, quedate quieto y apagá el foco hasta que pase. No te muevas." },
     { speaker = "Mamá", text = "¿Querés escuchar la historia del chequelo antes de irte?",
       choices = {
         { text = "Sí, quiero escucharla", call = function() require("chequelo_day").want_story() end },
         { text = "Ahora no" },
       } },
   },
+  -- Sin el foco no sale (chequelo_day.on_door)
+  mama_foco = {
+    { speaker = "Mamá", text = "¿Y el foco, mijo? No vas a salir a oscuras. Tomalo de la repisa." },
+    { speaker = "Mamá", text = "Se elige con su número y se prende con X. Pero gasta batería: apagalo cuando no lo necesités." },
+  },
   -- Sin pregunta: la mision se acepta sola al terminar (chequelo_day)
   mama_bendicion = {
     { speaker = "Mamá", text = "Que Dios te bendiga, mijo. Andá con cuidado y no tardés." },
+  },
+  -- Vecinos del camino que apuran al jugador antes de que aparezca la luz (night_npcs.lua)
+  vecino_prisa_1 = {
+    { speaker = "Ño Lencho", text = "¡Mijo, apurate! Ya casi se va la luz y el monte no perdona." },
+    { speaker = "Ño Lencho", text = "Seguí derecho por la calle hasta la casa de tu mamá y no te pares a hablar con nadie." },
+  },
+  vecino_prisa_2 = {
+    { speaker = "Ña Tina", text = "Ay, mijo, ¿todavía andás por aquí? Se va a ir la luz de un momento a otro." },
+    { speaker = "Ña Tina", text = "Apurate, que cuando se apague todo no vas a ver ni la mano." },
   },
   -- Despues de aceptada (mama ya no ofrece nada)
   mama = {

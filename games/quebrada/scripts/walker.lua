@@ -44,8 +44,8 @@ local math2 = require("walker_math")
 local M = {}
 
 M.DEFAULTS = {
-  walk_speed = 60,
-  run_speed = 400,
+  walk_speed = 130,
+  run_speed = 200,
   accel_time = 0.08,
   decel_time = 0.05,
   tag_prefix = "",

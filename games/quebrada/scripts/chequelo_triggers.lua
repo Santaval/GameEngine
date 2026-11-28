@@ -10,7 +10,7 @@ local M = {}
 -- Flags de la caminata: se limpian al empezar para poder repetirla (p. ej. tras F3)
 local WALK_FLAGS = {
   "chequelo.on_road", "chequelo.off_road", "chequelo.light_appears", "chequelo.detour",
-  "chequelo.detour_cafetal", "chequelo.detour_door", "chequelo.arrived",
+  "chequelo.detour_cafetal", "chequelo.detour_door", "chequelo.arrived", "chequelo.silbidos",
 }
 
 -- Primer desvio: no cambia si ya hay uno; los desvios no terminan la noche

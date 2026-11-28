@@ -17,6 +17,7 @@ local tod = require("time_of_day")
 
 local M = {}
 
+M.FOCO_SHELF = { x = 96, y = 24 } -- linterna de maps/house_mama.tmx (x 88-104, y 24)
 M.EXIT_DOOR = { x = 96, y = 128 } -- puerta de salida de maps/house_mama.tmx (centro del borde superior del rect)
 
 local want_story = false -- el jugador pidio oir la historia
@@ -80,6 +81,11 @@ end
 function M.on_door(door)
   local p = door and door.properties or {}
   if p.target_map ~= "@return" or not pending_exit() then return false end
+  -- Sin el foco no sale: mama lo manda a tomarlo de la repisa
+  if not require("tools").has("foco") then
+    dialogue.start(dialogue.scripts.mama_foco)
+    return true
+  end
   dialogue.start(dialogue.scripts.mama_luz, { on_end = after_warning })
   return true
 end
@@ -97,7 +103,9 @@ function M.tick(dt)
   end
   if pending_exit() and not dialogue.is_open() and not fade.is_active() then
     local bob = math.floor(math.sin(clock * 5) * 2 + 0.5)
-    draw_text_world(M.EXIT_DOOR.x - 3, M.EXIT_DOOR.y - 20 + bob, "v", "default", 255, 220, 80, 255)
+    -- Primero el foco (linterna de la repisa); con el foco en mano, la puerta
+    local at = require("tools").has("foco") and M.EXIT_DOOR or M.FOCO_SHELF
+    draw_text_world(at.x - 3, at.y - 20 + bob, "v", "default", 255, 220, 80, 255)
   end
 end
 

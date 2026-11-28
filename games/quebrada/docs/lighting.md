@@ -6,7 +6,7 @@ Night darkness with light circles, built on the engine's
 
 - **Ambient from the time of day.** `time_of_day.lua` (see `time-of-day.md`) owns the
   ambient colour: `day` is full white (the pass is skipped, no cost), `night` is
-  `20, 26, 51`, with dusk and dawn in between. On scene load it reapplies the phase instantly.
+  `6, 8, 18`, with dusk and dawn in between. On scene load it reapplies the phase instantly.
 - **Player halo.** `lighting.tick()` attaches a tiny warm halo (`radius 20`, steady,
   offset to the feet) to `player_entity` once per scene, so the character is never lost at night.
 - **Map lights.** `time_of_day.init(map)` creates them. In Tiled, add an object of class

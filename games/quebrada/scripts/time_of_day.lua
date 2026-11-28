@@ -22,9 +22,11 @@ local M = {}
 -- Aviso opcional al pasar de noche a dia: on_day(numero_de_dia). Lo conecta el controlador
 M.on_day = nil
 
--- Apagon de la noche del chequelo: con la mision en night_active se apagan todas las luces del
--- pueblo (casas, postes) y las ventanas (roofs.lua lo consulta)
-function M.blackout() return ws.has("mission.chequelo.night_active") and true or false end
+-- Apagon de la noche del chequelo: cuando aparece la luz companera (chequelo.light_appears, en plena
+-- noche) se apagan todas las luces del pueblo (casas, postes) y las ventanas (roofs.lua lo consulta)
+function M.blackout()
+  return (ws.has("mission.chequelo.night_active") and ws.has("chequelo.light_appears")) and true or false
+end
 
 -- Luces del mapa: se vuelven a crear en cada escena (load_scene las borra)
 local lights = {}

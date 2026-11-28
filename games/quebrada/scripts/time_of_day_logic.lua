@@ -9,7 +9,7 @@ M.CARD_FADE = 0.8   -- fundido de entrada y de salida de la tarjeta de titulo
 M.COLORS = {
   day = { 255, 255, 255 },
   dusk = { 150, 120, 130 },
-  night = { 20, 26, 51 },
+  night = { 6, 8, 18 },
   dawn = { 70, 70, 100 },
 }
 

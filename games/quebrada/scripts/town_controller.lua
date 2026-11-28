@@ -76,7 +76,7 @@ M.DEFAULTS = {
   roofs = nil,      -- nil = sigue a tile_map; techos que se desvanecen + ventanas encendidas (issue #71)
   world_debug = true, -- false = sin rejilla / colisiones / puertas dibujadas (issue #71)
   on_start = nil,   -- funcion llamada una vez al colocar al jugador (issue #78)
-  on_tick = nil,    -- funcion(dt, idx) llamada cada frame con el jugador colocado
+  on_tick = nil,    -- funcion(dt, idx, map) llamada cada frame con el jugador colocado
   on_door = nil,    -- funcion(door) -> true: consume la interaccion con una puerta abierta (no hay transicion)
   companion = false, -- true = luz companera de la noche del chequelo (issue #81)
 }
@@ -512,7 +512,7 @@ function M.make_update(cfg)
       end
 
       if c.on_tick then
-        local ok, e = pcall(c.on_tick, dt, idx)
+        local ok, e = pcall(c.on_tick, dt, idx, map)
         if not ok then print("[town] on_tick fallo: " .. tostring(e)) end
       end
 
