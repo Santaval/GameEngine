@@ -20,6 +20,7 @@ import { buildTsx, buildTsxFor } from "./tsx.mjs";
 import { buildTmx, renderMap } from "./demo_map.mjs";
 import { renderBuildingSheet, B_TILES, B_COLS, B_ROWS, buildingCanvas } from "./catalog_buildings.mjs";
 import { renderParkSheet, PARK_TILES, P_COLS, P_ROWS } from "./catalog_park.mjs";
+import { buildZona1ConstsLua } from "./zona1_consts.mjs";
 import { renderSchoolSheet, S_TILES, S_COLS, S_ROWS, schoolBuildingCanvas } from "./catalog_school.mjs";
 import { renderEbaisSheet, E_TILES, E_COLS, E_ROWS, ebaisBuildingCanvas } from "./catalog_ebais.mjs";
 import { renderMonteSheet, M_TILES, M_COLS, M_ROWS, turbineCanvas, MONTE_TILE_COUNT, MONTE_ROTOR_TILE_COUNT } from "./catalog_monte.mjs";
@@ -49,6 +50,7 @@ const out = {
   btmx: join(game, "maps", "buildings_demo.tmx"),
   house: join(game, "maps", "house_mama.tmx"),
   zona1: join(game, "maps", "zona1.tmx"),
+  consts: join(game, "tests", "zona1_consts.lua"),
 };
 
 const pngOf = (f) => encodePng(f.w, f.h, f.data);
@@ -68,6 +70,7 @@ const products = () => [
   [out.mtsx, Buffer.from(buildTsxFor({ name: "monte", image: "monte.png", tiles: M_TILES, cols: M_COLS, rows: M_ROWS }))],
   [out.rpng, pngOf(renderRioSheet())],
   [out.rtsx, Buffer.from(buildTsxFor({ name: "rio", image: "rio.png", tiles: R_TILES, cols: R_COLS, rows: R_ROWS }))],
+  [out.consts, Buffer.from(buildZona1ConstsLua())],
   [out.btmx, Buffer.from(buildBuildingsTmx())],
   [out.house, Buffer.from(buildInteriorTmx())],
   [out.zona1, Buffer.from(buildZona1Tmx())],

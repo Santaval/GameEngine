@@ -176,6 +176,7 @@ const PL_SOUTH_Y = SIDEWALK_S_Y + 2, PL_NORTH_Y = SIDEWALK_N_Y - 1 - 5; // top r
 const placeW = (n) => BUILDING_BY_NAME.get(n).w;
 export const PLACE_DOORS = []; // [x px, y px] of each door-front rect centre (walkability checks)
 export const PLACE_RANGES = { n: [], s: [] }; // inclusive column ranges that must stay free of street lamps
+export const PLACE_FOOTS = { n: [], s: [] }; // inclusive column ranges [x0, x1] of the footpaths / lanes / streets that cross the north / south sidewalk row
 const doorRect = (n, x, oyRow) => ({ x: x * SIZE + doorCx(n) - 16, y: (oyRow + BUILDING_BY_NAME.get(n).h) * SIZE, w: 32, h: 16 });
 /** A row of touching buildings on the SOUTH side. items: [{ id, n (building), title?, line }]; dy rows below the verge; foot: 2-wide footpath from the sidewalk at the west end. */
 const southBlock = (id, x0, items, { dy = 0, foot = true, yardFrom = x0, yardTo = null, title = null } = {}) => {
@@ -192,7 +193,7 @@ const southBlock = (id, x0, items, { dy = 0, foot = true, yardFrom = x0, yardTo 
   const yEnd = yardTo ?? (foot ? footX + 1 : end);
   els.push({ id: `${id}_patio`, kind: "path", surface: "lastre", x: yardFrom, y: yardY, w: yEnd - yardFrom + 1, h: PL_YARD });
   PLACE_RANGES.s.push([x0, end]);
-  if (foot) { els.push({ id: `${id}_camino`, kind: "path", surface: "lastre", x: footX, y: SIDEWALK_S_Y, w: 2, h: yardY + PL_YARD - SIDEWALK_S_Y }); PLACE_RANGES.s.push([footX, footX + 1]); }
+  if (foot) { els.push({ id: `${id}_camino`, kind: "path", surface: "lastre", x: footX, y: SIDEWALK_S_Y, w: 2, h: yardY + PL_YARD - SIDEWALK_S_Y }); PLACE_RANGES.s.push([footX, footX + 1]); PLACE_FOOTS.s.push([footX, footX + 1]); }
   if (title) els.push({ id: `zona_${id}`, kind: "zone", zone: id, x: (x0 - 1) * SIZE, y: (oy - 1) * SIZE, w: (yEnd - x0 + 3) * SIZE, h: (PL_YARD + 7) * SIZE, title, ambience: "pueblo" });
   return els;
 };
@@ -201,6 +202,7 @@ const northHouse = (id, x, n, line, title = null) => {
   const oy = PL_NORTH_Y, r = doorRect(n, x, oy), c = Math.floor(r.x / SIZE);
   PLACE_DOORS.push([r.x + 16, r.y + 8]);
   PLACE_RANGES.n.push([x, x + placeW(n) - 1]);
+  PLACE_FOOTS.n.push([c, c + 1]);
   return [
     { id, kind: "building", name: n, at: [x, oy] },
     { id: `${id}_camino`, kind: "path", surface: "lastre", x: c, y: oy + 5, w: 2, h: SIDEWALK_N_Y - (oy + 5) + 1 },
@@ -213,7 +215,7 @@ export const BERTA_X = WEST_X1 + 2; // 321: north-west corner of the park, just 
 export const AB_X = BERTA_X + 3 + 15 - 4; // abastecedor centre 30 m (15 tiles) west of Berta's house centre
 export const BAR_X = AB_X + 8 + 6;
 export const CALILES_X = EXT_PAVER_X1 + 1 + 10; // the barrio's street: 4-wide lastre going south, 20 m (10 tiles) after the main street turns to lastre (the cafetal and the colegio lie between Los Machillos and here)
-const CAL_THIRD_X = CALILES_X + 4 + 10 + 12 + 3 + 10, ENR_LANE_X = CAL_THIRD_X + 10; // third house west of the mouth; Tío Enrique's lane 4 tiles past its footpath
+export const CAL_THIRD_X = CALILES_X + 4 + 10 + 12 + 3 + 10, ENR_LANE_X = CAL_THIRD_X + 10; // third house west of the mouth; Tío Enrique's lane 4 tiles past its footpath
 // CASA DE ABUELA PAULA Y ABUELO PEPE: wooden house on the NORTH side, straight across the street from mama's house, set back by a ~15 m (8-tile, verge row included) fenced lane
 const PAULA_X = MAMA_AT[0], PAULA_Y = SIDEWALK_N_Y - 1 - 7 - 6; // building 8x6, door faces the street
 const PAULA_PX0 = PAULA_X - 3, PAULA_PX1 = PAULA_X + 10, PAULA_PY0 = PAULA_Y, PAULA_PY1 = SIDEWALK_N_Y - 1; // yard fence rectangle (14 wide)
@@ -226,6 +228,7 @@ const paulaFence = () => {
   return cells;
 };
 PLACE_RANGES.n.push([PAULA_PX0, PAULA_PX1]);
+PLACE_FOOTS.n.push([PAULA_LANE[0], PAULA_LANE[1]]);
 const PAULA_DOOR = doorRect("casa_paula", PAULA_X, PAULA_Y);
 PLACE_DOORS.push([PAULA_DOOR.x + 16, PAULA_DOOR.y + 8]);
 const LAME = "Está cerrado.";
@@ -266,6 +269,7 @@ const PLACE_ELEMENTS = [
   ...southBlock("enrique", ENR_LANE_X - 8, [{ id: "casa", n: "casa_2", line: "Casa de Tío Enrique. No hay nadie." }], { dy: 10, foot: false, yardTo: ENR_LANE_X + 1, title: "Casa de Tío Enrique" }),
 ];
 PLACE_RANGES.s.push([ENR_LANE_X, ENR_LANE_X + 1], [CALILES_X, CALILES_X + 3]);
+PLACE_FOOTS.s.push([ENR_LANE_X, ENR_LANE_X + 1], [CALILES_X, CALILES_X + 3]);
 
 export const LAMP_EVERY_M = 50;
 export const LAMP_EVERY = LAMP_EVERY_M / METRES_PER_TILE; // 25 tiles
