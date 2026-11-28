@@ -15,6 +15,8 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { encodePng } from "./png.mjs";
+import { Frame, rgb } from "./draw.mjs";
+import { GLYPHS, drawText, ADVANCE } from "./font.mjs";
 import { renderSheet, TILES } from "./catalog.mjs";
 import { buildTsx, buildTsxFor } from "./tsx.mjs";
 import { buildTmx, renderMap } from "./demo_map.mjs";
@@ -129,6 +131,11 @@ if (args.includes("--check")) {
   writeFileSync(join(dir, "buildings_demo_night.png"), pngOf(renderBuildingsMap({ night: true, roofs: true }).scaled(2)));
   writeFileSync(join(dir, "house_mama.png"), pngOf(renderInterior().scaled(4)));
   const grass = [96, 150, 70, 255];
+  { // every glyph of the shared font, x8
+    const keys = Object.keys(GLYPHS), per = 16, f = new Frame(per * ADVANCE + 2, Math.ceil(keys.length / per) * 7 + 2);
+    keys.forEach((k, i) => drawText(f, k === " " ? "-" : k, 1 + (i % per) * ADVANCE, 1 + Math.floor(i / per) * 7, rgb("#f1f1ec")));
+    writeFileSync(join(dir, "font_x8.png"), pngOf(f.onBackground([40, 60, 110, 255]).scaled(8)));
+  }
   writeFileSync(join(dir, "crop_iglesia_x4.png"), pngOf(buildingCanvas("iglesia").day.onBackground(grass).scaled(4)));
   writeFileSync(join(dir, "crop_casa_mama_x4.png"), pngOf(buildingCanvas("casa_mama").day.onBackground(grass).scaled(4)));
   writeFileSync(join(dir, "zona1.png"), pngOf(renderZona1({ night: false, roofs: true })));

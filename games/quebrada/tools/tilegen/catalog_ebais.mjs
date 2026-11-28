@@ -16,6 +16,7 @@ import { C } from "./palette.mjs";
 import { noise, tileRng } from "./rng.mjs";
 import { concreteAt } from "./materials.mjs";
 import * as D from "./building_draw.mjs";
+import { drawText } from "./font.mjs";
 
 export const SIZE = 16;
 export const E_COLS = 16;
@@ -193,10 +194,6 @@ function singles() {
   return T;
 }
 
-const GLYPHS = {
-  E: ["111", "100", "110", "100", "111"], B: ["110", "101", "110", "101", "110"], A: ["010", "101", "111", "101", "101"],
-  I: ["111", "010", "010", "010", "111"], S: ["111", "100", "111", "001", "111"],
-};
 function objects() {
   const cell = (name, cx, cy, row, col, layer, props = {}) => ({ cx, cy, id: id(row, col), name: `${name}_${cx}_${cy}`, layer, ...props });
   // sign board 2x1 on two posts: solid like a post
@@ -209,7 +206,7 @@ function objects() {
       const blue = rgb("#2a5a9a");
       f.rect(1, 1, 30, 10, B.whiteTrim); f.rect(1, 1, 30, 1, blue); f.rect(1, 10, 30, 1, blue); f.vline(1, 1, 10, blue); f.vline(30, 1, 10, blue);
       f.hline(2, 9, 28, B.whiteTrimShade);
-      "EBAIS".split("").forEach((ch, i) => GLYPHS[ch].forEach((row, j) => [...row].forEach((v, k) => { if (v === "1") f.px(7 + i * 4 + k, 3 + j, blue); })));
+      drawText(f, "EBAIS", 7, 3, blue);
     },
   }];
 }

@@ -18,6 +18,7 @@ import { C } from "./palette.mjs";
 import { tileRng } from "./rng.mjs";
 import { concreteAt } from "./materials.mjs";
 import * as D from "./building_draw.mjs";
+import { drawText } from "./font.mjs";
 
 export const SIZE = 16;
 export const S_COLS = 16;
@@ -139,10 +140,6 @@ function singles() {
 }
 
 // ---------------------------------------------------------------- multi-cell objects
-const GLYPHS = {
-  E: ["111", "100", "110", "100", "111"], O: ["111", "101", "101", "101", "111"], G: ["111", "100", "101", "101", "111"], I: ["111", "010", "010", "010", "111"], S: ["111", "100", "111", "001", "111"], C: ["111", "100", "100", "100", "111"],
-  U: ["101", "101", "101", "101", "111"], L: ["100", "100", "100", "100", "111"], A: ["010", "101", "111", "101", "101"],
-};
 function objects() {
   const O = [];
   const cell = (name, cx, cy, row, col, layer, props = {}) => ({ cx, cy, id: id(row, col), name: `${name}_${cx}_${cy}`, layer, ...props });
@@ -170,7 +167,7 @@ function objects() {
       for (const x of [5, 25]) { f.rect(x, 14, 3, 17, B.wood); f.vline(x, 14, 17, B.woodLight); f.vline(x + 2, 14, 17, B.woodDark); }
       f.rect(1, 2, 30, 13, B.whiteTrim); f.rect(1, 2, 30, 1, blue); f.rect(1, 14, 30, 1, blue); f.vline(1, 2, 13, blue); f.vline(30, 2, 13, blue);
       f.hline(2, 13, 28, B.whiteTrimShade);
-      text.split("").forEach((ch, i) => GLYPHS[ch].forEach((row, j) => [...row].forEach((v, k) => { if (v === "1") f.px(2 + i * 4 + k, 5 + j, blue); })));
+      drawText(f, text, 2, 5, blue);
     },
   });
   sign("escuela_rotulo", "ESCUELA", 11, rgb("#2a4a9a"));
