@@ -37,17 +37,18 @@ check(png:sub(1, 8) == "\137PNG\r\n\26\n", "monte.png no tiene firma PNG")
 local pw, ph = string.unpack(">I4I4", png, 17)
 check(pw == img_w and ph == img_h, "monte.png (" .. pw .. "x" .. ph .. ") no coincide con el tsx")
 
--- firstgid del mapa = tilecount(town) + tilecount(buildings) + tilecount(park) + tilecount(school) + tilecount(ebais) + 1 (1201)
+-- firstgid del mapa = tilecount(town) + tilecount(buildings) + tilecount(park) + tilecount(school) + tilecount(ebais) + 1 (ver games/quebrada/tests/zona1_consts.lua)
 local function count_of(path) return tonumber(attr(read_file(path):match("<tileset ([^>]*)>"), "tilecount")) end
 local firstgid = 1
 for _, n in ipairs({ "town", "buildings", "park", "school", "ebais" }) do firstgid = firstgid + count_of("games/quebrada/tilesets/" .. n .. ".tsx") end
-check(firstgid == 1201, "firstgid del monte debe ser 1201, calculado " .. firstgid)
+local Z = dofile("games/quebrada/tests/zona1_consts.lua")
+check(firstgid == Z.MONTE_FIRSTGID, "firstgid del monte debe ser " .. Z.MONTE_FIRSTGID .. " (zona1_consts.lua), calculado " .. firstgid)
 local tmx = read_file("games/quebrada/maps/zona1.tmx")
 check(tmx:match('<tileset firstgid="' .. firstgid .. '" source="%.%./tilesets/monte%.tsx"/>') ~= nil, "zona1.tmx debe declarar monte.tsx con firstgid " .. firstgid)
 
 -- nombres de la hoja town (el monte no puede repetirlos: monte_trunk y monte_canopy_* son de town)
 local town_names = {}
-for _, body in read_file("games/quebrada/tilesets/town.tsx"):gmatch('<tile id="%d+">(.-)</tile>') do town_names[body:match('name="name" value="([^"]*)"') or ""] = true end
+for body in read_file("games/quebrada/tilesets/town.tsx"):gmatch('<tile id="%d+">(.-)</tile>') do town_names[body:match('name="name" value="([^"]*)"') or ""] = true end
 
 local by_name, by_id, n_tiles, n_anim = {}, {}, 0, 0
 for tid, body in tsx:gmatch('<tile id="(%d+)">(.-)</tile>') do

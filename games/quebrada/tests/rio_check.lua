@@ -37,18 +37,19 @@ check(png:sub(1, 8) == "\137PNG\r\n\26\n", "rio.png no tiene firma PNG")
 local pw, ph = string.unpack(">I4I4", png, 17)
 check(pw == img_w and ph == img_h, "rio.png (" .. pw .. "x" .. ph .. ") no coincide con el tsx")
 
--- firstgid del mapa = suma de los tilecount de town, buildings, park, school, ebais y monte + 1 (1457)
+-- firstgid del mapa = suma de los tilecount de town, buildings, park, school, ebais y monte + 1 (ver games/quebrada/tests/zona1_consts.lua)
 local function count_of(path) return tonumber(attr(read_file(path):match("<tileset ([^>]*)>"), "tilecount")) end
 local firstgid = 1
 for _, n in ipairs({ "town", "buildings", "park", "school", "ebais", "monte" }) do firstgid = firstgid + count_of("games/quebrada/tilesets/" .. n .. ".tsx") end
-check(firstgid == 1457, "firstgid del rio debe ser 1457, calculado " .. firstgid)
+local Z = dofile("games/quebrada/tests/zona1_consts.lua")
+check(firstgid == Z.RIO_FIRSTGID, "firstgid del rio debe ser " .. Z.RIO_FIRSTGID .. " (zona1_consts.lua), calculado " .. firstgid)
 local tmx = read_file("games/quebrada/maps/zona1.tmx")
 check(tmx:match('<tileset firstgid="' .. firstgid .. '" source="%.%./tilesets/rio%.tsx"/>') ~= nil, "zona1.tmx debe declarar rio.tsx con firstgid " .. firstgid)
 
 -- los nombres de town y monte no se repiten
 local taken = {}
 for _, f in ipairs({ "town", "monte" }) do
-  for _, body in read_file("games/quebrada/tilesets/" .. f .. ".tsx"):gmatch('<tile id="%d+">(.-)</tile>') do taken[body:match('name="name" value="([^"]*)"') or ""] = true end
+  for body in read_file("games/quebrada/tilesets/" .. f .. ".tsx"):gmatch('<tile id="%d+">(.-)</tile>') do taken[body:match('name="name" value="([^"]*)"') or ""] = true end
 end
 
 local by_name, n_tiles = {}, 0

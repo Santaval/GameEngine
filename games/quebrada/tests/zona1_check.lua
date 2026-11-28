@@ -41,47 +41,58 @@ local function overlap(a, b)
   return a.x < b.x + b.w and b.x < a.x + a.w and a.y < b.y + b.h and b.y < a.y + a.h
 end
 
+-- Constantes del mapa que escribe el generador (make tiles): firstgids, PAD, TOP, largo de la calle, cafetal, casas... Las filas ahi son ABSOLUTAS (restar TOP).
+local Z = dofile("games/quebrada/tests/zona1_consts.lua")
 local ZONA = "games/quebrada/maps/zona1.tmx"
 local tmx = read_file(ZONA)
 
 -- ---- mapa ----
 local METRES_PER_TILE = 2
-local PAD = 255 -- LEFT_PAD de tools/tilegen/zona1_map.mjs (16 + 239: el monte a 250 tiles = 500 m de la puerta de la iglesia, a >= 10 tiles del borde izquierdo)
+local PAD = Z.LEFT_PAD -- LEFT_PAD de tools/tilegen/zona1_map.mjs (el monte a 250 tiles = 500 m de la puerta de la iglesia, a >= 10 tiles del borde izquierdo)
 local D = PAD - 16 -- desplazamiento respecto a los literales absolutos escritos con PAD = 16
 -- Orientacion: OESTE = DERECHA de la pantalla, ESTE = IZQUIERDA, SUR = abajo, NORTE = arriba.
-local EXT_PAVER_M, EXT_LASTRE_M = 310, 200
+local EXT_PAVER_M, EXT_LASTRE_M = Z.EXT_PAVER_M, Z.EXT_LASTRE_M
 local EXT_PAVER_T, EXT_LASTRE_T = EXT_PAVER_M // METRES_PER_TILE, EXT_LASTRE_M // METRES_PER_TILE -- 275, 100
 local EXT_X0 = PAD + 60
 local EXT_PAVER_X1 = EXT_X0 + EXT_PAVER_T - 1 -- 334
 local LASTRE_X0, LASTRE_X1 = EXT_PAVER_X1 + 1, EXT_PAVER_X1 + EXT_LASTRE_T -- 335, 434
-local TOP = 93 -- TOP_PAD de tools/tilegen/zona1_map.mjs: filas nuevas encima del mapa original (el rio a 175 m de la iglesia queda ~88 tiles al norte; 6 filas de cesped sobre la orilla mas norte)
+local TOP = Z.TOP_PAD -- TOP_PAD de tools/tilegen/zona1_map.mjs: filas nuevas encima del mapa original (el rio a 175 m de la iglesia queda ~88 tiles al norte; 6 filas de cesped sobre la orilla mas norte)
 local MAP_W, MAP_H = LASTRE_X1 + 1 + 10, 94 + TOP -- 700 x 187 (PAD a la izquierda, 10 tiles de margen a la derecha; 3 filas de margen bajo el lote del Ebais, fila 90)
 local STREET_X, STREET_Y, STREET_LEN, STREET_W = PAD + 10, 21, 50, 4 -- tiles; 50 tiles = 100 m; ancho 4 (~8 m reales, distorsion conocida)
 local CHURCH_X, CHURCH_Y, CHURCH_W, CHURCH_H = PAD + 30, 6, 10, 12 -- tiles
 local SIDEWALK_A, SIDEWALK_B = 49, 50 -- gids de sidewalk_a / sidewalk_b (tile ids 48 / 49)
-local PARK_FIRSTGID = 529 -- town (144) + buildings (384) + 1
-local SCHOOL_FIRSTGID = 721 -- town (144) + buildings (384) + park (192) + 1
-local EBAIS_FIRSTGID = 945 -- town (144) + buildings (384) + park (192) + school (224) + 1
-local MONTE_FIRSTGID = 1201 -- town (144) + buildings (384) + park (192) + school (224) + ebais (256) + 1
+-- firstgids: los declara el TMX; deben coincidir con el generador (zona1_consts.lua) y con 1 + la suma de los tilecount de los tilesets anteriores
+local FG = {}
+for g, n in tmx:gmatch('<tileset firstgid="(%d+)" source="%.%./tilesets/(%w+)%.tsx"/>') do FG[n] = tonumber(g) end
+do
+  local expect = 1
+  for _, n in ipairs({ "town", "buildings", "park", "school", "ebais", "monte", "rio" }) do
+    check(FG[n] == expect, "firstgid de " .. n .. " en el TMX = " .. tostring(FG[n]) .. ", esperado 1 + tilecounts anteriores = " .. expect)
+    expect = expect + tonumber(attr(read_file("games/quebrada/tilesets/" .. n .. ".tsx"):match("<tileset ([^>]*)>"), "tilecount"))
+  end
+end
+check(FG.park == Z.PARK_FIRSTGID and FG.school == Z.SCHOOL_FIRSTGID and FG.ebais == Z.EBAIS_FIRSTGID and FG.monte == Z.MONTE_FIRSTGID and FG.rio == Z.RIO_FIRSTGID, "los firstgids del TMX no coinciden con zona1_consts.lua (correr make tiles)")
+FG = nil
+local PARK_FIRSTGID, SCHOOL_FIRSTGID, EBAIS_FIRSTGID, MONTE_FIRSTGID = Z.PARK_FIRSTGID, Z.SCHOOL_FIRSTGID, Z.EBAIS_FIRSTGID, Z.MONTE_FIRSTGID
 local PARK_X, PARK_Y, PARK_W, PARK_H = PAD + 10, 27, 50, 37 -- el parque: una cuadra (50 tiles), una fila de cesped bajo la acera sur
 local PAVER_A, PAVER_B = 51, 52 -- gids de paver_a / paver_b (town firstgid 1, tile ids 50 / 51)
 local head = tmx:match("<map ([^>]*)>")
 local map_w, map_h = tonumber(attr(head, "width")), tonumber(attr(head, "height"))
-check(map_w == MAP_W and map_h == MAP_H, "el mapa debe ser 700x187 (" .. tostring(map_w) .. "x" .. tostring(map_h) .. ")")
+check(map_w == MAP_W and map_h == MAP_H, "el mapa debe ser " .. MAP_W .. "x" .. MAP_H .. " (" .. tostring(map_w) .. "x" .. tostring(map_h) .. ")")
 check(tonumber(attr(head, "tilewidth")) == 16 and tonumber(attr(head, "tileheight")) == 16, "tiles de 16x16")
 check(STREET_LEN * METRES_PER_TILE == 100, "la calle debe medir 100 m")
 check(tmx:match('<property name="metres_per_tile"[^>]-value="2"') ~= nil, "falta metres_per_tile=2 en el mapa")
 check(tmx:match('<tileset firstgid="1" source="%.%./tilesets/town%.tsx"/>') ~= nil, "falta el tileset town (firstgid 1)")
 check(tmx:match('<tileset firstgid="145" source="%.%./tilesets/buildings%.tsx"/>') ~= nil, "falta el tileset buildings (firstgid 145)")
 
-check(tmx:match('<tileset firstgid="' .. PARK_FIRSTGID .. '" source="%.%./tilesets/park%.tsx"/>') ~= nil, "falta el tileset park (firstgid 529)")
+check(tmx:match('<tileset firstgid="' .. PARK_FIRSTGID .. '" source="%.%./tilesets/park%.tsx"/>') ~= nil, "falta el tileset park (firstgid " .. PARK_FIRSTGID .. ")")
 local _, n_tilesets = tmx:gsub("<tileset ", "")
-check(tmx:match('<tileset firstgid="' .. SCHOOL_FIRSTGID .. '" source="%.%./tilesets/school%.tsx"/>') ~= nil, "falta el tileset school (firstgid 721)")
-check(tmx:match('<tileset firstgid="' .. EBAIS_FIRSTGID .. '" source="%.%./tilesets/ebais%.tsx"/>') ~= nil, "falta el tileset ebais (firstgid 945)")
-check(tmx:match('<tileset firstgid="' .. MONTE_FIRSTGID .. '" source="%.%./tilesets/monte%.tsx"/>') ~= nil, "falta el tileset monte (firstgid 1201)")
-local RIO_FIRSTGID = MONTE_FIRSTGID + 256 -- el monte tiene capacidad 16 x 16 = 256 ids
-check(RIO_FIRSTGID == 1457, "rio firstgid = 1201 + 256 = 1457")
-check(tmx:match('<tileset firstgid="' .. RIO_FIRSTGID .. '" source="%.%./tilesets/rio%.tsx"/>') ~= nil, "falta el tileset rio (firstgid 1457)")
+check(tmx:match('<tileset firstgid="' .. SCHOOL_FIRSTGID .. '" source="%.%./tilesets/school%.tsx"/>') ~= nil, "falta el tileset school (firstgid " .. SCHOOL_FIRSTGID .. ")")
+check(tmx:match('<tileset firstgid="' .. EBAIS_FIRSTGID .. '" source="%.%./tilesets/ebais%.tsx"/>') ~= nil, "falta el tileset ebais (firstgid " .. EBAIS_FIRSTGID .. ")")
+check(tmx:match('<tileset firstgid="' .. MONTE_FIRSTGID .. '" source="%.%./tilesets/monte%.tsx"/>') ~= nil, "falta el tileset monte (firstgid " .. MONTE_FIRSTGID .. ")")
+local RIO_FIRSTGID = Z.RIO_FIRSTGID
+check(RIO_FIRSTGID == MONTE_FIRSTGID + 256, "rio firstgid = monte + 256 (capacidad 16 x 16 ids)")
+check(tmx:match('<tileset firstgid="' .. RIO_FIRSTGID .. '" source="%.%./tilesets/rio%.tsx"/>') ~= nil, "falta el tileset rio (firstgid " .. RIO_FIRSTGID .. ")")
 check(n_tilesets == 7, "el mapa debe declarar 7 tilesets (town, buildings, park, school, ebais, monte, rio), tiene " .. n_tilesets)
 
 local layers, ground = {}, {}
@@ -134,9 +145,13 @@ for _, y in ipairs({ 22, 70 }) do
     check(SURF[k] == nil or gid_surface[cell("ground", x, y)] == SURF[k], "superficie inesperada en (" .. x .. "," .. y .. "): " .. k)
   end
 end
-local function rect_is(k, x0, y0, x1, y1, what)
+local FOOTS = { n = {}, s = {} } -- columnas de caminos / pasillos / calles que cruzan la acera norte (n) o sur (s): lastre en vez de acera (las pone el generador)
+for _, side in ipairs({ "n", "s" }) do for _, r in ipairs(Z.PLACE_FOOTS[side]) do for c = r[1], r[2] do FOOTS[side][c] = true end end end
+for _, c in ipairs({ Z.CHAYO_FOOT_X, Z.CHAYO_FOOT_X + 1, Z.MAMA_FOOT_X, Z.MAMA_FOOT_X + 1 }) do FOOTS.s[c] = true end
+local function rect_is(k, x0, y0, x1, y1, what, skip)
   for y = y0, y1 do for x = x0, x1 do
-    if kind_at(x, y) ~= k then check(false, what .. ": se esperaba " .. k .. " en (" .. x .. "," .. y .. "), hay " .. kind_at(x, y)); return end
+    if skip and skip[x] then -- columna con un camino que cruza la acera
+    elseif kind_at(x, y) ~= k then check(false, what .. ": se esperaba " .. k .. " en (" .. x .. "," .. y .. "), hay " .. kind_at(x, y)); return end
   end end
 end
 
@@ -179,8 +194,8 @@ for x = STREET_X, STREET_X + STREET_LEN - 1 do
 end
 
 -- ---- la extension al oeste (derecha): 310 m de adoquin + 200 m de lastre = 510 m = 255 tiles ----
-check(EXT_PAVER_T == 275 and EXT_LASTRE_T == 100 and EXT_PAVER_T + EXT_LASTRE_T == 375, "extension: 275 + 100 = 375 tiles")
-check((EXT_PAVER_T + EXT_LASTRE_T) * METRES_PER_TILE == 510, "la extension debe medir 510 m")
+check(EXT_PAVER_T == Z.EXT_PAVER_TILES and EXT_LASTRE_T == Z.EXT_LASTRE_TILES, "extension: " .. Z.EXT_PAVER_TILES .. " + " .. Z.EXT_LASTRE_TILES .. " tiles (zona1_consts.lua)")
+check((EXT_PAVER_T + EXT_LASTRE_T) * METRES_PER_TILE == Z.EXT_PAVER_M + Z.EXT_LASTRE_M, "la extension debe medir " .. (Z.EXT_PAVER_M + Z.EXT_LASTRE_M) .. " m")
 rect_is("paver", EXT_X0, STREET_Y, EXT_PAVER_X1, STREET_Y + STREET_W - 1, "extension de adoquin (310 m)")
 rect_is("lastre", LASTRE_X0, STREET_Y, LASTRE_X1, STREET_Y + STREET_W - 1, "tramo de lastre (200 m)")
 rect_is("grass", LASTRE_X1 + 1, STREET_Y, map_w - 1, STREET_Y + STREET_W - 1, "margen tras el lastre")
@@ -191,10 +206,13 @@ for y = STREET_Y, STREET_Y + STREET_W - 1 do
   check(gid_surface[g] == "concreto", "el adoquin debe tener surface=concreto")
 end
 -- el lastre no tiene aceras: filas 20 y 25 son cesped
-rect_is("grass", LASTRE_X0, STREET_Y - 1, LASTRE_X1, STREET_Y - 1, "sin acera norte en el lastre")
-for x = LASTRE_X0, LASTRE_X1 do -- fila 25: cesped salvo donde arrancan los caminos de las casas de Chayo (406-407) y mama (432-433)
-  local foot = x == PAD + 406 or x == PAD + 407 or x == PAD + 432 or x == PAD + 433
+rect_is("grass", LASTRE_X0, STREET_Y - 1, LASTRE_X1, STREET_Y - 1, "sin acera norte en el lastre", FOOTS.n)
+-- caminos que arrancan en la fila sur: casas de Chayo y mama, la calle de Los Caliles y el pasillo de Tio Enrique (todo viene del generador)
+do
+for x = LASTRE_X0, LASTRE_X1 do -- fila 25: cesped salvo donde arrancan los caminos (FOOTS.s)
+  local foot = FOOTS.s[x] == true
   check(kind_at(x, STREET_Y + STREET_W) == (foot and "lastre" or "grass"), "sin acera sur en el lastre (fila 25, col " .. x .. ")")
+end
 end
 -- el lastre tiene rodadas (ruts) en las filas interiores
 local ruts = 0
@@ -202,10 +220,10 @@ for x = LASTRE_X0, LASTRE_X1 do if gid_name[cell("ground", x, STREET_Y + 1)] == 
 check(ruts > 50, "el lastre debe tener rodadas (" .. ruts .. ")")
 
 -- ---- aceras de la extension de adoquin (filas 20 y 25, cols 60-334); la sur se abre en la T oeste (cols 61-64) ----
-rect_is("sidewalk", EXT_X0, STREET_Y - 1, EXT_PAVER_X1, STREET_Y - 1, "acera norte de la extension")
+rect_is("sidewalk", EXT_X0, STREET_Y - 1, EXT_PAVER_X1, STREET_Y - 1, "acera norte de la extension", FOOTS.n)
 rect_is("sidewalk", EXT_X0, STREET_Y + STREET_W, EXT_X0, STREET_Y + STREET_W, "acera sur (col 60)")
 rect_is("paver", PAD + 61, STREET_Y + STREET_W, PAD + 64, STREET_Y + STREET_W, "union en T: sin acera en cols 61-64 de la fila 25 (+PAD)")
-rect_is("sidewalk", PAD + 65, STREET_Y + STREET_W, EXT_PAVER_X1, STREET_Y + STREET_W, "acera sur tras la union")
+rect_is("sidewalk", PAD + 65, STREET_Y + STREET_W, EXT_PAVER_X1, STREET_Y + STREET_W, "acera sur tras la union", FOOTS.s)
 
 -- ---- calles alrededor del parque ----
 -- oeste (derecha del parque): adoquin cols 61-64, filas 25-68; acera solo del lado del parque (col 60, filas 25-64)
@@ -392,9 +410,14 @@ for _, o in ipairs(of_class("light")) do
   end
 end
 local n_lamps = 0
+local LAMP = { n = {}, s = {}, skipped = 0, cols = 0 } -- columnas omitidas: las calcula el generador (camino de la iglesia, cafetal, calle oeste, edificios y caminos de las casas)
+for _, c in ipairs(Z.LAMP_SKIP_N) do LAMP.n[c] = true end
+for _, c in ipairs(Z.LAMP_SKIP_S) do LAMP.s[c] = true end
 for col = PAD + 10, LASTRE_X1, 25 do
+  LAMP.cols = LAMP.cols + 1
   for _, side in ipairs({ "n", "s" }) do
-    local skipped = (side == "n" and (col == PAD + 35 or col == PAD + 310)) or (side == "s" and col == PAD + 60) -- camino de la iglesia / cafetal (cerca y pasillo) / acera de la calle oeste
+    local skipped = LAMP[side][col] == true
+    if skipped then LAMP.skipped = LAMP.skipped + 1 end
     check((lamp_x[side .. col] == true) == (not skipped), "farola " .. side .. col .. (skipped and " debe omitirse" or " falta"))
     if lamp_x[side .. col] then
       n_lamps = n_lamps + 1
@@ -403,14 +426,18 @@ for col = PAD + 10, LASTRE_X1, 25 do
     end
   end
 end
-check(n_lamps == 31, "deben ser 31 farolas de calle (17 columnas x 2 lados - 3 omitidas), hay " .. n_lamps)
+check(n_lamps == LAMP.cols * 2 - LAMP.skipped, "deben ser " .. (LAMP.cols * 2 - LAMP.skipped) .. " farolas de calle (" .. LAMP.cols .. " columnas x 2 lados - " .. LAMP.skipped .. " omitidas), hay " .. n_lamps)
 for x in pairs(lamp_x) do
   local col = tonumber(x:sub(2))
   check((col - PAD - 10) % 25 == 0, "farola fuera de la rejilla de 25 tiles: " .. x)
 end
+for x in pairs(lamp_x) do -- ninguna farola dentro de un edificio / camino de las casas y locales de la calle principal
+  local side, col = x:sub(1, 1), tonumber(x:sub(2))
+  for _, r in ipairs(Z.PLACE_RANGES[side]) do check(col < r[1] or col > r[2], "la farola " .. x .. " cae dentro de un edificio o camino (cols " .. r[1] .. "-" .. r[2] .. ")") end
+end
 local lamps = 0
 for _, o in ipairs(of_class("light")) do if o.name:match("^luz_farola_") then lamps = lamps + 1 end end
-check(lamps >= 31, "faltan farolas (" .. lamps .. ")")
+check(lamps >= LAMP.cols * 2 - LAMP.skipped, "faltan farolas (" .. lamps .. ")")
 
 -- ================================================================ el Chequelo: cafetal, casas, ruta, triggers, emisores
 local function gname(layer, x, y) return gid_name[cell(layer, x, y)] end
@@ -423,7 +450,7 @@ local function of_name_prefix(prefix)
 end
 
 -- ---- el cafetal: 25 tiles (50 m) de ancho, centrado 50 m antes del fin del adoquin (col 334 - 25 = 309), al norte de la calle ----
-local CAF_X0, CAF_X1, CAF_Y0, CAF_Y1, GAP0, GAP1 = PAD + 297, PAD + 321, 5, 18, PAD + 308, PAD + 309
+local CAF_X0, CAF_X1, CAF_Y0, CAF_Y1, GAP0, GAP1 = Z.CAF_X0, Z.CAF_X1, Z.CAF_Y0 - TOP, Z.CAF_Y1 - TOP, Z.CAF_GAP[1], Z.CAF_GAP[2]
 check(CAF_X1 - CAF_X0 + 1 == 25, "el cafetal debe medir 25 tiles = 50 m de ancho")
 check(CAF_X0 + (CAF_X1 - CAF_X0) // 2 == EXT_PAVER_X1 - 25, "el cafetal debe estar centrado 25 tiles (50 m) antes del fin del adoquin")
 check(CAF_Y1 < STREET_Y - 2, "el cafetal deja una fila de cesped (19) entre su cerca y la acera norte (20)")
@@ -448,7 +475,7 @@ for y = CAF_Y0 + 1, CAF_Y1 - 1 do for x = CAF_X0 + 1, CAF_X1 - 1 do
   else check(g == "soil" or g == "soil_terrace" or g == "soil_furrow", "terraza de tierra esperada en (" .. x .. "," .. y .. ")") end
 end end
 check(cafetos >= 80, "el cafetal debe tener filas de cafetos (" .. cafetos .. ")")
-for y = CAF_Y1, STREET_Y - 1 do -- pasillo hasta la acera: lastre y sin objetos
+for y = CAF_Y1, STREET_Y - 2 do -- pasillo hasta la acera (fila 20, que el pasillo toca sin cruzar): lastre y sin objetos
   for _, x in ipairs({ GAP0, GAP1 }) do
     check(kind_at(x, y) == "lastre", "el pasillo del cafetal debe llegar a la acera: lastre en (" .. x .. "," .. y .. ")")
     check(y == CAF_Y1 and gname("objects", x, y) == "fence_gap" or cell("objects", x, y) == 0, "obstaculo en el pasillo del cafetal en (" .. x .. "," .. y .. ")")
@@ -461,11 +488,14 @@ if zones.cafetal then
 end
 
 -- ---- casas: mama (casa_mama, fondo del lastre, sur) y Chayo (casa_2, 50 m = 25 tiles antes, sur) ----
-local MAMA_X0, MAMA_Y0, MAMA_W, MAMA_H = PAD + 423, 27, 8, 6
-local CHAYO_X0, CHAYO_Y0, CHAYO_W, CHAYO_H = PAD + 399, 27, 6, 5
+local MAMA_X0, MAMA_Y0, MAMA_W, MAMA_H = Z.MAMA_AT[1], Z.MAMA_AT[2] - TOP, 8, 6
+local CHAYO_X0, CHAYO_Y0, CHAYO_W, CHAYO_H = Z.CHAYO_AT[1], Z.CHAYO_AT[2] - TOP, 6, 5
 check((MAMA_X0 + MAMA_W / 2) - (CHAYO_X0 + CHAYO_W / 2) == 25, "la casa de Chayo debe estar 25 tiles (50 m) antes de la de mama, centro a centro")
-check(MAMA_X0 + MAMA_W - 1 < LASTRE_X1, "la casa de mama termina antes del fin de la calle (col 434)")
+check(MAMA_X0 + MAMA_W - 1 < LASTRE_X1, "la casa de mama termina antes del fin de la calle (col " .. LASTRE_X1 .. ")")
 check(MAMA_Y0 >= STREET_Y + STREET_W + 2, "las casas dejan 2 filas de cesped bajo la calle de lastre")
+local function find_obj(name, x, y) -- objeto del TMX con ese nombre en esa posicion (varias casas comparten modelo, by_name solo guarda la ultima)
+  for _, o in ipairs(objects) do if o.name == name and o.x == x and (y == nil or o.y == y) then return o end end
+end
 local function house_checks(name, ox, oy, w, h, open_porch)
   local any_b, any_roof, any_lit = false, false, false
   for y = oy, oy + h - 1 do for x = ox, ox + w - 1 do
@@ -476,9 +506,9 @@ local function house_checks(name, ox, oy, w, h, open_porch)
   check(any_b, name .. ": la capa buildings no tiene la casa en su sitio")
   check(any_roof, name .. ": la capa roof_" .. name .. " no tiene el techo en su sitio")
   check(any_lit, name .. ": la capa windows_lit no tiene ventanas encendidas")
-  local foot = by_name[name .. "_footprint"]
+  local foot = find_obj(name .. "_footprint", ox * 16) -- hay varias casas del mismo modelo: se busca por posicion
   check(foot ~= nil and foot.x == ox * 16 and foot.w == w * 16 and foot.h > 0, name .. "_footprint debe cubrir el ancho de la casa")
-  local roof = by_name["roof_" .. name]
+  local roof = find_obj("roof_" .. name, ox * 16, oy * 16)
   check(roof ~= nil and roof.class == "roof" and roof.props.roof_of == name and roof.x == ox * 16 and roof.y == oy * 16, "falta el rect roof de " .. name)
   check(layers["roof_" .. name].above == "true" and layers["roof_" .. name].roof_of == name, "roof_" .. name .. ": above y roof_of")
   check(by_name["luz_" .. name .. "_1"] ~= nil and by_name["luz_" .. name .. "_1"].props.only == "dusk,night", "falta la luz de ventana de " .. name)
@@ -620,7 +650,7 @@ for i = 2, #route do -- la ruta entera cubierta por la union de los rects road
   check(bad == nil, "road no cubre la ruta (tramo " .. (i - 1) .. ") cerca de (" .. tostring(bad and bad[1]) .. "," .. tostring(bad and bad[2]) .. ")")
 end
 -- los rects road cubren la calle de la puerta de la iglesia a la puerta de mama (filas 21-24 en el centro, 36 px de semiancho)
-for x = 816 + 16 * D, 7184 + 16 * D, 16 do check(covered_by(roads, x, 345) and covered_by(roads, x, 391), "road debe cubrir el ancho de la calle en x=" .. x) end
+for x = 816 + 16 * D, LASTRE_X1 * 16, 16 do check(covered_by(roads, x, 345) and covered_by(roads, x, 391), "road debe cubrir el ancho de la calle en x=" .. x) end
 -- walk_start alrededor del spawn default; light_appears en la mitad de la ruta
 local ws_rect = triggers_by_id.walk_start and triggers_by_id.walk_start[1]
 if ws_rect and spawn.default then
@@ -734,7 +764,8 @@ local function school_block(name, ox, oy)
 end
 school_block("escuela_aulas_a", 6 + D, 38)
 school_block("escuela_aulas_b", 6 + D, 51)
-check(sname("objects", 11 + D, 47) == "escuela_asta_0_2" and sname("canopy", 11 + D, 45) == "escuela_asta_0_0" and sname("canopy", 11 + D, 46) == "escuela_asta_0_1", "falta el asta de la bandera (1x3) en (11 + D, 45-47)")
+Z.FLAG_X, Z.FLAG_Y = Z.ESC_FLAG_AT[1], Z.ESC_FLAG_AT[2] - TOP -- origen (arriba) del asta 1x3: bandera en las dos filas de arriba, base solida en la tercera
+check(sname("objects", Z.FLAG_X, Z.FLAG_Y + 2) == "escuela_asta_0_2" and sname("canopy", Z.FLAG_X, Z.FLAG_Y) == "escuela_asta_0_0" and sname("canopy", Z.FLAG_X, Z.FLAG_Y + 1) == "escuela_asta_0_1", "falta el asta de la bandera (1x3) en (" .. Z.FLAG_X .. ", " .. Z.FLAG_Y .. "-" .. (Z.FLAG_Y + 2) .. ")")
 check(sname("canopy", 16 + D, 44) == "escuela_rotulo_0_0" and sname("objects", 17 + D, 45) == "escuela_rotulo_1_1", "falta el rotulo de la escuela (2x2) en (16 + D, 44)")
 check(zones.escuela ~= nil and zones.escuela.props.title == "La escuela" and zones.escuela.props.ambience == "pueblo", "zona escuela: titulo 'La escuela' y ambience pueblo")
 if zones.escuela then
@@ -1051,7 +1082,7 @@ for id, body in read_file("games/quebrada/tilesets/rio.tsx"):gmatch('<tile id="(
 local function is_water(g) local n = gid_name[g] or r_name[g]; return n ~= nil and (n:match("^water_") ~= nil or n:match("^rio_water_") ~= nil) end
 local function is_bank(g) local n = gid_name[g] or r_name[g]; return n ~= nil and (n:match("^bank_") ~= nil or n:match("^rio_bank_inner_") ~= nil) end
 local function water_at(x, y) return is_water(rcell("ground", x, y)) end
-local RIVER_ASKED = { { "iglesia", PAD + 35, 6 + TOP, 175, 88 }, { "cafetal", EXT_PAVER_X1 - 25, 5 + TOP, 20, 10 }, { "casa_mama", PAD + 423 + 4, 27 + TOP, 50, 25 } } -- id, col, fila superior del objeto, metros pedidos, tiles
+local RIVER_ASKED = { { "iglesia", PAD + 35, 6 + TOP, 175, 88 }, { "cafetal", EXT_PAVER_X1 - 25, 5 + TOP, 20, 10 }, { "casa_mama", Z.MAMA_AT[1] + 4, Z.MAMA_AT[2], 50, 25 } } -- id, col, fila superior del objeto, metros pedidos, tiles
 local river_cols = {}
 for _, a in ipairs(RIVER_ASKED) do
   local id, col, top, metres, tiles = a[1], a[2], a[3], a[4], a[5]
@@ -1106,7 +1137,7 @@ do
   -- el puente sobrepasa 2 tiles cada orilla: las barandas cubren de (primera fila de agua - 3) a (ultima + 3)
   local w0, w1 = math.huge, 0
   for y = 0, real_h - 1 do if water_at(PAD + 2, y) then w0 = math.min(w0, y); w1 = math.max(w1, y) end end
-  check(#rail_rows > 0 and math.min(table.unpack(rail_rows)) == w0 - 3 and math.max(table.unpack(rail_rows)) == w1 + 3, "puente: debe pasar 2 tiles mas alla de cada orilla (filas " .. (w0 - 3) .. " a " .. (w1 + 3) .. ")")
+  check(#rail_rows > 0 and math.min(table.unpack(rail_rows)) == w0 - 2 and math.max(table.unpack(rail_rows)) == w1 + 2, "puente: debe pasar 2 tiles mas alla de cada orilla (barandas en las filas " .. (w0 - 2) .. " a " .. (w1 + 2) .. ", postes en " .. (w0 - 3) .. " y " .. (w1 + 3) .. ")")
   -- el rio es recto y horizontal en el cruce: la misma fila de agua en las 12 cols alrededor
   local same = true
   for x = PAD - 2, PAD + 13 do
@@ -1125,7 +1156,7 @@ do
       check(o.w <= 20 * 16 and o.h >= 16 * 16, o.name .. ": tira de <= 20 tiles de ancho que abarca el agua + 8 tiles a cada lado")
     end
   end
-  check(strips >= 30 and covered == map_w * 16, "zona rio: tiras que cubren todo el ancho (" .. strips .. " tiras, " .. covered .. " px)")
+  check(strips >= math.ceil(map_w / Z.RIVER_ZONE_LEN) and covered == map_w * 16, "zona rio: tiras que cubren todo el ancho (" .. strips .. " tiras, " .. covered .. " px)")
 end
 
 -- ---- alcanzabilidad (relleno desde el spawn default sobre tiles no solidos y sin las huellas de los edificios) ----
@@ -1163,7 +1194,7 @@ do
   end
   local function reach(x, y) return seen[(y // 16 + TOP) * map_w + (x // 16) + 1] == true end -- y en px del marco original
   check(reach(PLOT_X1 * 16 + 8, 46 * 16 + 8) and reach(PLOT_X1 * 16 + 8, 47 * 16 + 8), "la entrada de la escuela (col 18, filas 46-47) debe ser alcanzable")
-  check(reach((11 + D) * 16 + 8, 49 * 16 + 8) and reach((10 + D) * 16 + 8, 57 * 16 + 8) and reach((17 + D) * 16 + 8, 54 * 16 + 8), "el patio, el pasillo este y el patio sur de la escuela deben ser alcanzables")
+  check(reach((Z.FLAG_X + 1) * 16 + 8, (Z.FLAG_Y + 2) * 16 + 8) and reach((10 + D) * 16 + 8, 57 * 16 + 8) and reach((17 + D) * 16 + 8, 54 * 16 + 8), "el patio, el pasillo este y el patio sur de la escuela deben ser alcanzables")
   for _, n in ipairs({ "escuela_aulas_a", "escuela_aulas_b" }) do
     for i = 1, 2 do local d = by_name[n .. "_puerta_" .. i]; check(d and reach(d.x + d.w // 2, d.y + 8), n .. "_puerta_" .. i .. " debe ser alcanzable") end
   end
