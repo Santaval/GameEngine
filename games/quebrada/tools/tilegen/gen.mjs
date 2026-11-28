@@ -180,6 +180,7 @@ if (args.includes("--check")) {
   for (const [nm, c0, w] of [["pueblo_1", BERTA_X - 4, 56], ["pueblo_2", BERTA_X + 50, 76]]) crop(nm, c0, stR, w, 36);
   crop("caliles", CALILES_X - 14, stR, 66, 70);
   writeFileSync(join(dir, "zona1_cables_x2.png"), pngOf(z1.slice((BERTA_X + 124) * 16, (SIDEWALK_N_Y - 8) * 16, 100 * 16, 22 * 16).scaled(2))); // the cables between the lamps of the lastre
+  crop("parada", COL_X0 - 8, SIDEWALK_N_Y, 44, 16); // the bus stop and the school-zone sign beside the colegio gate
   crop("potrero", POTRERO.x0 - 6, POTRERO.y0 - 4, POTRERO.x1 - POTRERO.x0 + 13, SIDEWALK_N_Y - POTRERO.y0 + 10); // the fenced potrero north of the street
   crop("bananal", BERTA_X + 60 - 6, SIDEWALK_N_Y - 24, 36, 30);
   crop("tierra_sur", BERTA_X + 10, SIDEWALK_N_Y + 34, 100, 40); // the scrub and trees behind the shops

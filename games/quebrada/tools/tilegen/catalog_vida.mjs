@@ -1,9 +1,9 @@
 // Vida sheet (vida.png + vida.tsx): name plaques for the houses of the main street, and (later) street life: animals, bus stop, laundry, motorbike, poles, signs.
 // Eighth tileset of zona1.tmx (appended after rio, so no earlier firstgid moves). Sheet: 16 columns x 16 rows of 16x16 tiles, id = row * 16 + col. Every tile name starts with `vida_`.
 //   ids 0-63    name plaques  vida_rotulo_<key>_<cx>_0   (1 row tall, 3-4 tiles wide; ysort, solid: a board on two posts, or mounted on a fence)
-//   ids 64-...  street life: hens / rooster (animated, 2 variants with offset frame lists), dogs, cows and a horse (see docs/vida.md)
+//   ids 64-...  street furniture (bus stop, laundry lines, moto, utility pole, signs) and street life: hens / rooster (animated, 2 variants with offset frame lists), dogs, cows and a horse (see docs/vida.md)
 // Property scheme as town.tsx: name, layer (ground|overlay|ysort|above), surface (non-solid ground only), solid, sort_offset (and `anim` for animated tiles, see tsx.mjs).
-import { Frame, rgb, withAlpha } from "./draw.mjs";
+import { Frame, rgb, shade, withAlpha } from "./draw.mjs";
 import { C } from "./palette.mjs";
 import { tileRng } from "./rng.mjs";
 import { drawText, textWidth } from "./font.mjs";
@@ -147,6 +147,57 @@ for (const a of animalObjects) {
   const cells = [0, 1].map((cx) => ({ cx, cy: 0, id: propId++, name: `${a.name}_${cx}_0`, layer: "ysort", solid: true }));
   O.push({ name: a.name, w: 2, h: 1, cells, draw: a.draw });
 }
+
+// ---------------------------------------------------------------- street furniture (multi-cell objects; the upper rows are `above` so you walk behind roofs and wires)
+const ZN = { base: B.zincBase, light: B.zincLight, dark: B.zincDark };
+const ROPE = rgb("#c9b48a");
+const objectCells = (name, w, h, layerOf) => Array.from({ length: w * h }, (_, i) => { const cx = i % w, cy = Math.floor(i / w), layer = layerOf(cx, cy); return { cx, cy, id: propId++, name: `${name}_${cx}_${cy}`, layer, ...(layer === "ysort" ? { solid: true } : {}) }; });
+const post = (f, x, y0, y1) => { f.rect(x, y0, 3, y1 - y0 + 1, B.wood); f.vline(x, y0, y1 - y0 + 1, B.woodLight); f.vline(x + 2, y0, y1 - y0 + 1, B.woodDark); };
+const furniture = [
+  { name: "vida_parada", w: 3, h: 2, layerOf: (cx, cy) => (cy === 0 ? "above" : "ysort"), draw(f) { // bus stop: zinc roof with the PARADA board, a wooden bench under it
+    f.rect(0, 6, 48, 5, ZN.base); f.hline(0, 6, 48, ZN.light); f.hline(0, 10, 48, ZN.dark); for (let x = 2; x < 48; x += 3) f.vline(x, 7, 3, ZN.dark);
+    f.rect(0, 11, 48, 2, B.woodDark); f.hline(0, 11, 48, B.wood);
+    f.rect(8, 1, 32, 8, B.whiteTrim); f.rect(8, 1, 32, 1, rgb("#2a4a9a")); f.rect(8, 8, 32, 1, rgb("#2a4a9a")); f.vline(8, 1, 8, rgb("#2a4a9a")); f.vline(39, 1, 8, rgb("#2a4a9a"));
+    drawText(f, "PARADA", 8 + Math.floor((32 - textWidth("PARADA")) / 2), 2, rgb("#2a4a9a"));
+    f.ellipse(24, 30, 22, 2, SHADOW); post(f, 3, 16, 30); post(f, 42, 16, 30);
+    f.rect(8, 24, 32, 3, B.woodLight); f.hline(8, 24, 32, shade(B.woodLight, 1.2)); f.hline(8, 26, 32, B.woodDark); f.rect(8, 19, 32, 2, B.wood); f.rect(9, 27, 2, 4, B.woodDeep); f.rect(37, 27, 2, 4, B.woodDeep);
+  } },
+  ...["a", "b"].map((k) => ({ name: `vida_ropa_${k}`, w: 2, h: 2, layerOf: (cx, cy) => (cy === 0 ? "above" : "ysort"), draw(f) { // laundry line between two posts, clothes hanging
+    post(f, 2, 2, 30); post(f, 27, 2, 30); f.ellipse(16, 30, 14, 2, SHADOW);
+    f.hline(5, 5, 22, ROPE); f.px(5, 6, ROPE); f.px(26, 6, ROPE);
+    const items = k === "a" ? [[7, 9, 6, 10, rgb("#c4584a")], [15, 9, 5, 7, rgb("#f1efe4")], [21, 9, 5, 11, rgb("#4f6fa8")]] : [[7, 9, 5, 12, rgb("#e8c442")], [14, 9, 6, 8, rgb("#4f9a9e")], [21, 9, 5, 6, rgb("#f1efe4")]];
+    for (const [x, y, w, h, c] of items) { f.rect(x, y - 3, w, h + 3, c); f.hline(x, y - 3, w, shade(c, 1.2)); f.hline(x, y + h - 1, w, shade(c, 0.8)); f.px(x + 1, y - 4, B.woodDeep); f.px(x + w - 2, y - 4, B.woodDeep); }
+  } })),
+  { name: "vida_moto", w: 2, h: 1, layerOf: () => "ysort", draw(f) { // parked red motorbike, side view
+    f.ellipse(16, 14, 14, 2, SHADOW);
+    for (const x of [7, 25]) { f.ellipse(x, 11, 4, 4, B.tire); f.ellipse(x, 11, 2.2, 2.2, rgb("#8c8c88")); f.px(x, 11, B.tire); }
+    f.rect(8, 10, 17, 2, B.zincDark); f.rect(11, 6, 10, 5, rgb("#b83a32")); f.hline(11, 6, 10, rgb("#d6584c")); f.rect(7, 5, 5, 3, rgb("#26231f")); f.rect(20, 4, 3, 2, rgb("#d6584c")); // frame, tank, seat, headlight
+    f.line(24, 4, 27, 8, B.metal); f.hline(22, 3, 4, B.metal); f.px(25, 2, B.metal); f.rect(4, 8, 3, 2, rgb("#b83a32")); f.rect(14, 11, 6, 2, B.zincDark); // fork, handlebar, tail, engine
+  } },
+  { name: "vida_poste", w: 1, h: 3, layerOf: (cx, cy) => (cy === 2 ? "ysort" : "above"), draw(f) { // utility pole without a lamp: crossarm with insulators, the cable at y=2 (like the lamp poles)
+    const P = C.post;
+    for (let x = 0; x < 16; x++) f.px(x, 2, P.cable);
+    f.ellipse(8, 46, 6, 1.8, SHADOW);
+    for (let y = 3; y < 46; y++) { f.px(6, y, P.light); f.px(7, y, P.base); f.px(8, y, P.dark); }
+    f.rect(1, 3, 14, 2, P.arm); f.hline(1, 3, 14, shade(P.arm, 1.3)); for (const x of [2, 7, 13]) { f.px(x, 1, P.lampDim); f.px(x, 2, P.lamp); }
+    f.rect(5, 40, 6, 6, C.concrete.base); f.hline(5, 40, 6, C.concrete.light); f.vline(10, 40, 6, C.concrete.dark);
+  } },
+  { name: "vida_senal_alto", w: 1, h: 2, layerOf: (cx, cy) => (cy === 0 ? "above" : "ysort"), draw(f) { // ALTO board on a post
+    f.rect(0, 2, 16, 12, rgb("#c1272f")); f.hline(0, 2, 16, rgb("#e0584f")); f.hline(0, 13, 16, rgb("#8c1a20"));
+    for (const [x, y] of [[0, 2], [15, 2], [0, 13], [15, 13]]) f.set(x, y, [0, 0, 0, 0]);
+    drawText(f, "ALTO", 1, 6, B.whiteTrim); f.ellipse(8, 30, 5, 1.6, SHADOW); post(f, 6, 14, 30);
+  } },
+  { name: "vida_senal_escolar", w: 1, h: 2, layerOf: (cx, cy) => (cy === 0 ? "above" : "ysort"), draw(f) { // school-zone diamond: two children
+    for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) { const d = Math.abs(x - 7.5) + Math.abs(y - 7.5); if (d <= 8) f.px(x, y, d > 6.6 ? rgb("#26231f") : rgb("#f0cf3a")); }
+    f.rect(5, 6, 2, 5, rgb("#26231f")); f.rect(9, 7, 2, 4, rgb("#26231f")); f.rect(5, 4, 2, 2, rgb("#26231f")); f.rect(9, 5, 2, 2, rgb("#26231f"));
+    f.ellipse(8, 30, 5, 1.6, SHADOW); post(f, 6, 16, 30);
+  } },
+];
+for (const fu of furniture) {
+  const cells = objectCells(fu.name, fu.w, fu.h, fu.layerOf);
+  O.push({ name: fu.name, w: fu.w, h: fu.h, cells, draw: fu.draw });
+}
+
 export const V_TILES = [];
 for (const o of O) for (const c of o.cells) V_TILES.push({ ...c, object: o.name });
 for (const t of singles) V_TILES.push(t);

@@ -119,6 +119,25 @@ for _, n in ipairs({ "vida_perro_echado", "vida_perro_sentado", "vida_vaca_pinta
   check(by_name[n] and by_name[n].props.layer == "ysort" and by_name[n].props.solid == true and by_name[n].id >= 64, n .. ": ysort y solid (ids 64+)")
 end
 
+-- mobiliario de calle: la fila de arriba es "above" (se camina por detras de techos y cables), la de abajo ysort y solida (postes, banca, moto)
+local function layer_of(n) return by_name[n] and by_name[n].props.layer end
+local function solid_of(n) return by_name[n] and by_name[n].props.solid == true end
+local FURN = { vida_parada = { 3, 2 }, vida_ropa_a = { 2, 2 }, vida_ropa_b = { 2, 2 }, vida_poste = { 1, 3 }, vida_senal_alto = { 1, 2 }, vida_senal_escolar = { 1, 2 }, vida_moto = { 2, 1 } }
+for name, wh in pairs(FURN) do
+  for cy = 0, wh[2] - 1 do for cx = 0, wh[1] - 1 do
+    local n = name .. "_" .. cx .. "_" .. cy
+    check(by_name[n] ~= nil, "falta el tile " .. n)
+    local top = cy < wh[2] - 1 or name == "vida_moto" and false
+    if name == "vida_moto" then
+      check(layer_of(n) == "ysort" and solid_of(n), n .. ": ysort y solid")
+    elseif cy == wh[2] - 1 then
+      check(layer_of(n) == "ysort" and solid_of(n), n .. ": la fila de abajo es ysort y solid")
+    else
+      check(layer_of(n) == "above" and not solid_of(n), n .. ": las filas de arriba son above sin solid")
+    end
+  end end
+end
+
 if failures > 0 then
   print(failures .. " fallos")
   os.exit(1)

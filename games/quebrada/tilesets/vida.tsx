@@ -364,4 +364,154 @@
    <property name="solid" type="bool" value="true"/>
   </properties>
  </tile>
+ <tile id="78">
+  <properties>
+   <property name="name" value="vida_parada_0_0"/>
+   <property name="layer" value="above"/>
+  </properties>
+ </tile>
+ <tile id="79">
+  <properties>
+   <property name="name" value="vida_parada_1_0"/>
+   <property name="layer" value="above"/>
+  </properties>
+ </tile>
+ <tile id="80">
+  <properties>
+   <property name="name" value="vida_parada_2_0"/>
+   <property name="layer" value="above"/>
+  </properties>
+ </tile>
+ <tile id="81">
+  <properties>
+   <property name="name" value="vida_parada_0_1"/>
+   <property name="layer" value="ysort"/>
+   <property name="solid" type="bool" value="true"/>
+  </properties>
+ </tile>
+ <tile id="82">
+  <properties>
+   <property name="name" value="vida_parada_1_1"/>
+   <property name="layer" value="ysort"/>
+   <property name="solid" type="bool" value="true"/>
+  </properties>
+ </tile>
+ <tile id="83">
+  <properties>
+   <property name="name" value="vida_parada_2_1"/>
+   <property name="layer" value="ysort"/>
+   <property name="solid" type="bool" value="true"/>
+  </properties>
+ </tile>
+ <tile id="84">
+  <properties>
+   <property name="name" value="vida_ropa_a_0_0"/>
+   <property name="layer" value="above"/>
+  </properties>
+ </tile>
+ <tile id="85">
+  <properties>
+   <property name="name" value="vida_ropa_a_1_0"/>
+   <property name="layer" value="above"/>
+  </properties>
+ </tile>
+ <tile id="86">
+  <properties>
+   <property name="name" value="vida_ropa_a_0_1"/>
+   <property name="layer" value="ysort"/>
+   <property name="solid" type="bool" value="true"/>
+  </properties>
+ </tile>
+ <tile id="87">
+  <properties>
+   <property name="name" value="vida_ropa_a_1_1"/>
+   <property name="layer" value="ysort"/>
+   <property name="solid" type="bool" value="true"/>
+  </properties>
+ </tile>
+ <tile id="88">
+  <properties>
+   <property name="name" value="vida_ropa_b_0_0"/>
+   <property name="layer" value="above"/>
+  </properties>
+ </tile>
+ <tile id="89">
+  <properties>
+   <property name="name" value="vida_ropa_b_1_0"/>
+   <property name="layer" value="above"/>
+  </properties>
+ </tile>
+ <tile id="90">
+  <properties>
+   <property name="name" value="vida_ropa_b_0_1"/>
+   <property name="layer" value="ysort"/>
+   <property name="solid" type="bool" value="true"/>
+  </properties>
+ </tile>
+ <tile id="91">
+  <properties>
+   <property name="name" value="vida_ropa_b_1_1"/>
+   <property name="layer" value="ysort"/>
+   <property name="solid" type="bool" value="true"/>
+  </properties>
+ </tile>
+ <tile id="92">
+  <properties>
+   <property name="name" value="vida_moto_0_0"/>
+   <property name="layer" value="ysort"/>
+   <property name="solid" type="bool" value="true"/>
+  </properties>
+ </tile>
+ <tile id="93">
+  <properties>
+   <property name="name" value="vida_moto_1_0"/>
+   <property name="layer" value="ysort"/>
+   <property name="solid" type="bool" value="true"/>
+  </properties>
+ </tile>
+ <tile id="94">
+  <properties>
+   <property name="name" value="vida_poste_0_0"/>
+   <property name="layer" value="above"/>
+  </properties>
+ </tile>
+ <tile id="95">
+  <properties>
+   <property name="name" value="vida_poste_0_1"/>
+   <property name="layer" value="above"/>
+  </properties>
+ </tile>
+ <tile id="96">
+  <properties>
+   <property name="name" value="vida_poste_0_2"/>
+   <property name="layer" value="ysort"/>
+   <property name="solid" type="bool" value="true"/>
+  </properties>
+ </tile>
+ <tile id="97">
+  <properties>
+   <property name="name" value="vida_senal_alto_0_0"/>
+   <property name="layer" value="above"/>
+  </properties>
+ </tile>
+ <tile id="98">
+  <properties>
+   <property name="name" value="vida_senal_alto_0_1"/>
+   <property name="layer" value="ysort"/>
+   <property name="solid" type="bool" value="true"/>
+  </properties>
+ </tile>
+ <tile id="99">
+  <properties>
+   <property name="name" value="vida_senal_escolar_0_0"/>
+   <property name="layer" value="above"/>
+  </properties>
+ </tile>
+ <tile id="100">
+  <properties>
+   <property name="name" value="vida_senal_escolar_0_1"/>
+   <property name="layer" value="ysort"/>
+   <property name="solid" type="bool" value="true"/>
+  </properties>
+ </tile>
 </tileset>

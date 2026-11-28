@@ -28,3 +28,11 @@ Hens and the rooster are animated through `anim` (tile ids of this sheet, see `t
 the rooster crows (frame 2) every fourth 700 ms step. They are `ysort` without `solid`; dogs, cows and the horse are `ysort` and `solid`.
 Placement (`ANIMAL_ELEMENTS` in `zona1_map.mjs`): three hens and a rooster plus a sitting dog in Abuela Paula's yard, three hens in Tío Enrique's yard, a lying dog beside the abastecedor and a sitting dog beside the bar, three cows and a horse in the potrero.
 `tests/vida_check.lua` checks the animation frames and the solidity of every animal.
+
+## Street furniture (ids 78+)
+
+Multi-cell objects, upper rows `above` (you walk behind roofs, clothes and cables), the bottom row `ysort` and `solid` (posts, bench, moto): `vida_parada` (3x2 bus stop with a PARADA board and a bench), `vida_ropa_a` / `vida_ropa_b` (2x2 laundry lines),
+`vida_moto` (2x1 parked motorbike), `vida_poste` (1x3 utility pole without a lamp, cable at its row y=2 like the lamp poles) and `vida_senal_alto` / `vida_senal_escolar` (1x2 ALTO board and school-zone diamond).
+Placement (`FURNITURE_ELEMENTS`): the bus stop on the sidewalk / south verge beside the colegio's gate, a laundry line each between Doña Isabel's and Carmen's houses and between Carmen's and Los Machillos, the moto in front of María y Juvenal's, the school-zone sign before the colegio,
+the ALTO sign at the mouth of Los Caliles, and one pole on the south verge (`POLE_X`, where the lamp column is skipped) that the power cable continues over: `wire` ends may be lamps or `vida_poste` objects.
+The wooden pasture gate of the original plan was not drawn: the potrero's gate is the fence's open-gate tile (`fence_gap`).

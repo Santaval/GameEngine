@@ -288,8 +288,9 @@ const LAND_ELEMENTS = [
   emit("caballo_potrero", "horse_neigh_far_01", POT_CX - 6, POT_CY, 67, "day", { max_distance: 450 }),
 ];
 // cables between the heads of the street lamps along the lastre (north head row = SIDEWALK_N_Y - 3, south = SIDEWALK_S_Y - 1)
-const WIRE_SPANS = [["n", 465, 490], ["n", 490, 515], ["n", 515, 540], ["s", 515, 540], ["s", 540, 565]].map(([side, x0, x1]) => ({
-  id: `cable_${side}_${x0}_${x1}`, kind: "wire", row: side === "n" ? SIDEWALK_N_Y - 3 : SIDEWALK_S_Y - 1, x0, x1, a: `farola_${side}_${x0}`, b: `farola_${side}_${x1}` }));
+const POLE_X = CALILES_X + 10; // a utility pole (no lamp) on the south verge where the lamp column 490 is skipped: the cable continues over it
+const WIRE_SPANS = [["n", 465, 490], ["n", 490, 515], ["n", 515, 540], ["s", 465, POLE_X], ["s", POLE_X, 515], ["s", 515, 540], ["s", 540, 565]].map(([side, x0, x1]) => ({
+  id: `cable_${side}_${x0}_${x1}`, kind: "wire", row: side === "n" ? SIDEWALK_N_Y - 3 : SIDEWALK_S_Y - 1, x0, x1, a: x0 === POLE_X ? "poste_sur" : `farola_${side}_${x0}`, b: x1 === POLE_X ? "poste_sur" : `farola_${side}_${x1}` }));
 export const WIRE_CELLS = WIRE_SPANS.reduce((n, w) => n + (w.x1 - w.x0 - 1), 0);
 // ---- animals (vida sheet): hens and a rooster in Paula's and Tío Enrique's yards, dogs at the abastecedor, the bar and Paula's porch, cows and a horse in the potrero ----
 const animal = (id, name, x, y) => ({ id: `animal_${id}`, kind: "object", name, at: [x, y] });
@@ -300,12 +301,23 @@ const ANIMAL_ELEMENTS = [
   animal("vaca_1", "vida_vaca_pinta", POT_CX - 10, POT_CY - 1), animal("vaca_2", "vida_vaca_negra", POT_CX + 3, POT_CY + 2), animal("vaca_3", "vida_vaca_pinta", POT_CX + 14, POT_CY),
   animal("caballo", "vida_caballo", POT_CX - 18, POT_CY + 2),
 ];
+// ---- street furniture (vida sheet): bus stop, laundry lines, a parked moto, a pole, an ALTO and a school-zone sign ----
+const FURNITURE_ELEMENTS = [
+  { id: "parada_bus", kind: "object", name: "vida_parada", at: [CAF_GAP[1] + 3, SIDEWALK_S_Y] }, // roof on the sidewalk row, bench on the south verge, beside the colegio's gate
+  { id: "ropa_isabel", kind: "object", name: "vida_ropa_a", at: [BAR_X + 18, PL_N - 4] }, // between Doña Isabel's and Carmen's houses
+  { id: "ropa_carmen", kind: "object", name: "vida_ropa_b", at: [BAR_X + 37, PL_N - 4] }, // between Carmen's and Los Machillos
+  { id: "moto_maria", kind: "object", name: "vida_moto", at: [AB_X + 8, PL_N] }, // parked in front of María y Juvenal's
+  { id: "poste_sur", kind: "object", name: "vida_poste", at: [POLE_X, SIDEWALK_S_Y - 1] },
+  { id: "senal_alto", kind: "object", name: "vida_senal_alto", at: [CALILES_X - 3, SIDEWALK_S_Y] }, // at the mouth of Los Caliles
+  { id: "senal_escolar", kind: "object", name: "vida_senal_escolar", at: [CAF_X0 - 3, SIDEWALK_S_Y] }, // before the colegio
+];
 const LAME = "Está cerrado.";
 const PLACE_ELEMENTS = [
   ...PLAQUE_ELEMENTS,
   ...VIDA_EMITTERS,
   ...LAND_ELEMENTS,
   ...ANIMAL_ELEMENTS,
+  ...FURNITURE_ELEMENTS,
   ...WIRE_SPANS,
   ...northHouse("berta", BERTA_X, "casa_1", "Casa de Berta. No hay nadie.", "Casa de Berta"),
   ...northHouse("abastecedor", AB_X, "abastecedor", `Abastecedor El Jardín. ${LAME}`, "Abastecedor El Jardín"),
@@ -1116,8 +1128,8 @@ export function buildZona1(elements = ELEMENTS) {
 
   // ---- power cables: `power_wire` (canopy, cable at its row y=2) between the heads of two street lamps; the head cells of a lamp already carry the cable's end ----
   for (const e of elements.filter((e) => e.kind === "wire")) {
-    const heads = [e.a, e.b].map((id) => lamps.find((l) => l.id === id));
-    if (heads.some((h) => !h)) throw new Error(`wire ${e.id}: both ends must be placed lamps (${e.a}, ${e.b})`);
+    const heads = [e.a, e.b].map((id) => lamps.find((l) => l.id === id) ?? elements.find((o) => o.id === id && o.kind === "object" && o.name === "vida_poste"));
+    if (heads.some((h) => !h)) throw new Error(`wire ${e.id}: both ends must be placed lamps or vida_poste poles (${e.a}, ${e.b})`);
     for (let x = e.x0 + 1; x < e.x1; x++) {
       if (L.canopy[at(x, e.row)] !== 0) throw new Error(`wire ${e.id}: canopy already used at (${x},${e.row})`);
       put("canopy", x, e.row, "power_wire");

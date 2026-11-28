@@ -440,6 +440,16 @@ do -- cables entre las cabezas de las farolas de la calle de lastre: solo hay po
   for _, g in ipairs(layers.canopy._cells) do if g ~= 0 and gid_name[g] == "power_wire" then wires = wires + 1 end end
   check(wires == Z.WIRE_CELLS, "power_wire: deben ser " .. Z.WIRE_CELLS .. " celdas de cable, hay " .. wires)
 end
+do -- mobiliario de calle (hoja vida): parada, ropa tendida, moto, poste (con cable que sigue hasta la farola siguiente) y senales
+  local vid = {}
+  for tid, body in read_file("games/quebrada/tilesets/vida.tsx"):gmatch('<tile id="(%d+)">(.-)</tile>') do vid[body:match('name="name" value="([^"]*)"')] = tonumber(tid) end
+  local function count_gid(layer, name) local g, n = Z.VIDA_FIRSTGID + vid[name], 0; for _, v in ipairs(layers[layer]._cells) do if v == g then n = n + 1 end end return n end
+  check(count_gid("objects", "vida_poste_0_2") == 1 and count_gid("canopy", "vida_poste_0_0") == 1 and count_gid("canopy", "vida_poste_0_1") == 1, "debe haber exactamente un poste de luz sin farola (base, cabeza y fuste)")
+  check(count_gid("objects", "vida_parada_0_1") == 1 and count_gid("canopy", "vida_parada_1_0") == 1, "falta la parada de bus")
+  check(count_gid("objects", "vida_ropa_a_0_1") == 1 and count_gid("objects", "vida_ropa_b_0_1") == 1, "faltan las dos ropas tendidas")
+  check(count_gid("objects", "vida_moto_0_0") == 1, "falta la moto estacionada")
+  check(count_gid("objects", "vida_senal_alto_0_1") == 1 and count_gid("objects", "vida_senal_escolar_0_1") == 1, "faltan las senales (alto y zona escolar)")
+end
 do -- emisores de sonido: cada sonido esta registrado en la escena y los de animales de noche respetan la mision del Chequelo
   local scene = read_file("games/quebrada/scenes/zona1.lua")
   local n_vida, perros = 0, nil
