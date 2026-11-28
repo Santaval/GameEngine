@@ -61,6 +61,17 @@ class Game {
         bool isRunning = false;
         bool showColliders = false;
 
+        // Perfil (ENGINE_PROFILE=1, ENGINE_PROFILE_FRAMES=N para salir tras N frames): tiempos de
+        // trabajo por frame (sin la espera de los 30 FPS) impresos como [Perf] cada 150 frames
+        struct Profile {
+            bool on = false;
+            int limit = 0;
+            Uint64 updateStart = 0;
+            double updateMs = 0.0, renderMs = 0.0, scriptMs = 0.0, workMax = 0.0, workSoFar = 0.0;
+            int frames = 0, total = 0;
+            size_t draws = 0;
+        } profile;
+
         std::unique_ptr<AssetManager> assetManager;
         // Declarado despues de assetManager: guarda una referencia a el
         std::unique_ptr<AudioManager> audioManager;
@@ -182,6 +193,7 @@ class Game {
      WorldSync* getWorldSync() const { return worldSync.get(); }
      SceneLoader* getSceneLoader() const { return sceneLoader.get(); }
      void quit() { isRunning = false; }
+    void reportProfile();
      double getDeltaTime() const { return deltaTime; }
      AudioManager* getAudio() const { return audioManager.get(); }
      // Aplica la tabla de set_ducking ({ enabled, amount, fade_ms, buses })

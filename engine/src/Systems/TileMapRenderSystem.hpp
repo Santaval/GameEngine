@@ -37,6 +37,9 @@ class TileMapRenderSystem {
             }
         }
 
+        // Cuenta de tiles dibujados desde el ultimo reset (perfil: Game con ENGINE_PROFILE)
+        size_t drawCount = 0;
+
         tilemap::TileMap& getMap() { return map; }
         const tilemap::TileMap& getMap() const { return map; }
 
@@ -69,6 +72,7 @@ class TileMapRenderSystem {
             if (inst.tileset < 0 || static_cast<size_t>(inst.tileset) >= textures.size()) return;
             SDL_Texture* texture = textures[static_cast<size_t>(inst.tileset)];
             if (texture == nullptr) return;
+            drawCount++;
 
             SDL_SetTextureAlphaMod(texture, static_cast<Uint8>(std::max(0, std::min(255, inst.alpha))));
             const SDL_Rect src = {inst.sx, inst.sy, inst.sw, inst.sh};

@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cctype>
 #include <cmath>
+#include <cstdlib>
 #include <filesystem>
 #include <iostream>
 
@@ -507,7 +508,10 @@ void Game::loadScene(const std::string& requestedScene) {
 }
 
 bool Game::loadTileMap(const std::string& path, double x, double y, std::string& error) {
+    const Uint64 perfT0 = SDL_GetPerformanceCounter();
+    const double perfToMs = 1000.0 / static_cast<double>(SDL_GetPerformanceFrequency());
     tmx::Result parsed = tmx::loadFile(resolveGamePath(this->gameRoot, path));
+    const Uint64 perfT1 = SDL_GetPerformanceCounter();
     if (!parsed.ok) {
         error = parsed.error;
         return false;
@@ -520,12 +524,18 @@ bool Game::loadTileMap(const std::string& path, double x, double y, std::string&
         error = built.error;
         return false;
     }
+    const Uint64 perfT2 = SDL_GetPerformanceCounter();
     for (const std::string& warning : built.warnings) {
         std::cout << "[TileMap] " << warning << std::endl;
     }
 
     auto system = std::make_unique<TileMapRenderSystem>(std::move(built.map));
     system->loadTextures(this->renderer, *this->assetManager);
+    if (this->profile.on) {
+        const Uint64 perfT3 = SDL_GetPerformanceCounter();
+        std::cout << "[Perf] load " << path << ": parse=" << (perfT1 - perfT0) * perfToMs << "ms build=" << (perfT2 - perfT1) * perfToMs
+            << "ms textures=" << (perfT3 - perfT2) * perfToMs << "ms total=" << (perfT3 - perfT0) * perfToMs << "ms" << std::endl;
+    }
     // La segunda llamada reemplaza al mapa anterior
     this->tileMap = std::move(system);
     this->ySort = true;
@@ -661,6 +671,7 @@ void Game::drawLetterbox() {
 }
 
 void Game::render() {
+    const Uint64 renderT0 = SDL_GetPerformanceCounter();
     // Casi negro: fondo de espacio
     SDL_SetRenderDrawColor(this->renderer, 10, 10, 18, 255);
     SDL_RenderClear(this->renderer);
@@ -742,6 +753,7 @@ void Game::render() {
     this->spriteBuffer.clear();
 
     SDL_RenderPresent(this->renderer);
+    if (this->profile.on) this->profile.renderMs += (SDL_GetPerformanceCounter() - renderT0) * 1000.0 / static_cast<double>(SDL_GetPerformanceFrequency());
 }
 
 void Game::update() {
@@ -751,6 +763,7 @@ void Game::update() {
         SDL_Delay(timeToWait);
     }
 
+    this->profile.updateStart = SDL_GetPerformanceCounter(); // el trabajo cuenta desde aqui: despues de la espera de 30 FPS
     double deltaTime = (SDL_GetTicks() - this->milisecsPreviousFrame) / 1000.0;
     this->deltaTime = deltaTime;
 
@@ -775,7 +788,9 @@ void Game::update() {
     this->registry->getSystem<ScriptSystem>().subscribeToTriggerEvent(this->eventManager);
 
     this->registry->update();
+    const Uint64 scriptT0 = SDL_GetPerformanceCounter();
     this->registry->getSystem<ScriptSystem>().update(this->lua);
+    if (this->profile.on) this->profile.scriptMs += (SDL_GetPerformanceCounter() - scriptT0) * 1000.0 / static_cast<double>(SDL_GetPerformanceFrequency());
     // Replicacion de estado: envia lo propio y corrige lo ajeno antes de simular
     for (auto& msg : this->registry->getSystem<NetSyncSystem>().update(
             deltaTime, *this->networkRegistry, this->netClient->isOnline())) {
@@ -794,6 +809,7 @@ void Game::update() {
     // Al final: el oyente y los emisores ya estan en su posicion de este frame
     this->updateSpatialAudio(deltaTime);
     this->registry->getSystem<LightingSystem>().update(deltaTime);
+    if (this->profile.on) this->profile.updateMs += (SDL_GetPerformanceCounter() - this->profile.updateStart) * 1000.0 / static_cast<double>(SDL_GetPerformanceFrequency());
 }
 
 void Game::updateSpatialAudio(double dt) {
@@ -860,6 +876,9 @@ void Game::updateSpatialAudio(double dt) {
 
 void Game::run() {
     this->setup();
+    const char* perfEnv = std::getenv("ENGINE_PROFILE");
+    this->profile.on = perfEnv != nullptr && *perfEnv != '\0';
+    if (const char* perfFrames = std::getenv("ENGINE_PROFILE_FRAMES")) this->profile.limit = std::max(0, std::atoi(perfFrames));
 
     while(this->isRunning) {
         if (!this->pendingScene.empty()) {
@@ -871,7 +890,27 @@ void Game::run() {
         this->processInput();
         this->update();
         this->render();
+        if (this->profile.on) this->reportProfile();
     }
+}
+
+void Game::reportProfile() {
+    Profile& p = this->profile;
+    if (this->tileMap) { p.draws += this->tileMap->drawCount; this->tileMap->drawCount = 0; }
+    p.frames++;
+    p.total++;
+    p.workMax = std::max(p.workMax, p.updateMs + p.renderMs - p.workSoFar);
+    p.workSoFar = p.updateMs + p.renderMs;
+    if (p.frames >= 150 || (p.limit > 0 && p.total >= p.limit)) {
+        const double n = static_cast<double>(p.frames);
+        std::cout << "[Perf] frames=" << p.frames << " work avg=" << (p.updateMs + p.renderMs) / n << "ms max=" << p.workMax
+            << "ms (update " << p.updateMs / n << " [scripts " << p.scriptMs / n << "] render " << p.renderMs / n
+            << ") tile draws/frame=" << static_cast<double>(p.draws) / n << std::endl;
+        p.updateMs = p.renderMs = p.scriptMs = p.workMax = p.workSoFar = 0.0;
+        p.frames = 0;
+        p.draws = 0;
+    }
+    if (p.limit > 0 && p.total >= p.limit) this->isRunning = false;
 }
 
 void Game::destroy() {
