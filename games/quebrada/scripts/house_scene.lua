@@ -2,7 +2,7 @@
 -- El interior se dibuja con tiles (issue #71): suelo, pared del fondo y muebles de maps/house_mama.tmx.
 -- La puerta de salida vuelve al mapa del que se entro (@return), asi que cada mapa de exterior
 -- que tenga una puerta a esta casa debe estar en `scenes`.
--- chequelo_day se pide aqui (no solo en el saludo) para registrar dialogue.on_end.mama (issue #82)
+-- Inicio de la partida (chequelo_day): mama manda a misa, indicador en la puerta, aviso de la luz y bendicion
 local chequelo_day = require("chequelo_day")
 
 update = require("town_controller").make_update({
@@ -13,6 +13,7 @@ update = require("town_controller").make_update({
     ["maps/zona1.tmx"] = "scenes/main.lua",
     ["maps/house_mama.tmx"] = "scenes/house_demo.lua",
   },
-  -- Al entrar: saludo de mama si es de dia y aun no se decidio (issue #82)
-  on_start = function() chequelo_day.maybe_greet() end,
+  on_start = chequelo_day.on_start,
+  on_tick = chequelo_day.tick,
+  on_door = chequelo_day.on_door,
 })

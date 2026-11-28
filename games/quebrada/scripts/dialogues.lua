@@ -4,35 +4,29 @@
 --   when: condicion (function o texto "a,!b"); si es falsa la linea/opcion se salta.
 local m = require("missions")
 
--- Primera vez (o mientras la mision sigue solo ofrecida)
-local nueva = m.mission_is("chequelo", "none", "offered")
-
 return {
-  -- Saludo al entrar de dia (chequelo_day.maybe_greet, issue #82): una sola vez
-  mama_saludo = {
-    { speaker = "Mamá", text = "Ah, llegaste, mijo. Pasá, que afuera está todo cerrado." },
-    { speaker = "Mamá", text = "Hoy solo mi casa está abierta. Sentate, descansá." },
-    { speaker = "Mamá",
-      text = "Si querés, escuchá la historia de la quebrada. La grabé para que no se perdiera.",
-      set_flag = "mama.saludada" },
+  -- Inicio de la partida (chequelo_day.on_start): al nacer en la casa
+  mama_alistate = {
+    { speaker = "Mamá", text = "Mijo, ya alístate que tienes que ir a misa." },
   },
-  -- Oferta de mama (issue #82). Las `call` van en funciones: este modulo se carga antes que chequelo_day
-  mama = {
-    { when = nueva, speaker = "Mamá", mission_offer = "chequelo",
-      text = "Mirá, mijo. Ya sabés lo que se cuenta del chequelo." },
-    { when = nueva, speaker = "Mamá",
-      text = "Esta noche se va la luz, como cada año. ¿Vas a ir a la iglesia después de la misa?",
+  -- Al ir a la puerta (chequelo_day.on_door): aviso de la luz y decision de oir la historia
+  mama_luz = {
+    { speaker = "Mamá", text = "Esperate, mijo. Esta noche se va la luz, como cada año." },
+    { speaker = "Mamá", text = "Cuando se vaya, no sigás la luz que veás por el monte. Nunca la sigás." },
+    { speaker = "Mamá", text = "¿Querés escuchar la historia del chequelo antes de irte?",
       choices = {
-        { text = "Sí, voy esta noche", set_flag = "mama.avisada", mission_accept = "chequelo",
-          call = function() require("chequelo_day").go_to_church() end },
-        { text = "Mejor no", mission_reject = "chequelo",
-          call = function() require("chequelo_day").on_reject() end },
+        { text = "Sí, quiero escucharla", call = function() require("chequelo_day").want_story() end },
+        { text = "Ahora no" },
       } },
-    -- Reacciones: se evaluan tras la eleccion y en cada conversacion posterior
+  },
+  -- Sin pregunta: la mision se acepta sola al terminar (chequelo_day)
+  mama_bendicion = {
+    { speaker = "Mamá", text = "Que Dios te bendiga, mijo. Andá con cuidado y no tardés." },
+  },
+  -- Despues de aceptada (mama ya no ofrece nada)
+  mama = {
     { when = m.mission_is("chequelo", "accepted"), speaker = "Mamá",
-      text = "Llevate el abrigo y no tardés. ¡Que Dios te cuide!" },
-    { when = m.mission_rejected("chequelo"), speaker = "Mamá",
-      text = "Está bien, mijo. Quedate a cenar. Mañana pasá por la casa de Ña Chayo; ella vio irse la luz." },
+      text = "Andá a la iglesia, mijo. Llevate el abrigo y que Dios te cuide." },
     { when = m.mission_is("chequelo", "night_active", "done", "failed"), speaker = "Mamá",
       text = "Cuidate, mijo. La noche es larga." },
   },

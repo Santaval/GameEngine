@@ -99,3 +99,14 @@ resolves, even if the story never reaches its closing lines.
 2. Choose "Mejor no": state `rejected`, `chequelo.ending = stayed_home`; talking again plays the rejected line, not the intro.
 3. Open F3, set `chequelo` to `none`, talk and choose "Sí": state `accepted`, `mama.avisada` and `chequelo.accepted` are true, the screen fades to the church and the night starts when you reach its door.
 4. Cycle the states in the overlay; `night_active`, `done` and `failed` give Mama's fallback line.
+
+## Inicio de la partida (refinado)
+
+La partida nueva arranca en la casa de mamá (`scripts/new_game.lua`, entidad de `scenes/main.lua`; no actúa con partida cargada ni con el atajo `z`). Flujo (`scripts/chequelo_day.lua`):
+
+1. Mamá: "Mijo, ya alístate que tienes que ir a misa." (`on_start` de la casa).
+2. Una flecha "v" parpadea sobre la puerta de salida.
+3. Al usar la puerta (`cfg.on_door` del controlador) mamá avisa de la luz y pregunta si quieres oír la historia. Si dices sí, suena la grabación (con su saludo y cierre).
+4. Sin preguntar por la misión: bendición, la misión se ofrece y acepta sola (`mama.avisada`, `intro.bendecido`), se guarda y fundido a la puerta de la iglesia, donde `walk_start` empieza la noche.
+
+Ya no hay rechazo en este flujo; `on_reject` y los textos de "quedarse en casa" quedan por si se reutilizan.

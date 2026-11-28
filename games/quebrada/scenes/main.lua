@@ -79,6 +79,15 @@ scene = {
         { assetId = "rooster_far_04", filePath = "sounds/sfx/sfx_rooster_far_04.mp3" },
         { assetId = "dogs_chorus_far_04", filePath = "sounds/sfx/sfx_dogs_chorus_far_04.mp3" },
         -- Emisores de la noche del chequelo (issue #78, emitters.lua)
+        -- Apagon de la noche del chequelo (scripts/blackout.lua; docs/blackout.md)
+        { assetId = "power_cut", filePath = "sounds/sfx/sfx_power_cut.mp3" },
+        { assetId = "blackout_loop", filePath = "sounds/amb/amb_blackout_loop.mp3", stream = true },
+        { assetId = "whistle_01", filePath = "sounds/sfx/sfx_whistle_01.mp3" },
+        { assetId = "whistle_02", filePath = "sounds/sfx/sfx_whistle_02.mp3" },
+        { assetId = "whistle_03", filePath = "sounds/sfx/sfx_whistle_03.mp3" },
+        { assetId = "horse_snort_01", filePath = "sounds/sfx/sfx_horse_snort_01.mp3" },
+        { assetId = "horse_snort_02", filePath = "sounds/sfx/sfx_horse_snort_02.mp3" },
+        { assetId = "horse_hooves_far_01", filePath = "sounds/sfx/sfx_horse_hooves_far_01.mp3" },
         { assetId = "leaves_rustle", filePath = "sounds/sfx/sfx_leaves_rustle.mp3" },
         { assetId = "door_creak_far", filePath = "sounds/sfx/sfx_door_creak_far.mp3" },
     },
@@ -130,6 +139,13 @@ scene = {
                 animation = { atlas = "dummy", tag = "idle_down" },
                 box_collider = { width = 14, height = 8, offset_x = 5, offset_y = 28, solid = true, mover = true },
                 script = { path = "scripts/zona1_player.lua" },
+            },
+        },
+        {
+            -- Partida nueva: arranca en la casa de mama (scripts/new_game.lua)
+            components = {
+                transform = { position = { x = 0, y = 0 } },
+                script = { path = "scripts/new_game.lua" },
             },
         },
         {

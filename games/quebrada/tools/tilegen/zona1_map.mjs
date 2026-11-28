@@ -351,7 +351,7 @@ const PLACE_ELEMENTS = [
   { id: "paula_buganvilia_1", kind: "prop", name: "bougainvillea", at: [PAULA_X + 1, PAULA_PY1 - 1] },
   { id: "paula_buganvilia_2", kind: "prop", name: "bougainvillea", at: [PAULA_X + 6, PAULA_PY1 - 1] },
   { id: "door_paula", kind: "door", name: "door_paula", x: PAULA_DOOR.x, y: PAULA_DOOR.y, w: 32, h: 12, props: { target_map: "maps/house_paula.tmx", target_spawn: "inside_door", exit_spawn: "exit_paula", prompt: "E: entrar",
-    locked: "!unlock.house.chayo,!mission.chequelo.next_day", locked_line: "Está cerrado. Hoy solo mamá está en casa." } },
+    locked: "!mission.chequelo.next_day", locked_line: "Está cerrado. Hoy solo mamá está en casa." } },
   { id: "spawn_exit_paula", kind: "spawn", name: "exit_paula", x: PAULA_X * SIZE + 64, y: PAULA_DOOR.y + 24, facing: "down" },
   { id: "zona_paula", kind: "zone", zone: "casa_paula", x: (PAULA_PX0 - 1) * SIZE, y: (PAULA_PY0 - 1) * SIZE, w: (PAULA_PX1 - PAULA_PX0 + 3) * SIZE, h: (PAULA_PY1 - PAULA_PY0 + 3) * SIZE, title: "Casa de Abuela Paula y Abuelo Pepe", ambience: "pueblo" },
   ...southBlock("enrique", ENR_LANE_X - 8, [{ id: "casa", n: "casa_2", line: "Casa de Tío Enrique. No hay nadie." }], { dy: 10, foot: false, yardTo: ENR_LANE_X + 1, title: "Casa de Tío Enrique" }),

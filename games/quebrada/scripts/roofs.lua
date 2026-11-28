@@ -17,7 +17,7 @@ local win = 255
 local win_shown = nil
 
 local function lit_now()
-  return tod.visible("dusk,night") and true or false
+  return (tod.visible("dusk,night") and not tod.blackout()) and true or false
 end
 
 function M.init(map)

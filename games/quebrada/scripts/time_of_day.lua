@@ -22,6 +22,10 @@ local M = {}
 -- Aviso opcional al pasar de noche a dia: on_day(numero_de_dia). Lo conecta el controlador
 M.on_day = nil
 
+-- Apagon de la noche del chequelo: con la mision en night_active se apagan todas las luces del
+-- pueblo (casas, postes) y las ventanas (roofs.lua lo consulta)
+function M.blackout() return ws.has("mission.chequelo.night_active") and true or false end
+
 -- Luces del mapa: se vuelven a crear en cada escena (load_scene las borra)
 local lights = {}
 
@@ -46,7 +50,7 @@ end
 
 local function refresh_lights(seconds)
   for _, l in ipairs(lights) do
-    local target = logic.visible(l.only, st.phase) and l.intensity or 0
+    local target = (logic.visible(l.only, st.phase) and not M.blackout()) and l.intensity or 0
     if seconds > 0 then fade_light(l.id, target, seconds)
     else set_light(l.id, { intensity = target }) end
   end
@@ -107,6 +111,7 @@ end
 -- Al cargar la escena: reaplica la fase actual de inmediato (la pantalla llega en negro)
 -- y crea las luces del mapa (objetos `light`: radius, r, g, b, intensity, flicker, only)
 function M.init(map)
+  st.dark = M.blackout()
   lights = {}  -- las luces del motor ya se borraron con la escena anterior
   st.card = nil
   local r, g, b = logic.color(st.phase)
@@ -124,7 +129,7 @@ function M.init(map)
           y = o.rect.y + (o.rect.h or 0) / 2
         end
         local intensity = tonumber(p.intensity) or 1
-        local visible = logic.visible(p.only, st.phase)
+        local visible = logic.visible(p.only, st.phase) and not M.blackout()
         local id = add_light(x, y, radius, tonumber(p.r) or 255, tonumber(p.g) or 255,
           tonumber(p.b) or 255, visible and intensity or 0)
         if id > 0 then
@@ -138,6 +143,12 @@ function M.init(map)
 end
 
 function M.tick(dt)
+  -- Se va la luz (o vuelve): las luces del mapa se funden
+  local dark = M.blackout()
+  if dark ~= st.dark then
+    st.dark = dark
+    refresh_lights(dark and 2.5 or LIGHT_FADE)
+  end
   if not st.card then return end
   st.card.t = st.card.t + dt
   -- Seguro: la tarjeta dura ~3 s; pasados 8 s algo fallo y se libera

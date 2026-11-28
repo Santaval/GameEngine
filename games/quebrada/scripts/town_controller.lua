@@ -31,6 +31,8 @@
 --   `triggers` (misiones, p. ej. la noche del chequelo) y emitters.lua reproduce los class="emitter"
 --   segun `only` / `when`. Docs: games/quebrada/docs/zona1.md
 --   on_start  funcion opcional que se llama una vez cuando el jugador ya esta colocado en el mapa.
+--   on_tick   funcion opcional(dt) cada frame, ya colocado el jugador (indicadores, maquinas de estado).
+--   on_door   funcion opcional(door): si devuelve true, la puerta abierta no hace transicion (inicio, mama).
 local logic = require("door_logic")
 local ws = require("world_state")
 local fade = require("fade")
@@ -74,6 +76,8 @@ M.DEFAULTS = {
   roofs = nil,      -- nil = sigue a tile_map; techos que se desvanecen + ventanas encendidas (issue #71)
   world_debug = true, -- false = sin rejilla / colisiones / puertas dibujadas (issue #71)
   on_start = nil,   -- funcion llamada una vez al colocar al jugador (issue #78)
+  on_tick = nil,    -- funcion(dt, idx) llamada cada frame con el jugador colocado
+  on_door = nil,    -- funcion(door) -> true: consume la interaccion con una puerta abierta (no hay transicion)
   companion = false, -- true = luz companera de la noche del chequelo (issue #81)
 }
 
@@ -507,6 +511,11 @@ function M.make_update(cfg)
         amb.set_zone(z.properties.ambience) -- idempotente; tambien tras recargar escena
       end
 
+      if c.on_tick then
+        local ok, e = pcall(c.on_tick, dt, idx)
+        if not ok then print("[town] on_tick fallo: " .. tostring(e)) end
+      end
+
       -- Triggers de mapa (issue #78): no durante una transicion, con el overlay abierto ni con la tarjeta de hora
       if not transition and not ov.open and not tod.is_busy() then triggers.tick(foot) end
 
@@ -519,7 +528,7 @@ function M.make_update(cfg)
           if logic.is_locked(door, ws.has) then
             line.text = door.properties.locked_line or c.default_locked_line
             line.left = c.line_time
-          else
+          elseif not (c.on_door and c.on_door(door)) then
             begin_transition(door)
           end
         else

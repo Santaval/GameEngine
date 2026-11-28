@@ -4,6 +4,8 @@
 local ws = require("world_state")
 local missions = require("missions")
 local npc = require("npc_placeholder")
+local home_hint = require("home_hint")
+local blackout = require("blackout")
 
 update = require("town_controller").make_update({
   map = "maps/zona1.tmx",
@@ -16,6 +18,11 @@ update = require("town_controller").make_update({
     ["maps/house_mama.tmx"] = "scenes/house_demo.lua",
     ["maps/house_paula.tmx"] = "scenes/house_paula.lua",
   },
+  -- Noche del chequelo: guia de regreso a casa y sonidos del apagon (silbido, caballos)
+  on_tick = function(dt, idx)
+    home_hint.tick(dt, idx)
+    blackout.tick(dt)
+  end,
   -- Entrada desde el lanzador (tecla z): si la mision aun no se decidio, la deja aceptada como si
   -- mama ya hubiera hablado (los hooks reales ponen la noche y flags). Si ya esta decidida, usa F3.
   on_start = function()
