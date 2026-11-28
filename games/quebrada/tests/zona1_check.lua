@@ -435,6 +435,27 @@ for x in pairs(lamp_x) do -- ninguna farola dentro de un edificio / camino de la
   local side, col = x:sub(1, 1), tonumber(x:sub(2))
   for _, r in ipairs(Z.PLACE_RANGES[side]) do check(col < r[1] or col > r[2], "la farola " .. x .. " cae dentro de un edificio o camino (cols " .. r[1] .. "-" .. r[2] .. ")") end
 end
+do -- placas con el nombre de las casas (hoja vida): la primera celda de cada rotulo esta en su sitio, las siguientes seguidas, y ninguna cae sobre un camino
+  local vid = {}
+  for tid, body in read_file("games/quebrada/tilesets/vida.tsx"):gmatch('<tile id="(%d+)">(.-)</tile>') do vid[body:match('name="name" value="([^"]*)"')] = tonumber(tid) end
+  local n = 0
+  for key, at in pairs(Z.PLAQUE_AT) do
+    n = n + 1
+    local w = 0
+    while vid["vida_rotulo_" .. key .. "_" .. w .. "_0"] do w = w + 1 end
+    check(w >= 3, "rotulo " .. key .. ": falta en vida.tsx")
+    for cx = 0, w - 1 do
+      local want = Z.VIDA_FIRSTGID + (vid["vida_rotulo_" .. key .. "_" .. cx .. "_0"] or -1000)
+      check(rcell("objects", at[1] + cx, at[2]) == want, "rotulo " .. key .. ": falta la celda " .. cx .. " en (" .. (at[1] + cx) .. "," .. at[2] .. ")")
+      for _, side in ipairs({ "n", "s" }) do
+        for _, r in ipairs(Z.PLACE_FOOTS[side]) do
+          check(not (at[2] == (side == "n" and Z.SIDEWALK_N_Y - 1 or Z.SIDEWALK_S_Y + 1) and at[1] + cx >= r[1] and at[1] + cx <= r[2]) , "rotulo " .. key .. " cae sobre un camino (col " .. (at[1] + cx) .. ")")
+        end
+      end
+    end
+  end
+  check(n == 10, "deben ser 10 rotulos de casas en el mapa, hay " .. n)
+end
 local lamps = 0
 for _, o in ipairs(of_class("light")) do if o.name:match("^luz_farola_") then lamps = lamps + 1 end end
 check(lamps >= LAMP.cols * 2 - LAMP.skipped, "faltan farolas (" .. lamps .. ")")

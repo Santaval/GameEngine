@@ -376,3 +376,7 @@ Street lamps whose column falls inside a building or a path are skipped.
 
 Wooden house (`casa_paula`, buildings sheet rows 36-41, 8x6) on the NORTH side, straight across the street from mama's house (same columns). A ~15 m lastre lane (8 tiles from the street's sidewalk to the porch) runs between two halves of a wire-fenced yard (gate at the sidewalk end, the house is the back fence).
 Details drawn: old rusty zinc roof with a stove chimney, vertical plank walls with replaced greyer boards, deep porch with turned posts and railings, turquoise shutters and flower boxes, dark wooden door with a lamp and doormat, a rocking chair, a rolled hammock, firewood stack, hanging plants, cloth over the beam. Yard: platanos, a guanacaste, two bougainvilleas. Door text mentions wood smoke and coffee. Zone `casa_paula`.
+
+### Name plaques
+
+Each named house of the main street has a small name board on the verge beside its footpath (`CASA DE BERTA`, `MARIA Y JUVENAL`, `DOÑA ISABEL`, `CASA DE CARMEN`, `LOS MACHILLOS`, `DOÑA INGRACIA`, `GUARDERIA`, `LOS CALILES`, `TIO ENRIQUE`, and a two-line board on Abuela Paula's fence). See [vida.md](vida.md). The shops carry their name on the facade (see [buildings.md](buildings.md)).

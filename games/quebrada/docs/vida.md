@@ -14,3 +14,9 @@ Sheet: 16 x 16 tiles of 16 px (256 ids). Every tile name starts with `vida_`. Pr
 `PLAQUES` in `catalog_vida.mjs`: `{ key, lines, style }`. Style `post` is a cream board on two wooden posts (one line); style `fence` is a board hung on a wire fence (up to two lines). The width is
 `ceil((widest line in px + 4) / 16)` tiles (the font advances 4 px per character), at most 4, otherwise the generator throws. Plaques are placed with an `object` element (`name: "vida_rotulo_<key>"`).
 Keys: `berta`, `maria_juvenal`, `isabel`, `carmen`, `machillos`, `ingracia`, `guarderia`, `caliles`, `enrique`, `paula`. Accents are dropped by the font (DONA, TIO), only the Ñ is kept.
+
+### Where the plaques stand (`PLAQUE_AT`, exported to `tests/zona1_consts.lua`)
+
+On the verge row beside each footpath (north verge row `SIDEWALK_N_Y - 1`, south `SIDEWALK_S_Y + 1`), never on a footpath column: `berta` (`BERTA_X + 4`), `maria_juvenal` (`AB_X + 12`), `isabel` (`BAR_X + 15`), `carmen` (`BAR_X + 35`),
+`machillos` (`BAR_X + 44`) on the north side; `ingracia` (`AB_X + 4`), `guarderia` (`BAR_X + 6`), `caliles` (`CALILES_X + 4`), `enrique` (`ENR_LANE_X + 2`) on the south side; `paula` hangs in the yard fence beside the gate
+(the fence skips those four cells). `tests/zona1_check.lua` checks every plaque's cells and that none sits on a footpath.

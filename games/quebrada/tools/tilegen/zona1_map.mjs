@@ -222,10 +222,11 @@ export const CAL_THIRD_X = CALILES_X + 4 + 10 + 12 + 3 + 10, ENR_LANE_X = CAL_TH
 const PAULA_X = MAMA_AT[0], PAULA_Y = SIDEWALK_N_Y - 1 - 7 - 6; // building 8x6, door faces the street
 const PAULA_PX0 = PAULA_X - 3, PAULA_PX1 = PAULA_X + 10, PAULA_PY0 = PAULA_Y, PAULA_PY1 = SIDEWALK_N_Y - 1; // yard fence rectangle (14 wide)
 const PAULA_LANE = [PAULA_X + 3, PAULA_X + 4];
+const PAULA_PLAQUE_X = PAULA_LANE[1] + 1; // the name plaque (4 tiles wide) hangs in the fence just beside the gate
 const paulaFence = () => {
   const cells = [], add = (name, x, y) => cells.push({ name, at: [x, y] });
   add("wire_corner_es", PAULA_PX0, PAULA_PY0); add("wire_corner_ws", PAULA_PX1, PAULA_PY0); add("wire_corner_en", PAULA_PX0, PAULA_PY1); add("wire_corner_wn", PAULA_PX1, PAULA_PY1);
-  for (let x = PAULA_PX0 + 1; x < PAULA_PX1; x++) { if (x < PAULA_X || x >= PAULA_X + 8) add("wire_h", x, PAULA_PY0); add(x === PAULA_LANE[0] || x === PAULA_LANE[1] ? "fence_gap" : "wire_h", x, PAULA_PY1); }
+  for (let x = PAULA_PX0 + 1; x < PAULA_PX1; x++) { if (x < PAULA_X || x >= PAULA_X + 8) add("wire_h", x, PAULA_PY0); if (x < PAULA_PLAQUE_X || x >= PAULA_PLAQUE_X + 4) add(x === PAULA_LANE[0] || x === PAULA_LANE[1] ? "fence_gap" : "wire_h", x, PAULA_PY1); }
   for (let y = PAULA_PY0 + 1; y < PAULA_PY1; y++) { add("wire_v", PAULA_PX0, y); add("wire_v", PAULA_PX1, y); }
   return cells;
 };
@@ -233,8 +234,18 @@ PLACE_RANGES.n.push([PAULA_PX0, PAULA_PX1]);
 PLACE_FOOTS.n.push([PAULA_LANE[0], PAULA_LANE[1]]);
 const PAULA_DOOR = doorRect("casa_paula", PAULA_X, PAULA_Y);
 PLACE_DOORS.push([PAULA_DOOR.x + 16, PAULA_DOOR.y + 8]);
+// name plaques (vida sheet): on the verge row beside each footpath (north verge row = SIDEWALK_N_Y - 1, south = SIDEWALK_S_Y + 1); never on a PLACE_FOOTS column
+export const PLAQUE_AT = {}; // key -> [col, row] of the plaque's first cell
+const plaque = (key, x, y) => { PLAQUE_AT[key] = [x, y]; return { id: `rotulo_${key}`, kind: "object", name: `vida_rotulo_${key}`, at: [x, y] }; };
+const PL_N = SIDEWALK_N_Y - 1, PL_S = SIDEWALK_S_Y + 1;
+const PLAQUE_ELEMENTS = [
+  plaque("berta", BERTA_X + 4, PL_N), plaque("maria_juvenal", AB_X + 12, PL_N), plaque("isabel", BAR_X + 15, PL_N), plaque("carmen", BAR_X + 35, PL_N), plaque("machillos", BAR_X + 44, PL_N),
+  plaque("ingracia", AB_X + 4, PL_S), plaque("guarderia", BAR_X + 6, PL_S), plaque("caliles", CALILES_X + 4, PL_S), plaque("enrique", ENR_LANE_X + 2, PL_S),
+  plaque("paula", PAULA_PLAQUE_X, PAULA_PY1),
+];
 const LAME = "Está cerrado.";
 const PLACE_ELEMENTS = [
+  ...PLAQUE_ELEMENTS,
   ...northHouse("berta", BERTA_X, "casa_1", "Casa de Berta. No hay nadie.", "Casa de Berta"),
   ...northHouse("abastecedor", AB_X, "abastecedor", `Abastecedor El Jardín. ${LAME}`, "Abastecedor El Jardín"),
   ...northHouse("maria_juvenal", AB_X + 8, "casa_2", "Casa de María y Juvenal. No hay nadie."),
