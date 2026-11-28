@@ -15,9 +15,10 @@ LUA_BIN := $(firstword $(shell command -v lua5.3 lua5.4 lua 2>/dev/null))
 NODE_BIN := $(firstword $(shell command -v node 2>/dev/null))
 TILEGEN := games/quebrada/tools/tilegen/gen.mjs
 
-.PHONY: build test deps clean clean-deps lua-info run run-quebrada tiles
+.PHONY: build release test deps clean clean-deps lua-info run run-quebrada tiles
 
-build deps clean clean-deps lua-info:
+# `make release`: engine-bin compilado con -O2 (ver engine/Makefile)
+build release deps clean clean-deps lua-info:
 	$(MAKE) -C engine $@
 
 test:
