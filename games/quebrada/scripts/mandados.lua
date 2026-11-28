@@ -27,6 +27,11 @@ end
 function M.after_maria()
   if ws.has("maria.pagado") and missions.state("pagar_maria") == "accepted" then
     missions.jump("pagar_maria", "done", "Le pagaste a Doña María")
+    -- Sigue la caminata de vuelta a casa de noche (walkback.lua): hay que pasar por los Caliles, y Doña Maria da el machete
+    missions.offer("volver_casa")
+    missions.accept("volver_casa")
+    require("tools").give("machete")
+    libreta.notify()
     save.autosave()
   end
   if ws.has("maria.vendio") and missions.state("papas") == "accepted" then ws.set("papas.compradas", true) end

@@ -50,4 +50,9 @@ return {
   pagar_maria = {
     title = "Pagarle a Doña María lo de las papas",
   },
+  -- Tras pagar a Doña Maria (mandados.after_maria): volver a casa de noche; en la entrada de los Caliles hay que pelear
+  -- contra el simio (walkback.lua / simio.lua) y al llegar a casa mama lo recibe (chequelo_day, mama_simio)
+  volver_casa = {
+    title = "Volver a casa (de noche)",
+  },
 }

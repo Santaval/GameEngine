@@ -55,3 +55,7 @@ met is dimmed. The old `G` foco key is gone.
 - With the F3 overlay, set `tool.sal`: a second slot appears, `2` selects it, `X` sets `sal.used` and removes it.
 - With `tool.machete`, the slot is dim and `X` says it is not for this until `mona.battle` is true.
 - Pick up a tool, wait for the autosave, press `7` on the main scene: the tool is still there.
+
+## El machete en la pelea del simio
+
+Con `mona.battle` activo (lo pone `simio.lua` solo durante la pelea; se limpia al ganar, perder, huir o recargar la escena) el clic izquierdo usa el machete: `tools.lua` llama al global `machete_hook` (`simio.attack`), que pide un golpe de alcance corto delante del jugador (`simio_logic.slash_hits`, enfriamiento 0,45 s). `tools.select_id("machete")` lo elige solo al empezar la pelea. Fuera de la pelea sigue diciendo "El machete no es para esto." Se le da a Doña María al terminar de pagar (`mandados.after_maria`).

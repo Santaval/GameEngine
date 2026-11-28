@@ -18,6 +18,7 @@ scene = {
         { assetId = "hero", filePath = "sprites/hero.png", atlas = "sprites/hero.json" },
         { assetId = "dummy", filePath = "sprites/dummy.png", atlas = "sprites/dummy.json" },
         { assetId = "vfx_luz", filePath = "sprites/vfx_luz.png", atlas = "sprites/vfx_luz.json" },
+        { assetId = "vfx_machete", filePath = "sprites/vfx_machete.png", atlas = "sprites/vfx_machete.json" }, -- golpe del machete (simio.lua)
     },
     fonts = {
         [0] =
@@ -115,7 +116,6 @@ scene = {
         { name = "tool2", key = 50 },
         { name = "tool3", key = 51 },
         { name = "tool4", key = 52 },
-        { name = "tool_use", key = 120 }, -- x: usar la herramienta elegida
         { name = "debug_overlay", key = 1073741884 }, -- F3: overlay de flags y misiones
         { name = "continue", key = 55 }, -- 7: continuar la partida guardada (issue #52)
         { name = "new_game", key = 56 }, -- 8: nueva partida (borra el progreso, scripts/new_game.lua)
@@ -125,6 +125,11 @@ scene = {
         { name = "story_pause", key = 32 },      -- Espacio: pausa / reanudar la historia (repeticion desde la libreta)
         { name = "story_stop", key = 8 },        -- Retroceso: detener
         { name = "story_stop_alt", key = 113 },  -- q
+    },
+    -- Clic izquierdo = usar la herramienta elegida (antes tecla X; el nombre de accion sigue siendo tool_use)
+    mouse = {
+        [0] =
+        { name = "tool_use", button = 1 },
     },
     entities = {
         [0] =

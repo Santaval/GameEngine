@@ -7,6 +7,7 @@ local tod = require("time_of_day")
 
 local M = {}
 M.MESSAGE = "Volvé a casa, mijo. Seguí la luz."
+M.MESSAGE_VOLVER = "Volvé a casa por la calle principal."
 M.MESSAGE_TIME = 8    -- s que se muestra el mensaje (desde que termina la tarjeta de hora)
 M.NEAR = 90           -- px a la puerta: ya no hace falta la flecha lateral
 M.ORBIT = 34          -- px del jugador a la flecha
@@ -15,8 +16,23 @@ M.FEET = { x = 12, y = 19 } -- centro del muneco 24x38 respecto de su origen
 local shown = 0
 local clock = 0
 
-function M.active()
+-- Noche del chequelo (church -> casa de mama)
+local function chequelo_active()
   return missions.state("chequelo") == "night_active" and not ws.has("chequelo.arrived")
+end
+
+-- Volver a casa tras pagar a Doña Maria (walkback.lua); no durante la pelea con el simio
+local function volver_active()
+  if missions.state("volver_casa") ~= "accepted" then return false end
+  local ok, simio = pcall(require, "simio")
+  return not (ok and simio.is_fighting())
+end
+
+function M.active() return chequelo_active() or volver_active() end
+
+local function current_message()
+  if chequelo_active() then return M.MESSAGE end
+  return M.MESSAGE_VOLVER
 end
 
 local function door_target(idx)
@@ -42,7 +58,7 @@ function M.tick(dt, idx)
   if not tx or not player_entity then return end
   if shown < M.MESSAGE_TIME then
     shown = shown + dt
-    draw_message(M.MESSAGE)
+    draw_message(current_message())
   end
   local px, py = get_position(player_entity)
   px, py = px + M.FEET.x, py + M.FEET.y

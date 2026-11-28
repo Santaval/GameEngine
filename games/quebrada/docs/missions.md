@@ -110,3 +110,11 @@ La partida nueva arranca en la casa de mamá (`scripts/new_game.lua`, entidad de
 4. Sin preguntar por la misión: bendición, la misión se ofrece y acepta sola (`mama.avisada`, `intro.bendecido`), se guarda y fundido a la puerta de la iglesia, donde `walk_start` empieza la noche.
 
 Ya no hay rechazo en este flujo; `on_reject` y los textos de "quedarse en casa" quedan por si se reutilizan.
+
+## Volver a casa de noche: el simio de los Caliles (`volver_casa`)
+
+Al pagarle a Doña María (`pagar_maria`) nace `volver_casa` y se da el machete. Todo en Lua, sin triggers ni TMX nuevos: `scripts/walkback.lua` (rects de `walkback_logic.lua`), `scripts/simio.lua` (entidad, HUD, entrada) y `scripts/simio_logic.lua` (lógica pura, probada en `tests/simio_logic.lua`).
+
+- Al pisar la franja de la entrada de los Caliles (x 7648-7776, y 1776-1976) sale el simio: persigue (más lento que caminar), prepara el golpe ("!!" rojo), embiste y queda quieto un momento. El jugador pega con el clic izquierdo (6 golpes, hacia el cursor) y tiene 5 de vida. Si pierde: fundido y reintento en la acera norte, sin límite. Si se aleja del área, la pelea se reinicia (vuelve al pisar la franja).
+- Vencido el simio (`volver.simio_vencido`, se autoguarda) la puerta de mamá deja entrar; al pisar el rect de llegada: `volver.pendiente`, `volver_casa` termina ("Le hiciste frente al simio"), `chequelo_day.go_home()`, diálogo `mama_simio` y amanecer ("A la mañana siguiente...", `volver.cerrado`).
+- Una pelea no se guarda: `mona.battle` se limpia al cargar y la pelea reinicia al volver a pisar la franja.

@@ -9,6 +9,7 @@ local blackout = require("blackout")
 local night_npcs = require("night_npcs")
 local silbido = require("silbido")
 local day_npcs = require("day_npcs")
+local walkback = require("walkback")
 
 update = require("town_controller").make_update({
   map = "maps/zona1.tmx",
@@ -26,10 +27,12 @@ update = require("town_controller").make_update({
   on_tick = function(dt, idx, map)
     night_npcs.tick(dt, idx, map)
     day_npcs.tick(dt)
+    walkback.tick(dt, idx) -- volver a casa de noche: simio de los Caliles (volver_casa)
     home_hint.tick(dt, idx)
     blackout.tick(dt)
     silbido.tick(dt)
   end,
+  on_door = walkback.on_door, -- la puerta de mama sigue cerrada mientras el simio siga vivo (volver_casa)
   -- Entrada desde el lanzador (tecla z): si la mision aun no se decidio, la deja aceptada como si
   -- mama ya hubiera hablado (los hooks reales ponen la noche y flags). Si ya esta decidida, usa F3.
   on_start = function()

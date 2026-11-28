@@ -57,13 +57,17 @@ scene = {
         { name = "tool2", key = 50 },
         { name = "tool3", key = 51 },
         { name = "tool4", key = 52 },
-        { name = "tool_use", key = 120 }, -- x: usar la herramienta elegida
         { name = "debug_overlay", key = 1073741884 }, -- F3: overlay de flags y misiones
         { name = "libreta", key = 9 },       -- Tab: libreta (issue #80)
         { name = "libreta_alt", key = 108 }, -- l
         { name = "story_pause", key = 32 },      -- Espacio: pausa / reanudar la historia
         { name = "story_stop", key = 8 },        -- Retroceso: detener (Esc cierra el motor)
         { name = "story_stop_alt", key = 113 },  -- q
+    },
+    -- Clic izquierdo = usar la herramienta elegida (antes tecla X; el nombre de accion sigue siendo tool_use)
+    mouse = {
+        [0] =
+        { name = "tool_use", button = 1 },
     },
     entities = {
         [0] =

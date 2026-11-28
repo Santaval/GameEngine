@@ -80,19 +80,27 @@ function M.go_home()
 end
 
 -- Tras la charla de la noche: fundido, "a la manana siguiente" (dia nuevo) y mama pide las papas
-local function morning()
+-- clear_flag: el flag de "pendiente" que se limpia; next_stage: "morning" (papas) | "dawn_simio" (cierra volver_casa)
+local function morning(clear_flag, next_stage)
   fade.start_out(function()
-    ws.set("regreso.pendiente", nil)
+    ws.set(clear_flag or "regreso.pendiente", nil)
     tod.set("day", { title = "A la mañana siguiente..." })
-    stage = "morning"
+    stage = next_stage or "morning"
     fade.start_in()
   end)
 end
 
 -- Paso 1 (on_start de la casa): solo de dia y mientras no se haya ido a misa
 function M.on_start()
+  -- Llego a casa tras vencer al simio (walkback.lua): mama lo recibe y amanece (otro flag: no reusar regreso.pendiente)
+  if ws.has("volver.pendiente") then
+    local function dawn() morning("volver.pendiente", "dawn_simio") end
+    if not dialogue.start(dialogue.scripts.mama_simio, { on_end = dawn }) then dawn() end
+    return
+  end
   if ws.has("regreso.pendiente") then
-    if not dialogue.start(dialogue.scripts.mama_regreso, { on_end = morning }) then morning() end
+    local function next_day() morning("regreso.pendiente", "morning") end
+    if not dialogue.start(dialogue.scripts.mama_regreso, { on_end = next_day }) then next_day() end
     return
   end
   if ws.has("intro.bendecido") or ws.has("intro.alistado") or tod.get() ~= "day" then return end
@@ -147,6 +155,14 @@ end
 -- Cada frame (cfg.on_tick): indicador sobre la puerta y espera del fin de la historia
 function M.tick(dt)
   clock = clock + dt
+  if stage == "dawn_simio" then
+    if not tod.is_busy() and not fade.is_active() and not dialogue.is_open() then
+      stage = nil
+      ws.set("volver.cerrado", true)
+      save.autosave()
+    end
+    return
+  end
   if stage == "morning" then
     if not tod.is_busy() and not fade.is_active() and not dialogue.is_open() then
       stage = nil

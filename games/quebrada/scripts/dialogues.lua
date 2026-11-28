@@ -76,6 +76,10 @@ return {
     { when = m.mission_is("pagar_maria", "accepted"), speaker = "Yo", text = "Aquí tiene.", set_flag = "maria.pagado" },
     { when = m.mission_is("pagar_maria", "accepted"), speaker = "Doña María",
       text = "Gracias, mijo. Váyase con cuidado y dígale a su papá que aquí tiene su cuenta al día." },
+    { when = m.mission_is("pagar_maria", "accepted"), speaker = "Doña María",
+      text = "Y tome, llévese este machete de mi difunto. Por los Caliles de noche anda algo, mijo. Mejor no ir con las manos vacías." },
+    { when = m.mission_is("pagar_maria", "accepted"), speaker = "",
+      text = "(Me dio un machete. Lo saco con el clic cuando haga falta.)" },
     { when = m.all(m.mission_is("papas", "accepted"), m.flag("papas.compradas")), speaker = "Doña María",
       text = "¿Todavía por aquí, mijo? Si busca a Lito, vaya a su casa. Y no se tarde, que su mamá espera las papas." },
     { when = m.all(m.not_(m.mission_is("papas", "accepted")), m.not_(m.mission_is("pagar_maria", "accepted"))),
@@ -107,10 +111,31 @@ return {
     { when = m.mission_is("escalera", "accepted"), speaker = "Papá",
       text = "¿Ya fuiste donde tu tío Enrique por la escalera? Los limones no se apean solos." },
   },
+  -- Volver a casa de noche (walkback.lua / simio.lua)
+  simio_aparece = {
+    { speaker = "", text = "(¿Qué es eso... en la entrada de los Caliles?)" },
+    { speaker = "", text = "(Camina en cuatro patas... y ahora se pone de pie. Es alto. Es como lo que contó papá.)" },
+    { speaker = "", text = "(Viene derecho hacia mí. No hay para dónde correr: ¡el machete, con el clic!)" },
+  },
+  simio_huye = {
+    { speaker = "", text = "(Pegó un chillido y se fue en cuatro patas, calle de los Caliles abajo...)" },
+    { speaker = "", text = "(Me tiemblan las manos. Mejor me voy rápido para la casa.)" },
+  },
+  -- Al llegar a casa tras vencer al simio (chequelo_day.on_start con volver.pendiente)
+  mama_simio = {
+    { speaker = "Mamá", text = "¡Mijo! ¿Qué te pasó? Venís blanco como un papel... ¿y ese machete?",
+      choices = {
+        { text = "Me salió algo en los Caliles", next = {
+          { speaker = "Mamá", text = "¿En los Caliles? Ay, Dios santo... lo mismo que le pasó a tu papá." },
+          { speaker = "Mamá", text = "No le digás nada a nadie todavía. Mañana hablamos con él. Andá, acostate." } } },
+        { text = "Nada, mamá. Solo vine corriendo", next = {
+          { speaker = "Mamá", text = "Mm. Esa cara no es de correr, mijo. Andá, acostate, que mañana hablamos." } } },
+      } },
+  },
   -- Sin el foco no sale (chequelo_day.on_door)
   mama_foco = {
     { speaker = "Mamá", text = "¿Y el foco, mijo? No vas a salir a oscuras. Tomalo de la repisa." },
-    { speaker = "Mamá", text = "Se elige con su número y se prende con X. Pero gasta batería: apagalo cuando no lo necesités." },
+    { speaker = "Mamá", text = "Se elige con su número y se usa con el clic. Pero gasta batería: apagalo cuando no lo necesités." },
   },
   -- Sin pregunta: la mision se acepta sola al terminar (chequelo_day)
   mama_bendicion = {

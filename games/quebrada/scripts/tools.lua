@@ -34,8 +34,14 @@ M.DEFS = {
     use = { set_flag = "sal.used", consume = true, line = "Tiras una linea de sal." } },
   { id = "machete", name = "Machete", label = "MACH", color = { 190, 190, 205 },
     source = "Mona y el machete",
-    use = { when = "mona.battle", blocked = "El machete no es para esto.",
-            set_flag = "machete.used", line = "Blandes el machete." } },
+    -- Solo sirve durante una pelea (mona.battle: lo pone simio.lua). El golpe lo resuelve simio.attack (global
+    -- machete_hook); sin `line` para no repetir un mensaje en cada golpe
+    use = { when = "mona.battle", blocked = "El machete no es para esto.", set_flag = "machete.used",
+            fn = function()
+              local hook = rawget(_G, "machete_hook")
+              if not hook then return false, "El machete no es para esto." end
+              return hook()
+            end } },
   { id = "cables", name = "Cables", label = "CABL", color = { 210, 120, 60 },
     source = "Electrocutada",
     use = { set_flag = "cables.used", consume = true, line = "Conectas los cables." } },
@@ -75,6 +81,17 @@ end
 -- Tecla 1..4: selecciona la n-esima. true si cambio la seleccion
 function M.select(n)
   return logic.select(st, owned(), n)
+end
+
+-- Selecciona la herramienta `id` si se tiene (la pelea del simio saca el machete sola). true si quedo seleccionada
+function M.select_id(id)
+  for _, d in ipairs(owned()) do
+    if d.id == id then
+      st.selected = d.id -- directo: select(n) solo llega a MAX_SLOTS casillas
+      return true
+    end
+  end
+  return false
 end
 
 -- Usa la seleccionada. Devuelve el mensaje a mostrar (o nil si no hay nada que decir)
