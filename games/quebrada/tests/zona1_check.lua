@@ -435,6 +435,11 @@ for x in pairs(lamp_x) do -- ninguna farola dentro de un edificio / camino de la
   local side, col = x:sub(1, 1), tonumber(x:sub(2))
   for _, r in ipairs(Z.PLACE_RANGES[side]) do check(col < r[1] or col > r[2], "la farola " .. x .. " cae dentro de un edificio o camino (cols " .. r[1] .. "-" .. r[2] .. ")") end
 end
+do -- cables entre las cabezas de las farolas de la calle de lastre: solo hay power_wire en esos tramos
+  local wires = 0
+  for _, g in ipairs(layers.canopy._cells) do if g ~= 0 and gid_name[g] == "power_wire" then wires = wires + 1 end end
+  check(wires == Z.WIRE_CELLS, "power_wire: deben ser " .. Z.WIRE_CELLS .. " celdas de cable, hay " .. wires)
+end
 do -- emisores de sonido: cada sonido esta registrado en la escena y los de animales de noche respetan la mision del Chequelo
   local scene = read_file("games/quebrada/scenes/zona1.lua")
   local n_vida, perros = 0, nil

@@ -75,5 +75,6 @@ return {
   STREET_Y = 114,
   TOP_PAD = 93,
   VIDA_FIRSTGID = 1937,
+  WIRE_CELLS = 120,
   BRIDGE = { beyond = 2, deckE = 264, deckW = 259, pierE = 266, pierW = 257, railE = 265, railW = 258, rb0 = 6, rb1 = 16, wr0 = 9, wr1 = 13 },
 }

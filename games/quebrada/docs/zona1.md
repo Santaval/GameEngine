@@ -388,3 +388,4 @@ Each named house of the main street has a small name board on the verge beside i
 - **Bananal** (plátano grove, `tree_zone`) north of the street beyond Los Machillos; trunks stay at row <= 107 so the canopies clear the lamp heads.
 - **Tierra sur**: two `tree_zone` + scatter rectangles of guanacaste / monte / palm / plátano with weeds, rocks and stumps behind the shops and around Los Caliles (rows 140-184).
 - **Benches**: four `bench` props on the north verge in front of the abastecedor and the bar, and a `ebais_basurero` bin.
+- **Power cables**: `wire` elements (`WIRE_SPANS`) hang `power_wire` (canopy) between the heads of the street lamps along the lastre: north row `SIDEWALK_N_Y - 3`, cols 465-540; south row `SIDEWALK_S_Y - 1`, cols 515-565. Both ends must be placed lamps and the cells must be free of other canopy, otherwise the generator throws.

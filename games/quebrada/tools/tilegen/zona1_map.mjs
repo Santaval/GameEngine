@@ -287,11 +287,16 @@ const LAND_ELEMENTS = [
   emit("vacas_potrero_2", "cow_far_03", POT_CX + 6, POT_CY, 59, "day", { max_distance: 450 }),
   emit("caballo_potrero", "horse_neigh_far_01", POT_CX - 6, POT_CY, 67, "day", { max_distance: 450 }),
 ];
+// cables between the heads of the street lamps along the lastre (north head row = SIDEWALK_N_Y - 3, south = SIDEWALK_S_Y - 1)
+const WIRE_SPANS = [["n", 465, 490], ["n", 490, 515], ["n", 515, 540], ["s", 515, 540], ["s", 540, 565]].map(([side, x0, x1]) => ({
+  id: `cable_${side}_${x0}_${x1}`, kind: "wire", row: side === "n" ? SIDEWALK_N_Y - 3 : SIDEWALK_S_Y - 1, x0, x1, a: `farola_${side}_${x0}`, b: `farola_${side}_${x1}` }));
+export const WIRE_CELLS = WIRE_SPANS.reduce((n, w) => n + (w.x1 - w.x0 - 1), 0);
 const LAME = "Está cerrado.";
 const PLACE_ELEMENTS = [
   ...PLAQUE_ELEMENTS,
   ...VIDA_EMITTERS,
   ...LAND_ELEMENTS,
+  ...WIRE_SPANS,
   ...northHouse("berta", BERTA_X, "casa_1", "Casa de Berta. No hay nadie.", "Casa de Berta"),
   ...northHouse("abastecedor", AB_X, "abastecedor", `Abastecedor El Jardín. ${LAME}`, "Abastecedor El Jardín"),
   ...northHouse("maria_juvenal", AB_X + 8, "casa_2", "Casa de María y Juvenal. No hay nadie."),
@@ -1096,6 +1101,16 @@ export function buildZona1(elements = ELEMENTS) {
     put("canopy", cx, cy - 2, "poste_head_top");
     put("canopy", cx, cy - 1, "poste_head_shaft");
     lamps.push({ id: e.id, x: cx * SIZE + 14, y: (cy - 2) * SIZE + 11 }); // the lamp of the head tile sits at (14, 11) of its 16x32 picture
+  }
+
+  // ---- power cables: `power_wire` (canopy, cable at its row y=2) between the heads of two street lamps; the head cells of a lamp already carry the cable's end ----
+  for (const e of elements.filter((e) => e.kind === "wire")) {
+    const heads = [e.a, e.b].map((id) => lamps.find((l) => l.id === id));
+    if (heads.some((h) => !h)) throw new Error(`wire ${e.id}: both ends must be placed lamps (${e.a}, ${e.b})`);
+    for (let x = e.x0 + 1; x < e.x1; x++) {
+      if (L.canopy[at(x, e.row)] !== 0) throw new Error(`wire ${e.id}: canopy already used at (${x},${e.row})`);
+      put("canopy", x, e.row, "power_wire");
+    }
   }
 
   // ---- trees and props (trunk on a free grass cell) ----
