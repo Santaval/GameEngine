@@ -71,6 +71,7 @@ local function build()
       return o ~= nil and tostring(o) or ending_of[id]
     end, mt, lds, lead_pending, ws.has)
   rows[3] = logic.mission_rows(sec)
+  for _, r in ipairs(logic.logro_rows(require("logros"), ws.has)) do rows[3][#rows[3] + 1] = r end -- logros (Castigados...)
   return rows
 end
 
@@ -296,6 +297,12 @@ function M.draw()
     cy = cy + 4
     local ending = nil
     para(logic.outcome_text(cur.state, cur.outcome, ending), 40, 110, 60)
+  elseif cur and cur.kind == "logro" then
+    para(cur.text, 50, 35, 25)
+    cy = cy + 4
+    para("Logro conseguido", 40, 110, 60)
+    cy = cy + 4
+    para(cur.desc or "", 70, 55, 40)
   elseif cur and cur.kind == "lead" then
     para(cur.text, 50, 35, 25)
     if cur.person then para("Ir donde: " .. cur.person, 110, 85, 60) end

@@ -9,5 +9,6 @@ update = require("town_controller").make_update({
   scenes = {
     ["maps/zona1.tmx"] = "scenes/main.lua",
     ["maps/house_paula.tmx"] = "scenes/house_paula.lua",
+    ["maps/house_abastecedor.tmx"] = "scenes/house_abastecedor.lua",
   },
 })

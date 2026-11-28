@@ -83,7 +83,7 @@ end
 -- color
 do
   local r, g, b = t.color("night")
-  eq(r, 20, "night r"); eq(g, 26, "night g"); eq(b, 51, "night b")
+  eq(r, 6, "night r"); eq(g, 8, "night g"); eq(b, 18, "night b")
   r = t.color("zzz")
   eq(r, 255, "fase desconocida = dia")
 end

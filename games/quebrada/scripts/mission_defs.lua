@@ -30,4 +30,12 @@ return {
   papas = {
     title = "Papas para la olla (abastecedor El Jardín)",
   },
+  -- Pista de Doña Maria (mandados.lua): preguntar a Lito por que nos dicen "come mono". Su casa se hace despues
+  lito = {
+    title = "Preguntarle a Lito por qué nos dicen \"come mono\"",
+  },
+  -- Mama manda a avisarle a papa (esta en el patio) que ya casi esta la comida (mandados.after_mama)
+  papa = {
+    title = "Avisarle a papá que ya casi está la comida (está en el patio)",
+  },
 }

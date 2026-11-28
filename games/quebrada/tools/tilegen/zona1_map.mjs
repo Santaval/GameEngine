@@ -320,7 +320,10 @@ const PLACE_ELEMENTS = [
   ...FURNITURE_ELEMENTS,
   ...WIRE_SPANS,
   ...northHouse("berta", BERTA_X, "casa_1", "Casa de Berta. No hay nadie.", "Casa de Berta"),
-  ...northHouse("abastecedor", AB_X, "abastecedor", `Abastecedor El Jardín. ${LAME}`, "Abastecedor El Jardín"),
+  // The abastecedor has a real door (interior maps/house_abastecedor.tmx): no "mirar la puerta" interactable
+  ...northHouse("abastecedor", AB_X, "abastecedor", `Abastecedor El Jardín. ${LAME}`, "Abastecedor El Jardín").filter((e) => e.id !== "abastecedor_puerta"),
+  { id: "door_abastecedor", kind: "door", name: "door_abastecedor", ...doorRect("abastecedor", AB_X, PL_NORTH_Y), h: 12, props: { target_map: "maps/house_abastecedor.tmx", target_spawn: "inside_door", exit_spawn: "exit_abastecedor", prompt: "E: entrar" } },
+  { id: "spawn_exit_abastecedor", kind: "spawn", name: "exit_abastecedor", x: doorRect("abastecedor", AB_X, PL_NORTH_Y).x + 16, y: doorRect("abastecedor", AB_X, PL_NORTH_Y).y + 24, facing: "down" },
   ...northHouse("maria_juvenal", AB_X + 8, "casa_2", "Casa de María y Juvenal. No hay nadie."),
   ...northHouse("bar", BAR_X, "bar", `Bar Mata de Caña. ${LAME}`, "Bar Mata de Caña"),
   ...southBlock("ingracia", AB_X + 4 - 3, [{ id: "casa", n: "casa_3", line: "Casa de Doña Ingracia. No hay nadie." }], { title: "Casa de Doña Ingracia" }),

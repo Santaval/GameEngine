@@ -642,7 +642,7 @@ do -- la puerta de la casa de Abuela Paula y Abuelo Pepe, su spawn de salida, su
     check(d.props.target_spawn == "inside_door" and ptmx:find('name="inside_door"', 1, true) ~= nil, "door_paula: el spawn inside_door debe existir en house_paula.tmx")
     check(d.props.exit_spawn == "exit_paula" and spawn.exit_paula ~= nil, "door_paula: exit_spawn exit_paula debe existir en zona1")
     check(d.y == (Z.PAULA_Y - TOP + 6) * 16 and d.x + d.w / 2 == Z.PAULA_X * 16 + 64, "door_paula debe estar justo bajo la puerta dibujada de la casa de Paula")
-    check(d.props.locked == nil, "door_paula: siempre abierta")
+    check(d.props.locked == "!mission.chequelo.next_day", "door_paula: cerrada hasta el dia siguiente del chequelo")
   end
   if spawn.exit_paula then
     check(spawn.exit_paula.props.facing == "down", "exit_paula mira hacia abajo")

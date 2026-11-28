@@ -19,6 +19,7 @@ update = require("town_controller").make_update({
   scenes = {
     ["maps/zona1.tmx"] = "scenes/main.lua",
     ["maps/house_mama.tmx"] = "scenes/house_demo.lua",
+    ["maps/house_abastecedor.tmx"] = "scenes/house_abastecedor.lua",
     ["maps/house_paula.tmx"] = "scenes/house_paula.lua",
   },
   -- Noche del chequelo: vecinos que apuran, guia de regreso a casa y sonidos del apagon (silbido, caballos)

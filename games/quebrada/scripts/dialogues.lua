@@ -49,6 +49,29 @@ return {
     { speaker = "Vecino", text = "¡Hey, come monooooo!" },
     { speaker = "", text = "(¿Come mono? Nunca entendí por qué nos dicen así...)" },
   },
+  -- Abastecedor El Jardin (maps/house_abastecedor.tmx): la compra de las papas y la pregunta por "come mono".
+  -- papas.compradas lo pone mandados.after_maria al terminar (si no, las lineas de despues saldrian en la misma charla)
+  maria = {
+    { when = m.all(m.mission_is("papas", "accepted"), m.not_flag("papas.compradas")), speaker = "Doña María",
+      text = "¡Buenas, mijo! ¿Qué se le ofrece?" },
+    { when = m.all(m.mission_is("papas", "accepted"), m.not_flag("papas.compradas")), speaker = "Yo",
+      text = "Buenas, Doña María. Mi mamá manda a pedirle unas papas para la olla de carne del almuerzo." },
+    { when = m.all(m.mission_is("papas", "accepted"), m.not_flag("papas.compradas")), speaker = "Doña María",
+      text = "Ay, qué rico, olla de carne. Mire, justo me llegaron frescas. ¿Le pongo dos kilos?" },
+    { when = m.all(m.mission_is("papas", "accepted"), m.not_flag("papas.compradas")), speaker = "Yo", text = "Sí, por favor." },
+    { when = m.all(m.mission_is("papas", "accepted"), m.not_flag("papas.compradas")), speaker = "Doña María",
+      text = "Aquí tiene, mijo. Dígale a su mamá que me las pasa a pagar luego.", set_flag = "maria.vendio" },
+    { when = m.all(m.mission_is("papas", "accepted"), m.not_flag("papas.compradas")), speaker = "Yo",
+      text = "Doña María, ¿sabe por qué nos dicen come mono?" },
+    { when = m.all(m.mission_is("papas", "accepted"), m.not_flag("papas.compradas")), speaker = "Doña María",
+      text = "¡JAJA! No tengo ni idea. El que puede saber es Lito, vaya búsquelo a la casa y le pregunta.",
+      set_flag = "lito.pista" },
+    { when = m.all(m.mission_is("papas", "accepted"), m.not_flag("papas.compradas")), speaker = "",
+      text = "(Tengo las papas. Mamá espera, pero la curiosidad... ¿voy donde Lito o vuelvo a casa?)" },
+    { when = m.flag("papas.compradas"), speaker = "Doña María",
+      text = "¿Todavía por aquí, mijo? Si busca a Lito, vaya a su casa. Y no se tarde, que su mamá espera las papas." },
+    { when = m.not_flag("papas.compradas"), speaker = "Doña María", text = "¡Buenas, mijo! Mire lo que necesite." },
+  },
   -- Sin el foco no sale (chequelo_day.on_door)
   mama_foco = {
     { speaker = "Mamá", text = "¿Y el foco, mijo? No vas a salir a oscuras. Tomalo de la repisa." },
@@ -69,8 +92,21 @@ return {
   },
   -- Despues de aceptada (mama ya no ofrece nada)
   mama = {
-    { when = m.mission_is("papas", "accepted"), speaker = "Mamá",
+    -- Entrega de las papas (al entrar a la casa con las papas: mandados.on_enter_home; cierra el mandado y abre el aviso a papa)
+    { when = m.all(m.mission_is("papas", "accepted"), m.flag("papas.compradas"), m.not_flag("lito.visitado")),
+      speaker = "Mamá", text = "¡Las papas! Gracias, mijo. Ya mismo las echo a la olla de carne." },
+    { when = m.all(m.mission_is("papas", "accepted"), m.flag("papas.compradas"), m.flag("lito.visitado")),
+      speaker = "Mamá", text = "¿¡Hasta ahora llegás con las papas!? Son las tantas y el almuerzo se arruinó por andar de vago." },
+    { when = m.all(m.mission_is("papas", "accepted"), m.flag("papas.compradas"), m.flag("lito.visitado")),
+      speaker = "Mamá", text = "¡Estás castigado, mijo! Hoy no sales más... bueno, solo una cosa más." },
+    { when = m.all(m.mission_is("papas", "accepted"), m.flag("papas.compradas")),
+      speaker = "Mamá", text = "Andá a decirle a tu papá, que está en el patio, que ya casi va a estar la comida." },
+    { when = m.all(m.mission_is("papas", "accepted"), m.not_flag("papas.compradas")), speaker = "Mamá",
       text = "¿Ya fuiste a El Jardín por las papas, mijo? La olla de carne no espera." },
+    { when = m.mission_is("papa", "accepted"), speaker = "Mamá",
+      text = "¿Ya le avisaste a tu papá? Está en el patio. Que ya casi está la comida." },
+    { when = m.all(m.mission_is("papas", "done"), m.mission_is("papa", "none")), speaker = "Mamá",
+      text = "Ya está la olla de carne en el fogón. Gracias por las papas, mijo." },
     { when = m.mission_is("chequelo", "accepted"), speaker = "Mamá",
       text = "Andá a la iglesia, mijo. Llevate el abrigo y que Dios te cuide." },
     { when = m.mission_is("chequelo", "night_active", "failed"), speaker = "Mamá",

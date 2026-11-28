@@ -171,6 +171,20 @@ function M.mission_rows(sec)
   return rows
 end
 
+-- Seccion "Logros": defs { id, title, desc }; has(flag). Solo los conseguidos (flag logro.<id>)
+function M.logro_rows(defs, has)
+  local list = {}
+  for _, d in ipairs(defs or {}) do
+    if has("logro." .. d.id) then
+      list[#list + 1] = { kind = "logro", id = d.id, text = d.title, desc = d.desc, new = M.is_new("logro", d.id, has) }
+    end
+  end
+  if #list == 0 then return {} end
+  local rows = { { header = true, text = "Logros" } }
+  for _, e in ipairs(list) do rows[#rows + 1] = e end
+  return rows
+end
+
 -- Texto del resultado de una mision terminada (outcome del flag, o el final de la leyenda)
 function M.outcome_text(state, outcome, ending)
   local o = outcome or ending

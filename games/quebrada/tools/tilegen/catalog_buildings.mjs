@@ -13,6 +13,7 @@
 //   rows 29-33 cols 0-7    guarderia    8x5 (pastel blue walls, painted boats)
 //   rows 36-41 cols 0-7    casa_paula   8x6 (wooden house of Abuela Paula y Abuelo Pepe, lit cells share rows 34-35)
 //   rows 42-47             casa_paula interior furniture casa_paula_int_<cx>_<cy> (max 96);  rows 48-49  its wood back wall casa_paula_wall_<cx>_<cy> (16x2)
+//   rows 50-55             tienda_abastecedor interior furniture tienda_abastecedor_int_<cx>_<cy> (max 96);  rows 56-57  its yellow back wall tienda_abastecedor_wall_<cx>_<cy> (16x2)
 //   rows 34-35             lit window cells of the three shops (the casas use rows 18-19)
 //   row 23 cols 0-11       interior back wall  casa_mama_wall_<cx>;  cols 12-13 two coloured hedges
 //
@@ -26,7 +27,7 @@ import { drawText, textWidth } from "./font.mjs";
 
 export const SIZE = 16;
 export const B_COLS = 16;
-export const B_ROWS = 50;
+export const B_ROWS = 58;
 const B = C.bldg;
 const id = (row, col) => row * B_COLS + col;
 
@@ -592,6 +593,86 @@ for (const b of BUILDINGS) {
   if (nextLit > litEnd) throw new Error(`too many lit cells in ${b.name}`);
 }
 
+
+// ---------------------------------------------------------------- interior of the abastecedor El Jardin (16x11 cells = 256x176 px, a small shop; Doña María stands behind the counter)
+const SACK = rgb("#c9a96a"), SACKDARK = rgb("#9c7f48"), SACKLIGHT = rgb("#e0c58a");
+const POTATO = rgb("#a8774a"), POTATODARK = rgb("#7d5530");
+
+function sack(f, x, y, stripe) {
+  f.ellipse(x + 9, y + 21, 10, 2, D.SH);
+  f.rect(x, y + 4, 18, 16, SACK); f.vline(x, y + 4, 16, SACKLIGHT); f.vline(x + 17, y + 4, 16, SACKDARK); f.hline(x, y + 19, 18, SACKDARK);
+  f.rect(x + 2, y + 1, 14, 4, SACKDARK); f.rect(x + 3, y + 2, 12, 2, SACK); f.hline(x + 5, y + 5, 8, SACKDARK); // tied neck
+  f.rect(x + 3, y + 9, 12, 6, stripe); f.hline(x + 3, y + 9, 12, shade(stripe, 1.25));
+  for (let i = 0; i < 6; i++) f.px(x + 2 + i * 3, y + 7 + (i % 2) * 11, SACKDARK);
+}
+
+function crate(f, x, y, fruit) {
+  f.ellipse(x + 20, y + 25, 22, 2, D.SH);
+  f.rect(x, y + 8, 40, 16, B.woodLight); f.hline(x, y + 8, 40, shade(B.woodLight, 1.2)); f.hline(x, y + 23, 40, B.woodDark);
+  for (const yy of [12, 17, 21]) f.hline(x, y + yy, 40, B.woodDark);
+  f.rect(x, y + 8, 3, 16, B.wood); f.rect(x + 37, y + 8, 3, 16, B.wood);
+  for (let i = 0; i < 9; i++) f.ellipse(x + 4 + i * 4, y + 6 + (i % 2), 2.4, 2.4, fruit[i % fruit.length]);
+}
+
+function drawAbastecedorInterior(f) {
+  // counter (mostrador) across the middle, with a scale, a cash register and a candy jar
+  f.ellipse(128, 126, 58, 3, D.SH);
+  D.plank(f, 72, 94, 112, 9, B.woodLight, shade(B.woodLight, 1.2), B.wood, "abc");
+  f.rect(72, 103, 112, 19, B.wood); f.hline(72, 103, 112, B.woodDark); f.hline(72, 121, 112, B.woodDeep);
+  for (let x = 72; x < 184; x += 14) { f.vline(x, 104, 17, B.woodDark); f.rect(x + 2, 106, 10, 12, shade(B.wood, 1.08)); }
+  f.rect(72, 94, 112, 1, shade(B.woodLight, 1.3));
+  // scale
+  f.rect(82, 90, 18, 4, B.metal); f.hline(82, 90, 18, rgb("#e8eaec")); f.rect(90, 82, 3, 8, B.metal); f.ellipse(91, 80, 4, 4, rgb("#f1efe4")); f.px(91, 80, B.zincDark); f.line(91, 80, 93, 78, rgb("#c4584a"));
+  // candy jar
+  f.rect(120, 84, 12, 10, B.glassHi); f.rect(121, 85, 10, 8, B.glass); f.rect(119, 82, 14, 3, B.whiteTrimShade);
+  for (const [dx, dy, c] of [[2, 3, "#c4584a"], [5, 2, "#e8c442"], [8, 4, "#6bb03a"], [3, 6, "#8d5bb5"], [7, 7, "#c4584a"]]) f.px(121 + dx, 85 + dy, rgb(c));
+  // cash register
+  f.rect(150, 82, 22, 12, rgb("#4a4d52")); f.hline(150, 82, 22, rgb("#6b6f75")); f.rect(153, 76, 10, 6, rgb("#2e2e30")); f.rect(155, 77, 6, 3, B.glass);
+  for (let i = 0; i < 5; i++) f.px(154 + i * 3, 86, rgb("#c4c8cc")); f.rect(165, 85, 5, 4, rgb("#d9d2bd"));
+  // sacks stacked on the left (rice, beans, sugar) and an open sack of potatoes
+  sack(f, 8, 118, rgb("#c4584a")); sack(f, 28, 118, rgb("#4f6fa8")); sack(f, 46, 118, rgb("#e8c442"));
+  sack(f, 17, 98, rgb("#6bb03a")); sack(f, 37, 98, rgb("#f1efe4"));
+  f.ellipse(22, 166, 14, 2, D.SH);
+  f.rect(10, 150, 24, 16, SACK); f.vline(10, 150, 16, SACKLIGHT); f.vline(33, 150, 16, SACKDARK); f.hline(10, 165, 24, SACKDARK);
+  f.ellipse(22, 150, 12, 4, SACKDARK);
+  for (const [dx, dy] of [[-8, 0], [-3, -2], [2, 0], [7, -1], [-5, 2], [4, 2]]) { f.ellipse(22 + dx, 149 + dy, 3.4, 2.6, POTATO); f.px(22 + dx - 1, 148 + dy, POTATODARK); }
+  // refrigerator on the right with bottles
+  f.ellipse(226, 114, 24, 3, D.SH);
+  f.rect(204, 44, 44, 68, rgb("#e8eaec")); f.vline(204, 44, 68, rgb("#ffffff")); f.vline(247, 44, 68, rgb("#b4babf")); f.hline(204, 44, 44, rgb("#ffffff"));
+  f.rect(208, 50, 36, 54, rgb("#26323c")); f.rect(209, 51, 34, 52, rgb("#34505f"));
+  for (const yy of [64, 78, 92]) f.hline(209, yy, 34, rgb("#8d9aa3"));
+  const COL = ["#c4584a", "#4f9a9e", "#e8c442", "#6bb03a", "#8d5bb5"];
+  for (const [row, yy] of [[0, 54], [1, 68], [2, 82], [3, 96]]) for (let i = 0; i < 8; i++) { const c = rgb(COL[(i + row) % COL.length]); f.rect(211 + i * 4, yy, 3, 8, c); f.px(211 + i * 4 + 1, yy - 1, rgb("#c4c8cc")); }
+  f.rect(204, 104, 44, 8, rgb("#c4c8cc")); f.vline(244, 60, 20, rgb("#8d9aa3"));
+  // fruit crates (platanos and tomatoes) in the corner
+  crate(f, 196, 144, [rgb("#e8c442"), rgb("#d4a82c")]);
+  crate(f, 196, 124, [rgb("#c4584a"), rgb("#a8402f"), rgb("#d9654f")]);
+}
+
+function drawAbastecedorWall(f) {
+  // 256 x 32: yellow plaster wall, green baseboard, two shelves with goods, the shop sign and a calendar
+  for (let y = 0; y < 32; y++) for (let x = 0; x < 256; x++) {
+    let c = B.yellowWall;
+    if (noise("abw", x, y) < 0.06) c = shade(c, 0.94);
+    if (y > 27) c = B.greenTrim;
+    f.px(x, y, c);
+  }
+  f.hline(0, 27, 256, B.greenTrimDark); f.hline(0, 28, 256, shade(B.greenTrim, 1.2));
+  const GOODS = ["#c4584a", "#4f9a9e", "#e8c442", "#6bb03a", "#8d5bb5", "#f1efe4", "#4f6fa8"];
+  for (const [by, top] of [[13, 3], [24, 15]]) {
+    for (let x = 8; x < 198; x += 7) {
+      const h = 6 + Math.floor(noise("abg", x, by) * 4), c = rgb(GOODS[Math.floor(noise("abc", x, by) * GOODS.length)]);
+      f.rect(x, by - h, 5, h, c); f.hline(x, by - h, 5, shade(c, 1.3)); f.px(x + 2, by - h + 2, rgb("#f1efe4"));
+    }
+    f.rect(6, by, 194, 3, B.wood); f.hline(6, by, 194, B.woodLight); f.hline(6, by + 2, 194, B.woodDark);
+  }
+  // sign
+  f.rect(206, 3, 44, 14, B.greenTrimDark); f.rect(207, 4, 42, 12, B.greenTrim); f.hline(207, 4, 42, shade(B.greenTrim, 1.3));
+  drawText(f, "EL JARDIN", 210, 8, B.whiteTrim);
+  // calendar
+  f.rect(222, 19, 12, 8, B.whiteTrim); f.rect(222, 19, 12, 2, rgb("#c4584a"));
+}
+
 // ---------------------------------------------------------------- interiors (maps/house_<name>.tmx): furniture + back wall drawn on canvases, sliced into sheet cells
 // An interior spec: { name, w, h (tiles), intBase/intEnd (id range of the furniture cells), wallBase (first id of the wall cells), wallCols, wallRows, draw(f) furniture canvas, drawWall(f) wall canvas }.
 // Furniture cells are named `${name}_int_${cx}_${cy}` (the non-empty cells of the canvas, ids handed out in reading order); wall cells `${name}_wall_${cx}` when the wall is one row tall,
@@ -599,6 +680,7 @@ for (const b of BUILDINGS) {
 const INTERIOR_SPECS = [
   { name: "casa_mama", w: INT_W, h: INT_H, intBase: INT_BASE_ID, intEnd: id(23, 0), wallBase: WALL_BASE_ID, wallCols: WALL_COLS, wallRows: 1, draw: drawInterior, drawWall: drawBackWall },
   { name: "casa_paula", w: 16, h: 11, intBase: id(42, 0), intEnd: id(48, 0), wallBase: id(48, 0), wallCols: 16, wallRows: 2, draw: drawPaulaInterior, drawWall: drawPaulaWall },
+  { name: "tienda_abastecedor", w: 16, h: 11, intBase: id(50, 0), intEnd: id(56, 0), wallBase: id(56, 0), wallCols: 16, wallRows: 2, draw: drawAbastecedorInterior, drawWall: drawAbastecedorWall },
 ];
 export const INTERIORS = INTERIOR_SPECS.map((spec) => {
   const furniture = new Frame(spec.w * SIZE, spec.h * SIZE);
