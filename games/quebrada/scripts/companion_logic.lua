@@ -1,10 +1,13 @@
 -- Logica pura de la luz companera de la noche del chequelo (issue #81). Sin llamadas al motor.
 -- La luz solo se mueve a lo largo de la ruta (objetos `route` del mapa) con una velocidad maxima
--- fija: caminando el jugador la sigue de cerca, corriendo la deja atras, y al parar ella espera.
+-- normal: caminando el jugador la sigue de cerca; corriendo ella acelera para no quedarse atras, y al parar espera.
 local M = {}
 
 M.CONFIG = {
-  speed = 62,            -- px/s maximos de la luz (caminar = 60, correr = 400)
+  speed = 62,            -- px/s de la luz yendo al paso del jugador (caminar = 60, correr = 400)
+  catchup_speed = 520,   -- px/s maximos al alcanzar al jugador que corre (mayor que correr)
+  catchup_gap = 8,       -- px de retraso sobre el objetivo a partir de los que acelera
+  catchup_gain = 30,     -- px/s extra por cada px de retraso
   lead_distance = 40,    -- distancia por delante del jugador mientras camina
   wait_distance = 56,    -- distancia a la que se queda cuando el jugador se detiene
   light_radius = 64,
@@ -239,7 +242,15 @@ function M.step(st, path, detours, cfg, dt, inp)
   -- Movimiento: nunca retrocede
   if state == "guiding" or state == "waiting" then
     local target = ps + (state == "guiding" and cfg.lead_distance or cfg.wait_distance)
-    if target > st.s then st.s = st.s + math.min(target - st.s, cfg.speed * dt) end
+    if target > st.s then
+      -- Al paso normal va a `speed`; si el jugador corre y la deja atras, acelera hasta alcanzarlo
+      local lag = target - st.s
+      local speed = cfg.speed
+      if lag > cfg.catchup_gap then
+        speed = clamp(cfg.speed + (lag - cfg.catchup_gap) * cfg.catchup_gain, cfg.speed, cfg.catchup_speed)
+      end
+      st.s = st.s + math.min(lag, speed * dt)
+    end
     st.s = clamp(st.s, 0, path.len)
     st.offset = M.drift(st, detours, cfg, st.t)
   elseif state == "leaving" or state == "extinguishing" then

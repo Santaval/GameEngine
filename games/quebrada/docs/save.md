@@ -17,7 +17,7 @@ ranura, `slot1`.
 | `flags` | `world_state.snapshot()`: misiones y resultados, historias oidas, pistas y leyendas, casas y zonas desbloqueadas, dia, flags de dialogo... |
 | `time.phase` | Fase del dia (`day`, `dusk`, `night`, `dawn`) |
 | `foco.battery` | Bateria del foco (el foco se reanuda apagado) |
-| `place` | `map`, `scene` y `ctx` (llegada pendiente, `return_*`, zona) para reaparecer en el mismo sitio |
+| `place` | `map`, `scene` y `ctx` (llegada pendiente, `return_*`, zona; y `pos` = x, y y orientación del jugador al guardar en el mismo mapa, para reaparecer exactamente ahí) |
 
 Lo "Nuevo" de la libreta son flags `libreta.seen.<tipo>.<id>` y entra en `flags`.
 

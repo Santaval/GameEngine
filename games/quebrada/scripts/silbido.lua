@@ -15,6 +15,7 @@ local was_active = false
 local last_x, last_y = nil, nil
 local pick = nil
 local flash, notice, notice_left = 0, "", 0
+local halted = false
 
 local function say(text, secs) notice, notice_left = text, secs or 3 end
 
@@ -71,6 +72,7 @@ local function foco_ready()
 end
 
 function M.tick(dt)
+  if halted then return end
   local active = tod.blackout() and not ws.has("chequelo.arrived")
   if not active then
     set_blocked(false)
@@ -114,7 +116,9 @@ function M.tick(dt)
   elseif ev == "fail" then
     ws.set("chequelo.silbidos", st.strikes)
     flash = 1.2
-    require("missions").fail("chequelo")
+    halted = true -- hasta recargar la escena: sin mas silbidos ni golpes
+    set_blocked(false)
+    require("chequelo_day").on_caught()
   elseif ev == "pass" then
     say("El silbido pasó de largo", 2)
   end

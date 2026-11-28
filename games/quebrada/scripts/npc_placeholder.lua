@@ -16,6 +16,7 @@ M.ROSTER = {
   papa = { name = "Papá", color = { 150, 200, 255 } },
   tio = { name = "Tío", color = { 190, 255, 160 } },
   lencho = { name = "Ño Lencho", color = { 255, 150, 150 } },
+  vecino = { name = "Vecino", color = { 200, 200, 140 } },
   tina = { name = "Ña Tina", color = { 255, 255, 255 } },
 }
 

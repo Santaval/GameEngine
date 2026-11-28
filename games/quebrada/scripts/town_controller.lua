@@ -300,6 +300,18 @@ function M.make_update(cfg)
 
   local function try_place()
     if not player_entity or not player_walker then return false end
+    -- Partida cargada: reaparece exactamente donde se guardo (save.lua guarda ctx.pos)
+    local ctx0 = ws.ctx()
+    local pos = ctx0.pos
+    ctx0.pos = nil
+    if pos and not ctx0.arrival and type(pos.x) == "number" and type(pos.y) == "number" then
+      safe = nil
+      set_position(player_entity, pos.x, pos.y)
+      set_velocity(player_entity, 0, 0)
+      if pos.facing then player_walker:set_facing(pos.facing) end
+      player_walker.cam_state = {}
+      return true
+    end
     local arrival = ws.take_arrival()
     local sx, sy, sfacing
     if arrival then

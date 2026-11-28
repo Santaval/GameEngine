@@ -15,11 +15,19 @@ return {
     on_reject = function() ws.set("chequelo.ending", "stayed_home") end,
     on_complete = function(_, outcome)
       ws.set("chequelo.ending", outcome or "done")
-      require("time_of_day").set("day", { title = "Amanece..." })
+      -- Llegando a casa (regreso.pendiente) el amanecer lo pone chequelo_day tras hablar con mama
+      if not ws.has("regreso.pendiente") then
+        require("time_of_day").set("day", { title = "Amanece..." })
+      end
     end,
     on_fail = function()
       ws.set("chequelo.ending", "failed")
       require("time_of_day").set("day", { title = "Amanece..." })
     end,
+  },
+  -- Mandado de la manana siguiente (chequelo_day.lua): mama pide papas para la olla de carne.
+  -- Aparece en la pestana Misiones de la libreta (ofrecida y aceptada al pedirlas mama)
+  papas = {
+    title = "Papas para la olla (abastecedor El Jardín)",
   },
 }

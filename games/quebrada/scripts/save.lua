@@ -36,6 +36,17 @@ function M.save(opts)
     print("[save] aun no se sabe en que mapa estas: no se guarda")
     return false
   end
+  -- Posicion exacta: solo si se guarda en el mapa actual (con opts.map es un cambio de mapa y la llegada
+  -- ya dice donde aparecer). El controlador la usa al colocar al jugador al cargar (ctx.pos)
+  local ctx = {}
+  for k, v in pairs(ws.ctx()) do ctx[k] = v end
+  if not opts.map and player_entity and player_walker then
+    local px, py = get_position(player_entity)
+    if px then
+      ctx.arrival = nil
+      ctx.pos = { x = px, y = py, facing = player_walker:get_facing() }
+    end
+  end
   local tod = rawget(_G, "time_state")
   local foco = rawget(_G, "foco_state")
   local data = logic.build({
@@ -44,7 +55,7 @@ function M.save(opts)
     battery = foco and foco.battery or nil,
     map = map,
     scene = scene,
-    ctx = ws.ctx(),
+    ctx = ctx,
   })
   local ok, res = pcall(save_data, SLOT, data)
   if not ok or not res then

@@ -4,7 +4,7 @@
 -- y su calle de adoquin de 100 m (1 tile = 1 m). El resto (casas, cafetal, ...) lo coloca el usuario.
 -- ESCENA PRINCIPAL del juego (la que arranca `make run-quebrada`): el pueblo Quebrada Grande.
 -- Controlador: scripts/zona1_scene.lua; jugador sin limites de camara fijos: zona1_player.lua.
--- Tecla 7 continua la partida guardada; tecla z reinicia con el atajo de la noche del chequelo.
+-- Al abrir el juego se continua la partida guardada si existe; tecla 8 = nueva partida. Tecla 7 continua la partida guardada; tecla z reinicia con el atajo de la noche del chequelo.
 -- (Texto original de town_demo.lua:) Demo de puertas, interiores y zonas (issue #62): el barrio.
 -- WASD o flechas para andar, Shift corre, E / Enter interactua con la puerta,
 -- F alterna el flag unlock.house.chayo (depuracion), 0 vuelve a la escena principal,
@@ -115,6 +115,7 @@ scene = {
         { name = "tool_use", key = 120 }, -- x: usar la herramienta elegida
         { name = "debug_overlay", key = 1073741884 }, -- F3: overlay de flags y misiones
         { name = "continue", key = 55 }, -- 7: continuar la partida guardada (issue #52)
+        { name = "new_game", key = 56 }, -- 8: nueva partida (borra el progreso, scripts/new_game.lua)
         { name = "zona1", key = 122 },   -- z: reiniciar con el atajo de la noche del chequelo (issue #78)
         { name = "libreta", key = 9 },       -- Tab: libreta (issue #80)
         { name = "libreta_alt", key = 108 }, -- l

@@ -20,6 +20,35 @@ return {
         { text = "Ahora no" },
       } },
   },
+  -- Tres silbidos mal: te encontro (chequelo_day.on_caught)
+  chequelo_fallo = {
+    { speaker = "", text = "El silbido te encontró. La luz se apagó para siempre y el monte se cerró a tu alrededor...",
+      choices = {
+        { text = "Volver a la iglesia e intentarlo de nuevo", call = function() require("chequelo_day").restart_night() end },
+        { text = "Rendirme", call = function() require("missions").fail("chequelo") end },
+      } },
+  },
+  -- Al llegar a casa tras la noche (chequelo_day.go_home): mama lo recibe
+  mama_regreso = {
+    { speaker = "Mamá", text = "¿La viste, verdad? ¿O por qué esa cara?",
+      choices = {
+        { text = "Sí, la vi", next = {
+          { speaker = "Mamá", text = "Ay, mijo... ya lo sabía yo. No se lo contés a cualquiera. Andá, acostate." } } },
+        { text = "No vi nada, mamá", next = {
+          { speaker = "Mamá", text = "Mm. Esa cara dice otra cosa. Andá, acostate, mijo." } } },
+      } },
+  },
+  -- A la manana siguiente (chequelo_day): el mandado
+  mama_papas = {
+    { speaker = "Mamá", text = "Buenos días, mijo. ¿Dormiste algo?" },
+    { speaker = "Mamá", text = "Hoy hago olla de carne para el almuerzo y me faltan las papas." },
+    { speaker = "Mamá", text = "Andá al abastecedor El Jardín y traeme unas papas, ¿sí? Apurate, que la olla no espera." },
+  },
+  -- Camino al abastecedor (day_npcs.lua): salta solo al acercarse; la segunda linea es un pensamiento
+  come_mono = {
+    { speaker = "Vecino", text = "¡Hey, come monooooo!" },
+    { speaker = "", text = "(¿Come mono? Nunca entendí por qué nos dicen así...)" },
+  },
   -- Sin el foco no sale (chequelo_day.on_door)
   mama_foco = {
     { speaker = "Mamá", text = "¿Y el foco, mijo? No vas a salir a oscuras. Tomalo de la repisa." },
@@ -40,9 +69,11 @@ return {
   },
   -- Despues de aceptada (mama ya no ofrece nada)
   mama = {
+    { when = m.mission_is("papas", "accepted"), speaker = "Mamá",
+      text = "¿Ya fuiste a El Jardín por las papas, mijo? La olla de carne no espera." },
     { when = m.mission_is("chequelo", "accepted"), speaker = "Mamá",
       text = "Andá a la iglesia, mijo. Llevate el abrigo y que Dios te cuide." },
-    { when = m.mission_is("chequelo", "night_active", "done", "failed"), speaker = "Mamá",
+    { when = m.mission_is("chequelo", "night_active", "failed"), speaker = "Mamá",
       text = "Cuidate, mijo. La noche es larga." },
   },
   -- Casa de Abuela Paula y Abuelo Pepe (maps/house_paula.tmx)

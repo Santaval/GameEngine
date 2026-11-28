@@ -21,7 +21,7 @@ M.FOCO_SHELF = { x = 96, y = 24 } -- linterna de maps/house_mama.tmx (x 88-104, 
 M.EXIT_DOOR = { x = 96, y = 128 } -- puerta de salida de maps/house_mama.tmx (centro del borde superior del rect)
 
 local want_story = false -- el jugador pidio oir la historia
-local stage = nil        -- nil | "listening" (esperando que termine la historia)
+local stage = nil        -- nil | "listening" (esperando que termine la historia) | "morning"
 local clock = 0
 
 -- La historia entra en la libreta aunque el jugador nunca la haya escuchado
@@ -66,8 +66,35 @@ local function after_warning()
   end
 end
 
+-- Regreso de la noche: fundido a la casa de mama, donde ella lo recibe (on_start -> regreso)
+function M.go_home()
+  if player_walker then player_walker.input = function() return 0, 0, false end end
+  fade.start_out(function()
+    ws.set_ctx({
+      arrival = { map = "maps/house_mama.tmx", spawn = "inside_door", facing = "up" },
+      return_map = "maps/zona1.tmx", return_spawn = "exit_mama", return_facing = "down",
+    })
+    save.autosave({ map = "maps/house_mama.tmx", scene = "scenes/house_demo.lua" })
+    load_scene("scenes/house_demo.lua")
+  end)
+end
+
+-- Tras la charla de la noche: fundido, "a la manana siguiente" (dia nuevo) y mama pide las papas
+local function morning()
+  fade.start_out(function()
+    ws.set("regreso.pendiente", nil)
+    tod.set("day", { title = "A la mañana siguiente..." })
+    stage = "morning"
+    fade.start_in()
+  end)
+end
+
 -- Paso 1 (on_start de la casa): solo de dia y mientras no se haya ido a misa
 function M.on_start()
+  if ws.has("regreso.pendiente") then
+    if not dialogue.start(dialogue.scripts.mama_regreso, { on_end = morning }) then morning() end
+    return
+  end
   if ws.has("intro.bendecido") or ws.has("intro.alistado") or tod.get() ~= "day" then return end
   if missions.state("chequelo") ~= "none" then return end
   dialogue.start(dialogue.scripts.mama_alistate, { on_end = function() ws.set("intro.alistado", true) end })
@@ -90,9 +117,49 @@ function M.on_door(door)
   return true
 end
 
+-- Flags de la caminata de la noche (los mismos que limpia chequelo_triggers.walk_start)
+local WALK_FLAGS = {
+  "chequelo.on_road", "chequelo.off_road", "chequelo.light_appears", "chequelo.detour",
+  "chequelo.detour_cafetal", "chequelo.detour_door", "chequelo.arrived", "chequelo.silbidos",
+}
+
+-- Reintentar la noche: fundido, mision de nuevo en `accepted`, de dia, y aparece en la puerta de la
+-- iglesia; entrar en walk_start vuelve a empezar la noche
+function M.restart_night()
+  if player_walker then player_walker.input = function() return 0, 0, false end end
+  fade.start_out(function()
+    for _, f in ipairs(WALK_FLAGS) do ws.set(f, nil) end
+    ws.set("chequelo.ending", nil)
+    missions.jump("chequelo", "accepted")
+    tod.set("day", { instant = true, advance_day = false })
+    ws.set_ctx({ arrival = { map = "maps/zona1.tmx", spawn = "default" } })
+    save.autosave({ map = "maps/zona1.tmx", scene = "scenes/main.lua" })
+    load_scene("scenes/main.lua")
+  end)
+end
+
+-- El chequelo te encontro (3 silbidos): reintentar desde la iglesia o rendirse (mision fallida)
+function M.on_caught()
+  local opts = { on_end = nil }
+  if not dialogue.start(dialogue.scripts.chequelo_fallo, opts) then M.restart_night() end
+end
+
 -- Cada frame (cfg.on_tick): indicador sobre la puerta y espera del fin de la historia
 function M.tick(dt)
   clock = clock + dt
+  if stage == "morning" then
+    if not tod.is_busy() and not fade.is_active() and not dialogue.is_open() then
+      stage = nil
+      dialogue.start(dialogue.scripts.mama_papas, {
+        on_end = function()
+          missions.offer("papas")
+          missions.accept("papas")
+          save.autosave()
+        end,
+      })
+    end
+    return
+  end
   if stage == "listening" then
     local story = require("story")
     if not story.is_open() and not dialogue.is_open() then

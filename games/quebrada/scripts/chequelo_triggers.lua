@@ -44,7 +44,9 @@ M.detour_door = { on_enter = function() detour("detour_door") end }
 M.house_arrival = {
   on_enter = function()
     ws.set("chequelo.arrived", true) -- antes de complete: el autoguardado ya lo incluye
+    ws.set("regreso.pendiente", true) -- el amanecer espera a que mama reciba al jugador (chequelo_day)
     missions.complete("chequelo", logic.outcome(ws.get("chequelo.detour")))
+    require("chequelo_day").go_home()
   end,
 }
 
