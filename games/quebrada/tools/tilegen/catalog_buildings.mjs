@@ -9,6 +9,10 @@
 //   rows 12-16 cols 8-13   casa_3       6x5   (rust zinc, salmon walls, white trim, pink columns)
 //   rows 18-19 (288-319)   lit window cells  <name>_lit_<cx>_<cy>
 //   rows 20-22 (320-367)   interior furniture of mama's house  casa_mama_int_<cx>_<cy>
+//   rows 24-28 cols 0-7    abastecedor  8x5 (yellow walls, striped awning)   cols 8-15: bar  8x5 (green walls, red sign band)
+//   rows 29-33 cols 0-7    guarderia    8x5 (pastel blue walls, painted boats)
+//   rows 36-41 cols 0-7    casa_paula   8x6 (wooden house of Abuela Paula y Abuelo Pepe, lit cells share rows 34-35)
+//   rows 34-35             lit window cells of the three shops (the casas use rows 18-19)
 //   row 23 cols 0-11       interior back wall  casa_mama_wall_<cx>;  cols 12-13 two coloured hedges
 //
 // Building entry: { name, roof_of, col0,row0,w,h, roofRows, footRows:[r0,r1), open:[[cx,cy]], windows:[{x,y,w,h}],
@@ -20,7 +24,7 @@ import * as D from "./building_draw.mjs";
 
 export const SIZE = 16;
 export const B_COLS = 16;
-export const B_ROWS = 24;
+export const B_ROWS = 42;
 const B = C.bldg;
 const id = (row, col) => row * B_COLS + col;
 
@@ -164,6 +168,84 @@ function fillerHouse({ wall, roof, door, windows, hip = true, columns = null, sh
 
 const wallPal = (base, sh, hi, dark, salt) => ({ base, shade: sh, hi, dark, salt });
 
+/** Shop / bar / nursery, 128x80 (8x5): roof rows 0-2, wall rows 3-4, a coloured sign band under the eave, a big window and a door. */
+function shopBuilding({ wall, roof, door, sign, windows, deco, litWindows = windows, doorX = 58, salt }) {
+  const draw = (f) => {
+    D.hipRoof(f, 2, 2, 124, 44, roof, { top: 17, side: 22, frontTrim: 3, salt });
+    D.plasterWall(f, 0, 48, 128, 32, wall);
+    for (let y = 48; y < 51; y++) f.hline(0, y, 128, withAlpha([0, 0, 0, 255], 70 - (y - 48) * 18));
+    f.rect(6, 51, 116, 7, sign.bg); f.hline(6, 51, 116, sign.light); f.hline(6, 57, 116, sign.dark);
+    for (const w of windows) { if (w.awning) { for (let x = w.x - 2; x < w.x + w.w + 2; x += 4) { f.rect(x, 58, 4, 5, ((x - w.x + 2) / 4) % 2 ? w.awning[1] : w.awning[0]); } f.hline(w.x - 2, 63, w.w + 4, withAlpha([0, 0, 0, 255], 70)); } D.plainWindow(f, w.x, w.y, w.w, w.h, { bar: true, shutters: w.shutters, tint: w.tint }); }
+    D.door(f, doorX, 58, 12, 22, door);
+    if (deco) deco(f);
+  };
+  const drawLit = (f) => { for (const w of litWindows) D.plainWindow(f, w.x, w.y, w.w, w.h, { lit: true, bar: true }); };
+  return { w: 8, h: 5, roofRows: 3, footRows: [1, 3], open: [], windows, door: { cx: Math.round((doorX + 6) / 16) - 1, cy: 4, w: 32 }, draw, drawLit };
+}
+const boat = (f, x, y, hull, sail) => {
+  D.fillPoly(f, [[x, y + 8], [x + 14, y + 8], [x + 11, y + 12], [x + 3, y + 12]], () => hull);
+  D.fillPoly(f, [[x + 7, y], [x + 7, y + 7], [x + 1, y + 7]], () => sail);
+  D.fillPoly(f, [[x + 8, y + 2], [x + 8, y + 7], [x + 13, y + 7]], () => shade(sail, 0.85));
+  f.vline(x + 7, y - 1, 9, B.woodDark);
+};
+
+
+// ---------------------------------------------------------------- casa de Abuela Paula y Abuelo Pepe (wooden, 8x6 = 128x96, lots of small details)
+const WOOD = { base: rgb("#a06c3e"), light: rgb("#b98250"), dark: rgb("#7a4f2b"), deep: rgb("#4f3219"), grey: rgb("#8d7a62") };
+const PAULA_WIN = [{ x: 14, y: 72, w: 11, h: 12 }, { x: 88, y: 72, w: 11, h: 12 }];
+function drawPaula(f) {
+  const PW = 128;
+  // roof: old zinc, rust streaks, a stove chimney with a cap
+  D.hipRoof(f, 2, 2, 124, 62, { base: rgb("#b4b8b8"), light: rgb("#d0d3d1"), dark: rgb("#8c9190"), line: rgb("#767b7a"), trim: WOOD.dark, trimDark: WOOD.deep }, { top: 22, side: 28, frontTrim: 4, salt: "paularoof" });
+  for (let i = 0; i < 70; i++) {
+    const x = 6 + Math.floor(noise("pr", i, 1) * 114), y = 8 + Math.floor(noise("pr", i, 2) * 50);
+    if (f.get(x, y)[0] > 140) f.px(x, y, B.zincRust);
+  }
+  for (const y of [20, 38]) f.vline(30 + y, y, 10, withAlpha(B.zincRust, 150)); // rain streaks
+  f.rect(98, 6, 6, 18, rgb("#5c5f63")); f.vline(98, 6, 18, rgb("#7a7e82")); f.rect(96, 4, 10, 3, rgb("#43464a")); f.hline(96, 4, 10, rgb("#6b6f74"));
+  // deep porch: recessed wooden wall (vertical planks, a few patched boards), eave shadow
+  for (let y = 64; y < 92; y++) for (let x = 0; x < PW; x++) {
+    const plank = Math.floor(x / 4), edge = x % 4 === 3;
+    let c = (plank % 3 === 0) ? WOOD.base : (plank % 3 === 1) ? shade(WOOD.base, 0.94) : shade(WOOD.base, 1.05);
+    if (plank === 9 || plank === 23) c = shade(WOOD.grey, 1.0 + (plank === 9 ? 0.05 : 0)); // replaced boards, greyer
+    if (edge) c = WOOD.dark;
+    else if (noise("pw", x, y) < 0.05) c = shade(c, 0.9);
+    f.px(x, y, c);
+  }
+  for (let y = 64; y < 70; y++) f.hline(0, y, PW, withAlpha([0, 0, 0, 255], 90 - (y - 64) * 14));
+  f.rect(0, 64, PW, 3, WOOD.dark); f.hline(0, 64, PW, WOOD.light); // porch beam
+  // windows with open turquoise shutters and a flower box
+  for (const w of PAULA_WIN) {
+    D.plainWindow(f, w.x, w.y, w.w, w.h, { bar: true, shutters: rgb("#4f9a9e"), frame: B.whiteTrim });
+    f.rect(w.x - 2, w.y + w.h + 3, w.w + 4, 4, WOOD.dark); f.hline(w.x - 2, w.y + w.h + 3, w.w + 4, WOOD.light);
+    for (let i = 0; i < w.w + 2; i += 2) { f.px(w.x - 1 + i, w.y + w.h + 2, i % 4 ? C.flower.pink : C.flower.yellow); f.px(w.x - 1 + i, w.y + w.h + 1, B.leaf); }
+  }
+  // door: dark wood, two panels, a little roof lamp, a doormat
+  D.door(f, 58, 70, 12, 22, { base: WOOD.deep, light: shade(WOOD.deep, 1.5), dark: shade(WOOD.deep, 0.7) });
+  f.rect(61, 66, 6, 3, B.zincDark); f.rect(62, 69, 4, 1, B.litGlow);
+  f.rect(57, 92, 14, 2, rgb("#8a3d3a")); f.hline(57, 92, 14, rgb("#b25a52"));
+  // rocking chair on the right of the door, a woven hammock bundle on the left, hanging plants from the beam
+  f.rect(100, 82, 2, 10, WOOD.deep); f.vline(104, 82, 10, WOOD.deep); f.vline(106, 82, 10, WOOD.deep);
+  for (const x of [101, 103, 105]) f.vline(x, 80, 6, WOOD.dark);
+  f.rect(100, 85, 8, 3, WOOD.light); f.hline(100, 85, 8, shade(WOOD.light, 1.2));
+  f.rect(100, 82, 9, 1, WOOD.dark); f.hline(98, 91, 12, WOOD.deep); f.hline(99, 92, 10, withAlpha([0, 0, 0, 255], 60));
+  f.rect(38, 74, 14, 5, rgb("#d9b24a")); for (let i = 0; i < 14; i += 3) f.vline(38 + i, 74, 5, rgb("#b8932a")); f.hline(38, 79, 14, rgb("#8a6e1f")); // rolled hammock
+  f.vline(37, 66, 9, B.rope); f.vline(52, 66, 9, B.rope);
+  for (const x of [78, 112]) { f.vline(x + 3, 67, 6, B.rope); D.pottedPlant(f, x - 1, 80, { flowers: x === 78 }); }
+  // porch posts (turned wood), railing on both sides, open steps in the middle
+  for (const x of [3, 33, 91, 122]) { f.rect(x, 66, 3, 27, WOOD.base); f.vline(x, 66, 27, WOOD.light); f.vline(x + 2, 66, 27, WOOD.dark); f.rect(x - 1, 66, 5, 2, WOOD.light); f.rect(x - 1, 91, 5, 2, WOOD.dark); }
+  for (const [a, b] of [[6, 33], [94, 122]]) { f.rect(a, 80, b - a, 2, WOOD.light); f.hline(a, 82, b - a, WOOD.dark); for (let x = a + 2; x < b; x += 5) f.vline(x, 82, 9, WOOD.base); }
+  // deck planks and steps
+  for (let y = 92; y < 96; y++) for (let x = 0; x < PW; x++) f.px(x, y, (x % 10 === 0) ? WOOD.deep : (y === 92 ? WOOD.light : y === 95 ? WOOD.dark : WOOD.base));
+  f.rect(52, 93, 24, 3, shade(WOOD.base, 1.1)); f.hline(52, 93, 24, WOOD.light); f.hline(52, 95, 24, WOOD.deep);
+  // firewood stack against the left end, and a wash tub with a hanging cloth
+  for (let r = 0; r < 3; r++) for (let c = 0; c < 4 - r; c++) { const x = 8 + c * 5 + r * 2, y = 88 - r * 4; f.ellipse(x + 2, y + 1, 2.4, 2.4, WOOD.dark); f.ellipse(x + 2, y + 1, 1.5, 1.5, rgb("#c9a06a")); }
+  f.hline(7, 91, 22, withAlpha([0, 0, 0, 255], 70));
+  f.rect(110, 62, 14, 3, rgb("#d8d4c4")); f.rect(112, 65, 10, 4, rgb("#d8d4c4")); // cloth over the beam
+  f.vline(116, 65, 4, rgb("#b9b5a4"));
+}
+const drawPaulaLit = (f) => { for (const w of PAULA_WIN) D.plainWindow(f, w.x, w.y, w.w, w.h, { lit: true, bar: true }); D.plainWindow(f, 62, 69, 4, 1, { lit: true }); };
+
 const BUILDINGS = [
   {
     name: "iglesia", roof_of: "iglesia", col0: 0, row0: 0, w: 10, h: 12, roofRows: 8, footRows: [4, 8], open: [],
@@ -202,6 +284,43 @@ const BUILDINGS = [
       windows: [18, 67], hip: true,
       columns: { base: B.pinkColumn, light: B.pinkLight, dark: B.pinkColumnDark },
     }),
+  },
+  {
+    name: "abastecedor", roof_of: "abastecedor", col0: 0, row0: 24, litBase: id(34, 0), litEnd: id(36, 0),
+    ...shopBuilding({
+      wall: wallPal(B.yellowWall, B.yellowShade, B.creamHi, shade(B.yellowShade, 0.9), "ab"),
+      roof: { base: B.zincBase, light: B.zincLight, dark: B.zincDark, line: B.zincLine, trim: B.greenTrim, trimDark: B.greenTrimDark },
+      door: { base: B.greenTrim, light: shade(B.greenTrim, 1.25), dark: B.greenTrimDark },
+      sign: { bg: B.greenTrim, light: shade(B.greenTrim, 1.3), dark: B.greenTrimDark },
+      windows: [{ x: 12, y: 64, w: 12, h: 12 }, { x: 78, y: 64, w: 40, h: 12, awning: [B.redBase, B.whiteTrim], shutters: B.greenTrim }], salt: "abz",
+    }),
+  },
+  {
+    name: "bar", roof_of: "bar", col0: 8, row0: 24, litBase: id(34, 0), litEnd: id(36, 0),
+    ...shopBuilding({
+      wall: wallPal(rgb("#b4d3a6"), rgb("#98b98a"), rgb("#d0e6c4"), rgb("#7a9a6d"), "br"),
+      roof: { base: B.rustBase, light: B.rustLight, dark: B.rustDark, line: B.rustLine, trim: B.whiteTrim, trimDark: B.whiteTrimShade },
+      door: { base: B.woodLight, light: shade(B.woodLight, 1.2), dark: B.woodDark },
+      sign: { bg: B.redBase, light: B.redLight, dark: B.redDark },
+      windows: [{ x: 14, y: 64, w: 14, h: 12 }, { x: 88, y: 64, w: 14, h: 12 }, { x: 108, y: 64, w: 12, h: 12 }], salt: "brz",
+      deco: (f) => { for (const x of [34, 38, 42]) { f.rect(x, 66, 3, 8, B.zincBase); f.rect(x + 1, 63, 1, 3, B.zincLight); f.px(x, 66, B.zincLight); } },
+    }),
+  },
+  {
+    name: "guarderia", roof_of: "guarderia", col0: 0, row0: 29, litBase: id(34, 0), litEnd: id(36, 0),
+    ...shopBuilding({
+      wall: wallPal(B.blueWall, B.blueWallShade, rgb("#d3e3f0"), shade(B.blueWallShade, 0.9), "gu"),
+      roof: { base: B.redBase, light: B.redLight, dark: B.redDark, line: B.redLine, trim: B.whiteTrim, trimDark: B.whiteTrimShade },
+      door: { base: rgb("#e8c442"), light: rgb("#f5dc72"), dark: rgb("#b8932a") },
+      sign: { bg: rgb("#2f8f9a"), light: rgb("#58b3bd"), dark: rgb("#1f6a74") },
+      windows: [{ x: 16, y: 64, w: 12, h: 12 }, { x: 100, y: 64, w: 12, h: 12 }], salt: "guz",
+      deco: (f) => { boat(f, 34, 60, B.redBase, rgb("#f4e8a0")); boat(f, 78, 62, rgb("#2f8f9a"), B.whiteTrim); f.hline(32, 74, 22, shade(B.blueWall, 0.8)); f.hline(76, 75, 24, shade(B.blueWall, 0.8)); },
+    }),
+  },
+  {
+    name: "casa_paula", roof_of: "casa_paula", col0: 0, row0: 36, litBase: id(34, 0), litEnd: id(36, 0), w: 8, h: 6, roofRows: 4, footRows: [1, 4],
+    open: Array.from({ length: 8 }, (_, cx) => [cx, 5]), // the porch row is walkable
+    windows: PAULA_WIN, door: { cx: 3, cy: 5, w: 32 }, draw: drawPaula, drawLit: drawPaulaLit,
   },
 ];
 
@@ -319,7 +438,7 @@ export const WALL_BASE_ID = id(23, 0);
 export const WALL_COLS = 12;
 
 const canvases = new Map(); // building name -> { day, lit }
-let nextLit = LIT_BASE_ID;
+const litNext = new Map();
 
 for (const b of BUILDINGS) {
   const day = new Frame(b.w * SIZE, b.h * SIZE);
@@ -329,6 +448,8 @@ for (const b of BUILDINGS) {
   canvases.set(b.name, { day, lit });
   b.cells = [];
   b.lit = [];
+  const litBase = b.litBase ?? LIT_BASE_ID, litEnd = b.litEnd ?? id(20, 0);
+  let nextLit = litNext.get(litBase) ?? litBase;
   const open = new Set((b.open ?? []).map(([cx, cy]) => cellKey(cx, cy)));
   for (let cy = 0; cy < b.h; cy++) for (let cx = 0; cx < b.w; cx++) {
     const slice = day.slice(cx * SIZE, cy * SIZE, SIZE, SIZE);
@@ -344,8 +465,9 @@ for (const b of BUILDINGS) {
     const ls = lit.slice(cx * SIZE, cy * SIZE, SIZE, SIZE);
     if (nonEmpty(ls)) b.lit.push({ cx, cy, id: nextLit++, name: `${b.name}_lit_${cx}_${cy}`, layer: "ysort", sort_offset: 1, building: b.name });
   }
+  litNext.set(litBase, nextLit);
+  if (nextLit > litEnd) throw new Error(`too many lit cells in ${b.name}`);
 }
-if (nextLit > id(20, 0)) throw new Error(`too many lit cells: ${nextLit - LIT_BASE_ID}`);
 
 // interior furniture: drawn on a 12x9 canvas at exact pixel positions, then sliced
 const intCanvas = new Frame(INT_W * SIZE, INT_H * SIZE);

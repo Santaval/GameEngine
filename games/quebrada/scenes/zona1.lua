@@ -1,3 +1,5 @@
+-- (TOP_PAD = 93: el heroe nace en y = 300 + 93 * 16 = 1788 px; el rio y su tierra norte se agregaron arriba, ver docs/rio.md.)
+-- (LEFT_PAD = 255: el heroe nace en la puerta de la iglesia, desplazada 255 tiles = 4080 px a la derecha del layout original; el monte esta 500 m = 250 tiles al este, a la izquierda.)
 -- Zona 1 (issue #78): maps/zona1.tmx, reconstruida elemento por elemento. Base actual: la iglesia
 -- y su calle de adoquin de 100 m (1 tile = 1 m). El resto (casas, cafetal, ...) lo coloca el usuario.
 -- Misma escena que buildings_demo.lua (controles y teclas iguales) pero con otro mapa, otro
@@ -105,7 +107,7 @@ scene = {
         },
         {
             components = {
-                transform = { position = { x = 552, y = 300 }, scale = { x = 1, y = 1 } },
+                transform = { position = { x = 4632, y = 1788 }, scale = { x = 1, y = 1 } },
                 rigid_body = {},
                 sprite = { assetId = "hero", width = 16, height = 16 },
                 animation = { atlas = "hero", tag = "idle_down" },

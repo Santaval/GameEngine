@@ -41,3 +41,26 @@ Mama's house is based on a written description, not on a committed photo.
 court, line pieces, hoops, goals, walkway) are original procedural art drawn by
 `games/quebrada/tools/tilegen/catalog_park.mjs`. No third party pixels. The licence is the same TO-BE-CHOSEN placeholder
 as above (this file does not decide the licence of the original art).
+
+## School sheet (zone 1)
+
+`tilesets/school.png` / `school.tsx` (two long classroom blocks with red zinc roofs, pink corridor columns, grilled windows and benches, the flagpole,
+the sign board, the patio floors and the low whitewashed wall with chain-link) are original procedural art drawn by
+`games/quebrada/tools/tilegen/catalog_school.mjs`. No third party pixels. The shapes follow the reference photo
+`games/quebrada/docs/reference/escuela/escuela-frente.jpg` (shapes and colours only). The licence is the same TO-BE-CHOSEN placeholder
+as above (this file does not decide the licence of the original art).
+
+## Ebais sheet (zone 1)
+
+`tilesets/ebais.png` / `ebais.tsx` (the clinic building with its blue zinc roofs, stone-clad band, grilled windows, glass door and covered ramp porch with yellow railings, the concrete floors and parking line,
+blue plastic benches, potted plants, garbage bin and the small sign board) are original procedural art drawn by `games/quebrada/tools/tilegen/catalog_ebais.mjs`. No third party pixels. The shapes follow the
+reference photo `games/quebrada/docs/reference/clinica/ebais-rampa.jpg` (shapes and colours only). The licence is the same TO-BE-CHOSEN placeholder as above (this file does not decide the licence of the original art).
+
+## Monte sheet (zone 1)
+
+`tilesets/monte.png` / `monte.tsx` (the hule and nispero trees, the dark monte grass, leaf litter and mud ground tiles, ferns, bush, log, mossy rock, the asphalt road edge and centre-line pieces, the
+concrete turbine pad, and the wind turbine: tower, nacelle and the animated three-blade rotor) are original procedural art drawn by `games/quebrada/tools/tilegen/catalog_monte.mjs`. No third party pixels.
+The shapes follow the reference photos `games/quebrada/docs/reference/aerogeneradores/*.jpg` and `games/quebrada/docs/reference/monte/*.jpg` (shapes and colours only). The licence is the same
+TO-BE-CHOSEN placeholder as above (this file does not decide the licence of the original art).
+
+`tilesets/rio.png` / `rio.tsx` (rapids and deep-pool water, inner-corner banks, gravel, the concrete road bridge: deck curbs, rusty yellow-painted guard rails, concrete post and piers, and the boulders of the stream) are original procedural art drawn by `games/quebrada/tools/tilegen/catalog_rio.mjs`; the river course is computed by `river.mjs`. No third party pixels. The shapes follow the reference photo `games/quebrada/docs/reference/rio/quebrada-piedras.jpg` and the user's description of the river crossing (shapes and colours only). The licence is the same TO-BE-CHOSEN placeholder as above (this file does not decide the licence of the original art).

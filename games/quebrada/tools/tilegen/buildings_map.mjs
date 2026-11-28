@@ -31,6 +31,7 @@ export const PLACE = {
   casa_2: [10, 6],
   casa_3: [18, 6],
 };
+const DEMO_BUILDINGS = BUILDINGS.filter((b) => PLACE[b.name]); // the demo map only places the original landmarks (the zona1 shops are not in it)
 
 const LAYER_ORDER = ["ground", "overlay", "objects", "buildings", "windows_lit", "roof_iglesia", "roof_casa_mama", "roof_casa_1", "roof_casa_2", "roof_casa_3", "canopy"];
 
@@ -100,7 +101,7 @@ export function buildDemo() {
   for (const x of [ix + 4, ix + 5]) put("ground", x, iy + 12, "paver_a");
 
   // ---- buildings (base cells ysort, roofs per building, lit windows) ----
-  for (const b of BUILDINGS) {
+  for (const b of DEMO_BUILDINGS) {
     const [ox, oy] = PLACE[b.name];
     for (const c of b.cells) {
       if (c.layer === "above") bput(`roof_${b.name}`, ox + c.cx, oy + c.cy, c.name);
@@ -154,7 +155,7 @@ export function buildTmx() {
   const coll = [
     [`wall_top`, -16, -16, 672, 16], [`wall_bottom`, -16, 480, 672, 16], [`wall_left`, -16, 0, 16, 480], [`wall_right`, 640, 0, 16, 480],
   ].map(([n, x, y, w, h]) => `  <object id="${oid()}" name="${n}" x="${x}" y="${y}" width="${w}" height="${h}"/>`);
-  for (const b of BUILDINGS) {
+  for (const b of DEMO_BUILDINGS) {
     const o = px(b);
     const [r0, r1] = b.footRows;
     coll.push(`  <object id="${oid()}" name="${b.name}_footprint" x="${o.x}" y="${o.y + r0 * SIZE}" width="${o.w}" height="${(r1 - r0) * SIZE}"/>`);
@@ -204,7 +205,7 @@ ${prop("surface", "madera")}
    </properties>
   </object>`;
 
-  const roofs = BUILDINGS.map((b) => {
+  const roofs = DEMO_BUILDINGS.map((b) => {
     const o = px(b);
     return `  <object id="${oid()}" name="roof_${b.name}" class="roof" x="${o.x}" y="${o.y}" width="${o.w}" height="${o.h}">
    <properties>
@@ -225,7 +226,7 @@ ${prop("only", "dusk,night")}
    </properties>
   </object>`;
   const lights = [];
-  for (const b of BUILDINGS) {
+  for (const b of DEMO_BUILDINGS) {
     const o = px(b);
     b.windows.forEach((w, i) => lights.push(light(`luz_${b.name}_${i + 1}`, o.x + w.x + w.w / 2, o.y + w.y + w.h / 2, b.name === "casa_mama" ? 36 : 30)));
   }
@@ -243,7 +244,7 @@ ${prop("only", "dusk,night")}
     layer(lid++, "objects", L.objects, ysort),
     layer(lid++, "buildings", L.buildings, ysort),
     layer(lid++, "windows_lit", L.windows_lit, ysort),
-    ...BUILDINGS.map((b) => layer(lid++, `roof_${b.name}`, L[`roof_${b.name}`], above(b.roof_of))),
+    ...DEMO_BUILDINGS.map((b) => layer(lid++, `roof_${b.name}`, L[`roof_${b.name}`], above(b.roof_of))),
     layer(lid++, "canopy", L.canopy, prp([["above", "true", "bool"]])),
   ];
   const grp = (name, body) => ` <objectgroup id="${lid++}" name="${name}">\n${body}\n </objectgroup>`;
@@ -289,7 +290,7 @@ export function renderBuildingsMap({ night = false, roofs = true } = {}) {
   };
   const out = new Frame(MAP_W * SIZE, MAP_H * SIZE);
   for (const n of ["ground", "overlay", "objects", "buildings"]) draw(out, n);
-  if (roofs) for (const b of BUILDINGS) draw(out, `roof_${b.name}`);
+  if (roofs) for (const b of DEMO_BUILDINGS) draw(out, `roof_${b.name}`);
   draw(out, "canopy");
   if (!night) return out;
   const dark = out.darkened(0.35);

@@ -8,13 +8,13 @@ Material para dibujar el mapa y los tiles de Quebrada Grande. Son referencias, n
 
 - **Camino de las carretas**: calle vertical al este; baja desde las eólicas hasta la casa de mamá.
 - **Calle horizontal**: cruza el pueblo y termina en el camino.
-- **Calle 2**: vertical, a mitad del mapa, cruza la calle horizontal.
-- **Río**: franja larga en el borde este.
+- **Calle 2**: vertical, a mitad del mapa, cruza la calle horizontal. En el mapa ya está: es la "calle oeste" (adoquín junto al parque, sigue de lastre al sur) que pasa frente al Ebais (confirmado por el usuario).
+- **Río**: la quebrada recorre todo el NORTE del pueblo, irregular (a ~175 m de la iglesia, ~20 m del cafetal, ~50 m de la casa de mamá). Ya está en el mapa (docs/rio.md); el cruce de la calle de asfalto es un puente de concreto con barandas amarillas oxidadas.
 - **Este del camino**: Eólicas (arriba), Iglesia (en medio).
 - **Entre calle 2 y el camino**: Escuela (norte de la calle horizontal), Parque (sur).
 - **Oeste de calle 2**: Ebais (la clínica).
 - **Extremo oeste**: Níspero y hule (sur de la calle horizontal) y el Cafetal enfrente, del otro lado de la calle.
-- **Camino abajo**: Colegio y Casa de mamá, al oeste del camino.
+- **Colegio**: en el mapa está al sur de la calle principal, frente al cafetal (docs/school.md). Casa de mamá sigue al oeste del camino.
 
 Cambios respecto al croquis original: se agregó el cafetal (el documento lo pide al frente del monte).
 Pendiente: contar los pasos iglesia → casa para fijar la escala.
@@ -23,9 +23,9 @@ Pendiente: contar los pasos iglesia → casa para fijar la escala.
 
 | Lugar | Archivos | Notas |
 |---|---|---|
-| Aerogeneradores | `aerogeneradores/*` (4) | torre con vehículo para escala, camino a la cresta, atardecer con laguna, vista aérea |
+| Aerogeneradores | `aerogeneradores/*` (4) | torre con vehículo para escala, camino a la cresta, atardecer con laguna, vista aérea (ya usadas: el aerogenerador de `tilesets/monte.png`, ver `docs/monte.md`) |
 | Camino de las carretas | `camino/camino-de-carretas.jpg` | lastre y piedra, huellas, franjas de zacate |
-| Monte de hule y níspero | `monte/*` (3) | ladera boscosa, potrero y palma al frente; vista aérea del bosque con laguna de cráter (útil para la copa de los árboles) |
+| Monte de hule y níspero | `monte/*` (3) | ladera boscosa, potrero y palma al frente; vista aérea del bosque con laguna de cráter (útil para la copa de los árboles; ya usadas: los hules y nísperos de `tilesets/monte.png`, ver `docs/monte.md`) |
 | Río | `rio/quebrada-piedras.jpg` | |
 | Cafetal | `cafetal/cafetal-terrazas.jpg` | filas en terrazas |
 | Clínica (Ebais) | `clinica/ebais-rampa.jpg` | piedra arriba, techo de zinc azul, rampa con barandas amarillas, calle de adoquín |

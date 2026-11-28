@@ -19,6 +19,11 @@ export function buildTsxFor({ name, image, tiles, cols, rows, size = SIZE }) {
     if (t.solid) lines.push(`   <property name="solid" type="bool" value="true"/>`);
     if (t.sort_offset !== undefined) lines.push(`   <property name="sort_offset" type="int" value="${t.sort_offset}"/>`);
     lines.push(`  </properties>`);
+    if (t.anim) { // optional tile animation (the monte sheet's turbine rotors): frames are tile ids of the same tileset
+      lines.push(`  <animation>`);
+      for (const fr of t.anim) lines.push(`   <frame tileid="${fr.id}" duration="${fr.duration}"/>`);
+      lines.push(`  </animation>`);
+    }
     lines.push(` </tile>`);
   }
   lines.push(`</tileset>`);
