@@ -255,10 +255,43 @@ const VIDA_EMITTERS = [
   emit("perro_abastecedor", "dog_far_03", AB_X + 6, SIDEWALK_N_Y - 1, 37, "day"),
   emit("perros_caliles", "dogs_chorus_far_04", CALILES_X + 2, SIDEWALK_S_Y + 20, 47, "night", { when: "!mission.chequelo.night_active", max_distance: 400 }), // off during the Chequelo night: it would mask the mission's sound cues
 ];
+// ---- the empty land: a fenced potrero north of the street, a banana grove, trees and scrub behind the shops, benches in front of the abastecedor and the bar ----
+/** Wire fence rectangle (same pieces as the cafetal's): corners, wire_h / wire_v, `fence_gap` over the gate columns of the south row. */
+const wireFenceRect = (x0, y0, x1, y1, gateCols) => {
+  const cells = [], add = (name, x, y) => cells.push({ name, at: [x, y] });
+  add("wire_corner_es", x0, y0); add("wire_corner_ws", x1, y0); add("wire_corner_en", x0, y1); add("wire_corner_wn", x1, y1);
+  for (let x = x0 + 1; x < x1; x++) { add("wire_h", x, y0); add(gateCols.includes(x) ? "fence_gap" : "wire_h", x, y1); }
+  for (let y = y0 + 1; y < y1; y++) { add("wire_v", x0, y); add("wire_v", x1, y); }
+  return cells;
+};
+const riverBankMax = (a, b) => { let m = -Infinity; for (let c = a; c <= b; c++) m = Math.max(m, RIVER.run(c).b + TOP_PAD); return m; };
+export const POTRERO = (() => { // east of the cafetal (3 tiles of grass between the fences), 3 rows clear of the northernmost bank under it; lamp heads (rows 110-111) stay south of the fence
+  const x0 = CAF_X1 + 4, x1 = x0 + 55;
+  return { x0, x1, y0: riverBankMax(x0, x1) + 3, y1: SIDEWALK_N_Y - 4, gate: [x0 + 26, x0 + 27] };
+})();
+PLACE_FOOTS.n.push(POTRERO.gate); PLACE_RANGES.n.push(POTRERO.gate);
+const POT_CX = Math.floor((POTRERO.x0 + POTRERO.x1) / 2), POT_CY = Math.floor((POTRERO.y0 + POTRERO.y1) / 2);
+const LAND_ELEMENTS = [
+  stampOf("potrero_cerca", "objects", wireFenceRect(POTRERO.x0, POTRERO.y0, POTRERO.x1, POTRERO.y1, POTRERO.gate)),
+  { id: "potrero_portón", kind: "path", surface: "lastre", x: POTRERO.gate[0], y: POTRERO.y1, w: 2, h: SIDEWALK_N_Y - POTRERO.y1 + 1 },
+  ...[[POTRERO.x0 + 8, POTRERO.y0 + 5], [POTRERO.x0 + 40, POTRERO.y0 + 3], [POTRERO.x1 - 6, POTRERO.y1 - 4]].map(([x, y], i) => ({ id: `potrero_arbol_${i + 1}`, kind: "tree", tree: "guanacaste", at: [x, y] })),
+  ...[["weeds", 20], ["rock", 6], ["stump", 4]].map(([name, count]) => ({ id: `potrero_${name}`, kind: "scatter", rect: [POTRERO.x0 + 1, POTRERO.y0 + 1, POTRERO.x1 - 1, POTRERO.y1 - 1], name, count, seed: `pot_${name}` })),
+  { id: "bananal_machillos", kind: "tree_zone", rect: [BAR_X + 60, PL_N - 13, BAR_X + 80, PL_N - 5], step: 3, seed: "bn", trees: ["platano"] }, // trunks stay <= row 107 so the canopies clear the lamp heads
+  ...[[BAR_X - 11, SIDEWALK_S_Y + 22, BAR_X + 79, SIDEWALK_S_Y + 66, "s1"], [CALILES_X - 22, SIDEWALK_S_Y + 42, EXT_LASTRE_X1 + 5, SIDEWALK_S_Y + 66, "s2"]].flatMap(([x0, y0, x1, y1, tag]) => [
+    { id: `tierra_sur_arboles_${tag}`, kind: "tree_zone", rect: [x0, y0, x1, y1], step: 7, seed: `ts_${tag}`, trees: ["guanacaste", "monte", "palm", "platano"] },
+    ...[["weeds", 60], ["rock", 10], ["stump", 6]].map(([name, count]) => ({ id: `tierra_sur_${name}_${tag}`, kind: "scatter", rect: [x0, y0, x1, y1], name, count, seed: `ts_${name}_${tag}` })),
+  ]),
+  ...[AB_X + 1, AB_X + 6, BAR_X + 2, BAR_X + 5].map((x, i) => ({ id: `banca_${i + 1}`, kind: "prop", name: "bench", at: [x, PL_N] })),
+  { id: "basurero_abastecedor", kind: "prop", name: "ebais_basurero", at: [AB_X + 7, PL_N] },
+  emit("vacas_potrero", "cow_far_02", POT_CX, POT_CY, 41, "day", { max_distance: 450 }),
+  emit("vacas_potrero_2", "cow_far_03", POT_CX + 6, POT_CY, 59, "day", { max_distance: 450 }),
+  emit("caballo_potrero", "horse_neigh_far_01", POT_CX - 6, POT_CY, 67, "day", { max_distance: 450 }),
+];
 const LAME = "Está cerrado.";
 const PLACE_ELEMENTS = [
   ...PLAQUE_ELEMENTS,
   ...VIDA_EMITTERS,
+  ...LAND_ELEMENTS,
   ...northHouse("berta", BERTA_X, "casa_1", "Casa de Berta. No hay nadie.", "Casa de Berta"),
   ...northHouse("abastecedor", AB_X, "abastecedor", `Abastecedor El Jardín. ${LAME}`, "Abastecedor El Jardín"),
   ...northHouse("maria_juvenal", AB_X + 8, "casa_2", "Casa de María y Juvenal. No hay nadie."),
@@ -1318,6 +1351,7 @@ function checkWalkable(L, placed, defs, turbines = [], river = {}) {
     ["colegio gate (2 tiles)", tile(COL_GATE[0] * SIZE + 8, COL_Y0 * SIZE + 8) && tile(COL_GATE[1] * SIZE + 8, COL_Y0 * SIZE + 8)], ["colegio patio", tile((COL_X0 + 6) * SIZE + 8, (COL_Y0 + 9) * SIZE + 8)],
     ["colegio corridor", tile((COL_AT[0] + 4) * SIZE + 8, (COL_AT[1] + 5) * SIZE + 8)], ["colegio yard in front of the aulas", tile((COL_AT[0] + 4) * SIZE + 8, (COL_AT[1] + 6) * SIZE + 8)],
     ...PLACE_DOORS.map(([x, y], i) => [`place door ${i}`, tile(x, y)]),
+    ["potrero gate", tile(POTRERO.gate[0] * SIZE + 8, POTRERO.y1 * SIZE + 8) && tile(POTRERO.gate[1] * SIZE + 8, POTRERO.y1 * SIZE + 8)], ["potrero inside", tile(POT_CX * SIZE + 8, POT_CY * SIZE + 8)],
     ...schoolMust, ["footpath mama", tile(MAMA_FOOT_X * SIZE + 8, (30 + TOP_PAD) * SIZE) && tile((MAMA_FOOT_X + 1) * SIZE + 8, (30 + TOP_PAD) * SIZE)], ["footpath chayo", tile(CHAYO_FOOT_X * SIZE + 8, (28 + TOP_PAD) * SIZE) && tile((CHAYO_FOOT_X + 1) * SIZE + 8, (28 + TOP_PAD) * SIZE)]];
   for (const [what, ok] of must) if (!ok) throw new Error(`zona1: ${what} is not reachable from the church spawn (collision trap)`);
   for (const d of defs) for (const r of d.rects) if (!reach(r)) throw new Error(`zona1: trigger ${d.id} rect (${r.x},${r.y}) is not reachable`);

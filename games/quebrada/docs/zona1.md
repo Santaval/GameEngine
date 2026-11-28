@@ -380,3 +380,11 @@ Details drawn: old rusty zinc roof with a stove chimney, vertical plank walls wi
 ### Name plaques
 
 Each named house of the main street has a small name board on the verge beside its footpath (`CASA DE BERTA`, `MARIA Y JUVENAL`, `DOÑA ISABEL`, `CASA DE CARMEN`, `LOS MACHILLOS`, `DOÑA INGRACIA`, `GUARDERIA`, `LOS CALILES`, `TIO ENRIQUE`, and a two-line board on Abuela Paula's fence). See [vida.md](vida.md). The shops carry their name on the facade (see [buildings.md](buildings.md)).
+
+### The empty land (`LAND_ELEMENTS` in `zona1_map.mjs`)
+
+- **Potrero norte** (`POTRERO`, exported to the checks): a wire-fenced pasture (56 tiles wide) just west of the cafetal, 3 rows clear of the northernmost river bank under it, with a 2-tile lastre gate on the street side (a footpath crossing the north sidewalk, so it is in `PLACE_FOOTS.n`).
+  Three guanacastes and scattered weeds, rocks and stumps; emitters `vacas_potrero`, `vacas_potrero_2` and `caballo_potrero` at its centre (day).
+- **Bananal** (plátano grove, `tree_zone`) north of the street beyond Los Machillos; trunks stay at row <= 107 so the canopies clear the lamp heads.
+- **Tierra sur**: two `tree_zone` + scatter rectangles of guanacaste / monte / palm / plátano with weeds, rocks and stumps behind the shops and around Los Caliles (rows 140-184).
+- **Benches**: four `bench` props on the north verge in front of the abastecedor and the bar, and a `ebais_basurero` bin.

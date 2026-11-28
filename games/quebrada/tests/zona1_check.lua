@@ -478,6 +478,24 @@ check(lamps >= LAMP.cols * 2 - LAMP.skipped, "faltan farolas (" .. lamps .. ")")
 
 -- ================================================================ el Chequelo: cafetal, casas, ruta, triggers, emisores
 local function gname(layer, x, y) return gid_name[cell(layer, x, y)] end
+do -- el potrero norte (cerca de alambre con portón de lastre), las bancas de la calle y los emisores de las vacas
+  local P = Z.POTRERO
+  local y0, y1 = P.y0 - TOP, P.y1 - TOP
+  for _, c in ipairs({ { P.x0, y0 }, { P.x1, y0 }, { P.x0, y1 }, { P.x1, y1 } }) do
+    check((gname("objects", c[1], c[2]) or ""):match("^wire_corner") ~= nil, "potrero: falta la esquina de la cerca en (" .. c[1] .. "," .. c[2] .. ")")
+  end
+  for x = P.x0 + 1, P.x1 - 1 do
+    check(gname("objects", x, y0) == "wire_h", "potrero: falta la cerca norte en col " .. x)
+    local gap = x == P.gate[1] or x == P.gate[2]
+    check(gname("objects", x, y1) == (gap and "fence_gap" or "wire_h"), "potrero: cerca sur / portón en col " .. x)
+  end
+  for y = y0 + 1, y1 - 1 do check(gname("objects", P.x0, y) == "wire_v" and gname("objects", P.x1, y) == "wire_v", "potrero: falta la cerca lateral en fila " .. y) end
+  for y = y1, STREET_Y - 2 do for _, x in ipairs(P.gate) do check(kind_at(x, y) == "lastre", "potrero: el camino del portón debe ser de lastre en (" .. x .. "," .. y .. ")") end end
+  for _, x in ipairs({ Z.AB_X + 1, Z.AB_X + 6, Z.BAR_X + 2, Z.BAR_X + 5 }) do check(gname("objects", x, STREET_Y - 2) == "bench", "falta la banca en (" .. x .. ", fila 19)") end
+  local cows = 0
+  for _, o in ipairs(objects) do if o.class == "emitter" and o.name and (o.name:match("^vacas_") or o.name:match("^caballo_")) then cows = cows + 1; check(o.props.only == "day", o.name .. ": suena de dia") end end
+  check(cows == 3, "deben ser 3 emisores del potrero (vacas y caballo), hay " .. cows)
+end
 local function has_prefix(layer, x, y, prefix) local n = gname(layer, x, y); return n ~= nil and n:sub(1, #prefix) == prefix end
 local function point_in(r, px, py) return px >= r.x and px < r.x + r.w and py >= r.y and py < r.y + r.h end
 local function of_name_prefix(prefix)

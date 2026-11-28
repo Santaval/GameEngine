@@ -30,7 +30,7 @@ import { renderRioSheet, R_TILES, R_COLS, R_ROWS, RIO_TILE_COUNT } from "./catal
 import { renderVidaSheet, V_TILES, V_COLS, V_ROWS, VIDA_TILE_COUNT } from "./catalog_vida.mjs";
 import { buildTmx as buildBuildingsTmx, renderBuildingsMap } from "./buildings_map.mjs";
 import { buildTmx as buildInteriorTmx, renderInterior } from "./interior_map.mjs";
-import { MAMA_AT, BERTA_X, CALILES_X, SIDEWALK_N_Y, COL_X0, COL_Y0, COL_W, COL_H, CAF_Y0, buildTmx as buildZona1Tmx, renderZona1, baseReport, routeLength, pointAt, WALK_SPEED, RUN_SPEED, MAP_W, MAP_H, EXT_PAVER_X1, EXT_LASTRE_X1, LEFT_PAD, SCHOOL_FIRSTGID, EBAIS_FIRSTGID, MONTE_FIRSTGID, RIO_FIRSTGID, TOP_PAD, BRIDGE, RIVER, RIVER_ZONES, RIVER_CHURCH_M, RIVER_CAFETAL_M, RIVER_MAMA_M, MONTE_REPORT, MONTE_X0, MONTE_X1, MONTE_W, ROAD_X1, ROAD_Y0, TRAIL_X0, TRAIL_Y0, TRAIL_LEN, TURBINE_AT, TURBINE_BBOX, EB_X0, EB_X1, EB_Y0, EB_Y1, EB_AT, PLOT_X0, PLOT_X1, ESC_Y0, ESC_Y1, OLG_Y0, OLG_AT, ESC_A_AT, ESC_B_AT, ESC_GATE, OLG_GATE } from "./zona1_map.mjs";
+import { POTRERO, MAMA_AT, BERTA_X, CALILES_X, SIDEWALK_N_Y, COL_X0, COL_Y0, COL_W, COL_H, CAF_Y0, buildTmx as buildZona1Tmx, renderZona1, baseReport, routeLength, pointAt, WALK_SPEED, RUN_SPEED, MAP_W, MAP_H, EXT_PAVER_X1, EXT_LASTRE_X1, LEFT_PAD, SCHOOL_FIRSTGID, EBAIS_FIRSTGID, MONTE_FIRSTGID, RIO_FIRSTGID, TOP_PAD, BRIDGE, RIVER, RIVER_ZONES, RIVER_CHURCH_M, RIVER_CAFETAL_M, RIVER_MAMA_M, MONTE_REPORT, MONTE_X0, MONTE_X1, MONTE_W, ROAD_X1, ROAD_Y0, TRAIL_X0, TRAIL_Y0, TRAIL_LEN, TURBINE_AT, TURBINE_BBOX, EB_X0, EB_X1, EB_Y0, EB_Y1, EB_AT, PLOT_X0, PLOT_X1, ESC_Y0, ESC_Y1, OLG_Y0, OLG_AT, ESC_A_AT, ESC_B_AT, ESC_GATE, OLG_GATE } from "./zona1_map.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const game = resolve(here, "..", "..");
@@ -176,6 +176,9 @@ if (args.includes("--check")) {
   const stR = SIDEWALK_N_Y - 12;
   for (const [nm, c0, w] of [["pueblo_1", BERTA_X - 4, 56], ["pueblo_2", BERTA_X + 50, 76]]) crop(nm, c0, stR, w, 36);
   crop("caliles", CALILES_X - 14, stR, 66, 70);
+  crop("potrero", POTRERO.x0 - 6, POTRERO.y0 - 4, POTRERO.x1 - POTRERO.x0 + 13, SIDEWALK_N_Y - POTRERO.y0 + 10); // the fenced potrero north of the street
+  crop("bananal", BERTA_X + 60 - 6, SIDEWALK_N_Y - 24, 36, 30);
+  crop("tierra_sur", BERTA_X + 10, SIDEWALK_N_Y + 34, 100, 40); // the scrub and trees behind the shops
   // Casa de Abuela Paula y Abuelo Pepe, across the street from mama's house (x2) + the building at x4
   crop("paula", MAMA_AT[0] - 12, SIDEWALK_N_Y - 18, 34, 36);
   writeFileSync(join(dir, "crop_casa_paula_x4.png"), pngOf(buildingCanvas("casa_paula").day.onBackground(grass).scaled(4)));
