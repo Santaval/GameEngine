@@ -16,6 +16,11 @@ none --offer--> offered --accept--> accepted --start_night--> night_active --com
 `rejected` is terminal. `offer` is idempotent: it does nothing unless the state
 is `none`. Invalid transitions log a message and return `false, err`.
 
+Chequelo (issue #82): `accept` only sets `chequelo.accepted` (the hook does not change the
+time of day). The night starts when the player reaches the church door: `walk_start` in
+`zona1` calls `start_night`. Accepting and rejecting both autosave (see
+[save.md](save.md)); the glue for the day lives in `scripts/chequelo_day.lua`.
+
 ## Flag layout
 
 | Flag | Meaning |
@@ -90,7 +95,7 @@ resolves, even if the story never reaches its closing lines.
 
 ## Demo walkthrough
 
-1. Town demo, enter Mama's house and talk to her. The first lines play and the mission becomes `offered`.
+1. By day, enter Mama's house: she greets you once (`mama.saludada`). Talk to her (`Hablar`) for the offer, which makes the mission `offered`. `Escuchar la historia` plays the recording.
 2. Choose "Mejor no": state `rejected`, `chequelo.ending = stayed_home`; talking again plays the rejected line, not the intro.
-3. Open F3, set `chequelo` to `none`, talk and choose "Sí": state `accepted`, `mama.avisada` and `chequelo.accepted` are true.
+3. Open F3, set `chequelo` to `none`, talk and choose "Sí": state `accepted`, `mama.avisada` and `chequelo.accepted` are true, the screen fades to the church and the night starts when you reach its door.
 4. Cycle the states in the overlay; `night_active`, `done` and `failed` give Mama's fallback line.

@@ -112,7 +112,7 @@ no file is written yet.
 
 ## Demo
 
-In the main scene press `6` to open the demo (`scenes/town_demo.lua`).
+(The old `scenes/town_demo.lua` demo was removed; the doors and zones now live in the main scene, `scenes/main.lua`.)
 
 | Key | Action |
 | --- | --- |

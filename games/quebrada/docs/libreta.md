@@ -42,6 +42,9 @@ declare `story_chequelo` (and the story keys). A new real recording needs the sa
 
 A legend may declare `ending_flag = "chequelo.ending"` and `endings = { stayed_home = "Te quedaste en casa", ... }`.
 The page shows `Final: <text>` when the flag has a value (an unmapped value is shown as is).
+A legend may also declare `lived = { <ending> = text }` (issue #82): the text is shown below the
+summary for that ending. A rejected chequelo (`stayed_home`) has no `lived` entry, so its page
+shows only the title, the summary and the ending.
 
 ## "Nuevo"
 

@@ -144,8 +144,10 @@ Automated tests are not used for this feature. Check in the game after building:
 1. In the house, next to mama and facing her: the bobbing `!` and the HUD text
    `E — Hablar con mamá` appear. One `E` shows her line; holding `E` fires once;
    release and press again fires again.
-2. Between mama and the radio: facing left selects mama, facing right selects
-   the radio, facing down selects neither.
+2. Mama has two interactables (issue #82), one on each side with `radius = 20`: `mama`
+   ("Hablar", on her right) and `mama_historia` (`story = chequelo`, "Escuchar la historia",
+   on her left). Standing on the left, E plays the story; on the right, E opens the talk.
+   The radio is further right: facing it selects neither mama spot.
 3. `world_state.set("dialogue.open", true)` (or `libreta.open`) hides the
    indicator and the prompt, and `E` does nothing.
 4. Doors: the exit prompt `E: salir` still works. After arriving through a door,

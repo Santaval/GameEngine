@@ -78,7 +78,6 @@ The surface under the foot box center is found in this order. The first hit wins
 Values: `lastre`, `zacate`, `madera`, `concreto`. An unknown value falls back to
 `lastre` when choosing the sound.
 
-The walk demo (`scenes/walk_demo.lua`) has no map, so every step is `lastre`.
 
 ## Footstep sounds
 
@@ -106,11 +105,8 @@ The walk demo (`scenes/walk_demo.lua`) has no map, so every step is `lastre`.
 
 Every scene must declare each sound it plays in its `sounds` table:
 
-- `town_demo.lua`: the 8 step sounds, the 6 town loops (`amb_pueblo_*`,
-  `amb_monte_*`, `amb_quebrada_*`) and the one-shot sounds of those sets.
 - `house_demo.lua`: the 8 step sounds, `amb_casa_day` / `amb_casa_night` and the
   narrated story `story_chequelo` (issue #68).
-- `walk_demo.lua`: the 8 step sounds.
 
 Ambience loops are declared with `stream = true` (decoded when first played).
 
@@ -138,7 +134,7 @@ A paused voice keeps the ducking active. The player stops a paused recording wit
 
 ## Village animal emitters (zona 1, `VIDA_EMITTERS` in `zona1_map.mjs`)
 
-One fixed sound every `interval` seconds (emitters.lua has no randomness), so the emitters use co-prime intervals. `only` = time of day, `when` = flags. All sounds are registered in `scenes/zona1.lua`
+One fixed sound every `interval` seconds (emitters.lua has no randomness), so the emitters use co-prime intervals. `only` = time of day, `when` = flags. All sounds are registered in `scenes/main.lua`
 (`tests/zona1_check.lua` checks that every emitter's `sound` has its `assetId`).
 
 | Emitter | Sound | Interval (s) | When |

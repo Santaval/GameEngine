@@ -30,7 +30,7 @@ Width = 4.4 tiles on the flat stretches, 3.2-6 elsewhere (value noise, wavelengt
 
 ## Reshaping the river
 
-Edit `RIVER_*_M`, `OLD_*` anchors or the `makeRiver` call in `zona1_map.mjs`, or the noise terms / widths in `river.mjs`; run `node tools/tilegen/gen.mjs`. `TOP_PAD` and `MAP_H` follow automatically, but update the literal hero start in `scenes/zona1.lua` (`y = 300 + TOP_PAD * 16`; `gen.mjs` throws if it is stale) and `TOP` in `tests/zona1_check.lua`. `baseReport` throws if a measured distance is off by more than 1 tile.
+Edit `RIVER_*_M`, `OLD_*` anchors or the `makeRiver` call in `zona1_map.mjs`, or the noise terms / widths in `river.mjs`; run `node tools/tilegen/gen.mjs`. `TOP_PAD` and `MAP_H` follow automatically, but update the literal hero start in `scenes/main.lua` (`y = 300 + TOP_PAD * 16`; `gen.mjs` throws if it is stale) and `TOP` in `tests/zona1_check.lua`. `baseReport` throws if a measured distance is off by more than 1 tile.
 `--rio-preview <dir>` writes the river crops (x2: church, church with the 88 rows of land, cafetal, mama, bridge day / night, bridge x4, inside the monte day / night, a bend), the whole northern strip and the sheet x4.
 
 ## Autotiling

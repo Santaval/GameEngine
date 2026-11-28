@@ -5,11 +5,10 @@ local ws = require("world_state")
 return {
   chequelo = {
     title = "El chequelo",
-    -- "Sí, voy esta noche": aceptar lleva a la noche (nada llama aun a start_night, que
-    -- moveria la mision a night_active y apagaria mission.chequelo.accepted)
+    -- "Sí, voy esta noche": aceptar solo marca la mision. La noche empieza al llegar a la
+    -- puerta de la iglesia (walk_start en zona1, issue #82), que llama a start_night
     on_accept = function()
       ws.set("chequelo.accepted", true)
-      require("time_of_day").set("night", { title = "Esa noche..." })
     end,
     -- La hora es de la historia (issue #66): la mision lleva a la noche y de vuelta al dia
     on_start_night = function() require("time_of_day").set("night", { title = "Esa noche..." }) end,

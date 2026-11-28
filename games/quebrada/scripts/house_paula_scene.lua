@@ -7,9 +7,7 @@ update = require("town_controller").make_update({
   tile_map = true,
   world_debug = false,
   scenes = {
-    ["maps/town.tmx"] = "scenes/town_demo.lua",
-    ["maps/buildings_demo.tmx"] = "scenes/buildings_demo.lua",
-    ["maps/zona1.tmx"] = "scenes/zona1.lua",
+    ["maps/zona1.tmx"] = "scenes/main.lua",
     ["maps/house_paula.tmx"] = "scenes/house_paula.lua",
   },
 })

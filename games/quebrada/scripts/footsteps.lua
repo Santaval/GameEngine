@@ -5,7 +5,7 @@
 -- El controlador del mapa llama a set_source(idx) al cargar (surface_logic.build).
 local logic = require("surface_logic")
 local M = {}
-M.BOX = { x = 3, y = 8, w = 10, h = 8 } -- caja de pies del jugador
+M.BOX = { x = 5, y = 28, w = 14, h = 8 } -- caja de pies del jugador (muneco 24x38)
 M.STOP_FADE_MS = 80
 local source = nil   -- indice de superficies de esta escena (se pierde al cambiar de escena)
 

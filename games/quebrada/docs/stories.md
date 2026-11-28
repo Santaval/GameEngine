@@ -41,8 +41,9 @@ The overlay and the dialogue box never show at the same time.
 | `title` | Title shown on the overlay. |
 | `summary` | Short text shown on the overlay (wrapped, at most 6 lines). |
 | `heard_at` | Fraction (0 < x <= 1) at which the story counts as heard. Default `0.8`. |
-| `repeatable` | `true` lets a heard story be listened to again from the prompt. |
-| `requires` | Condition (missions `when` function) that makes the story available. |
+| `lived` | Optional. `value -> text` table (same keys as `endings`): the libreta shows the text below the summary for that ending. A key with no entry shows nothing extra (issue #82). |
+| `repeatable` | `true` lets a heard story be listened to again from the prompt. The chequelo story uses it (issue #82). |
+| `requires` | Optional condition (missions `when` function) that makes the story available. The chequelo story has none: it is available from the first visit. |
 | `mission_offer` | Optional mission id, offered when the story starts (idempotent). |
 | `greeting` | Lines `{ speaker, text }` played before the recording, once. |
 | `closing` | Lines played after the recording ends, or after it is stopped once heard. |

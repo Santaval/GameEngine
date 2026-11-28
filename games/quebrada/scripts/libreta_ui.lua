@@ -280,6 +280,7 @@ function M.draw()
     if cur.ending then para("Final: " .. cur.ending, 130, 60, 40) end
     cy = cy + 4
     para(cur.summary, 70, 55, 40)
+    if cur.lived then cy = cy + 4; para(cur.lived, 110, 85, 60) end -- lo que paso despues (issue #82)
     cy = cy + 6
     if cur.can_replay then
       para("[E] Escuchar de nuevo la grabación completa", 40, 80, 140)

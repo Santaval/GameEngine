@@ -8,24 +8,33 @@ local m = require("missions")
 local nueva = m.mission_is("chequelo", "none", "offered")
 
 return {
+  -- Saludo al entrar de dia (chequelo_day.maybe_greet, issue #82): una sola vez
+  mama_saludo = {
+    { speaker = "Mamá", text = "Ah, llegaste, mijo. Pasá, que afuera está todo cerrado." },
+    { speaker = "Mamá", text = "Hoy solo mi casa está abierta. Sentate, descansá." },
+    { speaker = "Mamá",
+      text = "Si querés, escuchá la historia de la quebrada. La grabé para que no se perdiera.",
+      set_flag = "mama.saludada" },
+  },
+  -- Oferta de mama (issue #82). Las `call` van en funciones: este modulo se carga antes que chequelo_day
   mama = {
     { when = nueva, speaker = "Mamá", mission_offer = "chequelo",
-      text = "¿Ya vas a salir? Está cayendo la noche y la quebrada no es lugar para andar sola, ni siquiera con linterna.",
-      voice = "chequelo_mama_gancho" },
+      text = "Mirá, mijo. Ya sabés lo que se cuenta del chequelo." },
     { when = nueva, speaker = "Mamá",
-      text = "Acuérdate de lo que decía tu abuela: después de las ocho no se anda por el monte, mijo." },
-    { when = nueva, speaker = "Mamá", text = "¿Vas a ir esta noche?",
+      text = "Esta noche se va la luz, como cada año. ¿Vas a ir a la iglesia después de la misa?",
       choices = {
-        { text = "Sí, voy esta noche", set_flag = "mama.avisada", mission_accept = "chequelo" },
-        { text = "Mejor no", mission_reject = "chequelo" },
+        { text = "Sí, voy esta noche", set_flag = "mama.avisada", mission_accept = "chequelo",
+          call = function() require("chequelo_day").go_to_church() end },
+        { text = "Mejor no", mission_reject = "chequelo",
+          call = function() require("chequelo_day").on_reject() end },
       } },
     -- Reacciones: se evaluan tras la eleccion y en cada conversacion posterior
     { when = m.mission_is("chequelo", "accepted"), speaker = "Mamá",
-      text = "Entonces llévate el abrigo y no tardes. ¡Que Dios te cuide!" },
+      text = "Llevate el abrigo y no tardés. ¡Que Dios te cuide!" },
     { when = m.mission_rejected("chequelo"), speaker = "Mamá",
-      text = "Eso es lo mejor. Quédate a cenar, ya casi está." },
+      text = "Está bien, mijo. Quedate a cenar. Mañana pasá por la casa de Ña Chayo; ella vio irse la luz." },
     { when = m.mission_is("chequelo", "night_active", "done", "failed"), speaker = "Mamá",
-      text = "Ten cuidado, mijo. La noche es larga." },
+      text = "Cuidate, mijo. La noche es larga." },
   },
   -- Casa de Abuela Paula y Abuelo Pepe (maps/house_paula.tmx)
   abuela_paula = {

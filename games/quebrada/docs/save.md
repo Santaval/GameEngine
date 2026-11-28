@@ -31,6 +31,7 @@ de audio los guarda el motor aparte (`settings.json`). Las herramientas (#53) so
 - Al entrar o salir de una casa (`town_controller.finish_other_map`, justo antes de `load_scene`).
 - Al terminar una mision (`missions.complete` / `missions.fail`, despues de su hook).
 - Al amanecer (`time_of_day.on_day`): dormir o pasar la noche.
+- Al decidir con mamá (issue #82, `scripts/chequelo_day.lua`): al rechazar, en la casa; al aceptar, al terminar la conversación, justo antes de cargar la zona 1 (la llegada a la iglesia ya va en el guardado).
 
 `save.save()` guarda a mano; `save.autosave()` hace lo mismo sin lanzar nunca errores. Un fallo
 solo escribe `[save] ...` en la consola.

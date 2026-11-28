@@ -54,6 +54,10 @@ spliced, then the next line is selected.
   `dialogue.scripts[npc]`. Call it on every scene load. The town controller does
   both.
 - `dialogue.register_script(name, script)`: adds or replaces a script.
+- `dialogue.on_end[npc] = fn(results)`: called when a conversation started by that NPC's
+  `npc` property ends (`attach` passes it as `opts.on_end`). `scripts/chequelo_day.lua`
+  registers `mama` here (issue #82). Other modules that start dialogues can also pass
+  `{ on_end = fn }` to `dialogue.start`.
 - `dialogue.update(dt)`: updates and draws the box. The town controller calls it
   after the door and interaction logic, so the key press that closes a dialogue
   is already consumed before a door can see it.

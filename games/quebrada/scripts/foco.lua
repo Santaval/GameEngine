@@ -45,9 +45,9 @@ function M.tick(dt)
         ids[i] = add_light(0, 0, 10, 255, 240, 200, 0)
       end
     end
-    -- Centro de los pies (la caja del sprite es 16x16)
+    -- Centro de los pies (muneco 24x38, caja de pies en 5,28 de 14x8)
     local px, py = get_position(player_entity)
-    local fx, fy = px + 8, py + 12
+    local fx, fy = px + 12, py + 32
     local beam = logic.beam(player_walker:get_facing())
     local s = logic.strength(st)
     for i, b in ipairs(beam) do

@@ -451,12 +451,12 @@ do -- mobiliario de calle (hoja vida): parada, ropa tendida, moto, poste (con ca
   check(count_gid("objects", "vida_senal_alto_0_1") == 1 and count_gid("objects", "vida_senal_escolar_0_1") == 1, "faltan las senales (alto y zona escolar)")
 end
 do -- emisores de sonido: cada sonido esta registrado en la escena y los de animales de noche respetan la mision del Chequelo
-  local scene = read_file("games/quebrada/scenes/zona1.lua")
+  local scene = read_file("games/quebrada/scenes/main.lua")
   local n_vida, perros = 0, nil
   for _, o in ipairs(objects) do
     if o.class == "emitter" then
       local snd = o.props.sound
-      check(scene:find('assetId = "' .. tostring(snd) .. '"', 1, true) ~= nil, "emisor " .. tostring(o.name) .. ": el sonido " .. tostring(snd) .. " no esta registrado en scenes/zona1.lua")
+      check(scene:find('assetId = "' .. tostring(snd) .. '"', 1, true) ~= nil, "emisor " .. tostring(o.name) .. ": el sonido " .. tostring(snd) .. " no esta registrado en scenes/main.lua")
       if o.name and o.name:match("^gallinas_") then check(o.props.only == "day", o.name .. ": las gallinas suenan de dia") end
       if o.name and o.name:match("^gallo_") then check(o.props.only == "dawn", o.name .. ": los gallos suenan al amanecer") end
       if o.name == "perros_caliles" then perros = o end
@@ -649,7 +649,7 @@ do -- la puerta de la casa de Abuela Paula y Abuelo Pepe, su spawn de salida, su
     check(kind_at(spawn.exit_paula.x // 16, spawn.exit_paula.y // 16) == "lastre", "exit_paula debe caer en el camino de lastre")
   end
   local ps = read_file("games/quebrada/scripts/house_paula_scene.lua")
-  check(ps:find('map = "maps/house_paula.tmx"', 1, true) ~= nil and ps:find('["maps/zona1.tmx"] = "scenes/zona1.lua"', 1, true) ~= nil, "house_paula_scene.lua: su mapa y la vuelta a zona1")
+  check(ps:find('map = "maps/house_paula.tmx"', 1, true) ~= nil and ps:find('["maps/zona1.tmx"] = "scenes/main.lua"', 1, true) ~= nil, "house_paula_scene.lua: su mapa y la vuelta a zona1")
   check(read_file("games/quebrada/scripts/zona1_scene.lua"):find('["maps/house_paula.tmx"] = "scenes/house_paula.lua"', 1, true) ~= nil, "zona1_scene.lua debe conocer la escena de la casa de Paula")
   check(exists("games/quebrada/scenes/house_paula.lua") and exists("games/quebrada/scripts/house_paula_player.lua"), "faltan scenes/house_paula.lua o scripts/house_paula_player.lua")
   local dl = read_file("games/quebrada/scripts/dialogues.lua")
@@ -657,7 +657,7 @@ do -- la puerta de la casa de Abuela Paula y Abuelo Pepe, su spawn de salida, su
 end
 -- la escena de la casa vuelve a zona1 (@return) y zona1_scene la conoce
 local hs = read_file("games/quebrada/scripts/house_scene.lua")
-check(hs:find('["maps/zona1.tmx"] = "scenes/zona1.lua"', 1, true) ~= nil, "house_scene.lua debe conocer maps/zona1.tmx")
+check(hs:find('["maps/zona1.tmx"] = "scenes/main.lua"', 1, true) ~= nil, "house_scene.lua debe conocer maps/zona1.tmx")
 local zs = read_file("games/quebrada/scripts/zona1_scene.lua")
 check(zs:find('map = "maps/zona1.tmx"', 1, true) ~= nil, "zona1_scene.lua debe cargar maps/zona1.tmx")
 

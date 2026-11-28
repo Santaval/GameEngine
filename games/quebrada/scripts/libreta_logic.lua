@@ -54,6 +54,15 @@ function M.ending_text(lg, get)
   return map[tostring(v)] or (type(v) == "string" and v or nil)
 end
 
+-- Lo que paso despues, segun el final (legend.lived, issue #82). nil si el final no tiene
+-- texto (p. ej. stayed_home: la historia se quedo en la libreta sin el "despues")
+function M.lived_text(lg, get)
+  if not lg or not lg.ending_flag or not lg.lived then return nil end
+  local v = get(lg.ending_flag)
+  if v == nil or v == false then return nil end
+  return lg.lived[tostring(v)]
+end
+
 -- list: story.list(); legends: id -> definicion; clues/leads: libreta.clues()/leads()
 -- Devuelve solo las encontradas, mas M.BLANK_PAGES paginas en blanco (blank = true)
 function M.story_entries(list, legends, has, get, clues, leads)
@@ -72,6 +81,7 @@ function M.story_entries(list, legends, has, get, clues, leads)
         status = (heard and "heard") or (s.state == "started" and "started") or "found",
         progress = s.progress or 0,
         ending = M.ending_text(lg, get),
+        lived = M.lived_text(lg, get),
         recorder = recorder,
         can_replay = recorder and (heard or s.state == "started"),
         new = M.is_new("story", s.id, has),

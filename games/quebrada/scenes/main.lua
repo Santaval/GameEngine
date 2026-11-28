@@ -2,9 +2,9 @@
 -- (LEFT_PAD = 255: el heroe nace en la puerta de la iglesia, desplazada 255 tiles = 4080 px a la derecha del layout original; el monte esta 500 m = 250 tiles al este, a la izquierda.)
 -- Zona 1 (issue #78): maps/zona1.tmx, reconstruida elemento por elemento. Base actual: la iglesia
 -- y su calle de adoquin de 100 m (1 tile = 1 m). El resto (casas, cafetal, ...) lo coloca el usuario.
--- Misma escena que buildings_demo.lua (controles y teclas iguales) pero con otro mapa, otro
--- controlador (scripts/zona1_scene.lua) y un jugador sin limites de camara fijos (zona1_player.lua).
--- Se abre con la tecla z en la escena principal.
+-- ESCENA PRINCIPAL del juego (la que arranca `make run-quebrada`): el pueblo Quebrada Grande.
+-- Controlador: scripts/zona1_scene.lua; jugador sin limites de camara fijos: zona1_player.lua.
+-- Tecla 7 continua la partida guardada; tecla z reinicia con el atajo de la noche del chequelo.
 -- (Texto original de town_demo.lua:) Demo de puertas, interiores y zonas (issue #62): el barrio.
 -- WASD o flechas para andar, Shift corre, E / Enter interactua con la puerta,
 -- F alterna el flag unlock.house.chayo (depuracion), 0 vuelve a la escena principal,
@@ -105,6 +105,8 @@ scene = {
         { name = "tool4", key = 52 },
         { name = "tool_use", key = 120 }, -- x: usar la herramienta elegida
         { name = "debug_overlay", key = 1073741884 }, -- F3: overlay de flags y misiones
+        { name = "continue", key = 55 }, -- 7: continuar la partida guardada (issue #52)
+        { name = "zona1", key = 122 },   -- z: reiniciar con el atajo de la noche del chequelo (issue #78)
         { name = "libreta", key = 9 },       -- Tab: libreta (issue #80)
         { name = "libreta_alt", key = 108 }, -- l
         { name = "story_pause", key = 32 },      -- Espacio: pausa / reanudar la historia (repeticion desde la libreta)
@@ -128,6 +130,20 @@ scene = {
                 animation = { atlas = "dummy", tag = "idle_down" },
                 box_collider = { width = 14, height = 8, offset_x = 5, offset_y = 28, solid = true, mover = true },
                 script = { path = "scripts/zona1_player.lua" },
+            },
+        },
+        {
+            -- Tecla 7: continuar la partida guardada
+            components = {
+                transform = { position = { x = 0, y = 0 } },
+                script = { path = "scripts/continue_launch.lua" },
+            },
+        },
+        {
+            -- Tecla z: reinicia la zona con el atajo de la noche del chequelo (zona1.demo_start)
+            components = {
+                transform = { position = { x = 0, y = 0 } },
+                script = { path = "scripts/zona1_launch.lua" },
             },
         },
     },

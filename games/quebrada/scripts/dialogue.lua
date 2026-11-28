@@ -19,6 +19,7 @@ M.MARGIN = 8
 M.play_voices = true
 M.box = nil           -- opcional: { asset = "id", slice = 8 } para caja 9-slice (solo si M.nine_slice existe)
 M.scripts = require("dialogues")
+M.on_end = {}         -- npc -> fn(results), registrada por otros modulos (issue #82)
 
 local cur = nil
 local time = 0
@@ -189,12 +190,13 @@ function M.reset()
 end
 
 -- Conecta interaction.on_npc con M.scripts (llamar en cada carga de escena)
+-- M.on_end[npc] = fn(results): se llama al terminar la conversacion con ese NPC (issue #82)
 function M.attach()
   interaction.on_npc = function(name, obj)
     -- Comentarios por consecuencias (issue #70) antepuestos al guion base
     local s = consequences.build_script(name, M.scripts[name])
     if s then
-      M.start(s)
+      M.start(s, { on_end = M.on_end[name] })
     elseif interaction.say then
       local p = (obj and obj.properties) or {}
       interaction.say(p.line or "...")

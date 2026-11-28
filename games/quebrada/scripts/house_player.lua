@@ -7,7 +7,7 @@ local fn, obj = require("walker").make_update({
     follow = true,
     deadzone = { w = 24, h = 16 },
     smooth = 10,
-    box = { x = 3, y = 8, w = 10, h = 8 },
+    box = { x = 5, y = 28, w = 14, h = 8 }, -- pies del muneco 24x38
     bounds = { x = 0, y = 0, w = 192, h = 144 },
   },
   footsteps = { on_state = require("footsteps").on_state }, -- pasos por superficie (issue #65)

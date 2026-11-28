@@ -3962,6 +3962,8 @@
     <property name="target_spawn" value="inside_door"/>
     <property name="exit_spawn" value="exit_paula"/>
     <property name="prompt" value="E: entrar"/>
+    <property name="locked" value="!unlock.house.chayo,!mission.chequelo.next_day"/>
+    <property name="locked_line" value="Está cerrado. Hoy solo mamá está en casa."/>
    </properties>
   </object>
  </objectgroup>

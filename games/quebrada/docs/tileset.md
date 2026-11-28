@@ -12,7 +12,7 @@ Files:
 | `tilesets/town.png` | 256x144 sheet, 16 columns x 9 rows, no margin. **Generated, never edit by hand.** |
 | `tilesets/town.tsx` | Tiled tileset with the properties of every tile. **Generated.** |
 | `tilesets/CREDITS.md` | Credits and licence notes |
-| `maps/tiles_demo.tmx` | 40x30 proof map built only from this tileset. **Generated.** Open it with key `8` in the main scene, or in Tiled. |
+| `maps/tiles_demo.tmx` | 40x30 proof map built only from this tileset. **Generated.** Open it in Tiled (its demo scene was removed). |
 | `tools/tilegen/` | The generator (Node, no npm packages). `catalog*.mjs` is the single source of truth |
 
 Regenerate with `make tiles` (same as `node games/quebrada/tools/tilegen/gen.mjs`). `make test` runs
@@ -203,7 +203,7 @@ Rules the test enforces:
 
 `town_controller.make_update{ map = "maps/tiles_demo.tmx", tile_map = true }` calls `load_tile_map(map)`
 before `load_tmx_colliders`. Without `tile_map` the controller keeps drawing nothing for tile layers
-(as `town.tmx`, which has object layers only). `scenes/tiles_demo.lua` + `scripts/tiles_scene.lua` show it.
+(as `town.tmx`, which has object layers only). `scenes/main.lua` + `scripts/zona1_scene.lua` use it.
 
 ## Add or change a tile
 

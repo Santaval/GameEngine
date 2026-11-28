@@ -40,7 +40,7 @@ function M.tick(dt)
   local st = companion_state
   local px, py = get_position(player_entity)
   logic.step(st, path, detours, CFG, dt, {
-    px = px + 8, py = py + 12, -- centro de los pies (la caja del sprite es 16x16)
+    px = px + 12, py = py + 32, -- centro de los pies (muneco 24x38, caja de pies en 5,28 de 14x8)
     light_appears = ws.has("chequelo.light_appears"),
     off_road = ws.has("chequelo.off_road"),
     arrived = ws.has("chequelo.arrived"),

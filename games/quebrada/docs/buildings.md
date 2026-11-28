@@ -57,7 +57,7 @@ Tile layers, in order: `ground`, `overlay`, `objects` (ysort: trunks, hedges), `
   roof fades to `min_alpha` at 600 alpha/s; outside it fades back. Two rects with the same `roof_of`: the lowest wins.
 - `scripts/town_controller.lua` runs `scripts/roofs.lua` when `tile_map` is on (config `roofs`, nil follows
   `tile_map`). `world_debug = false` hides the grid, collision and door rects that the controller normally paints
-  over the map; `buildings_scene.lua` and `house_scene.lua` use it.
+  over the map; `zona1_scene.lua` and `house_scene.lua` use it.
 - Doors: `door_mama` is a 32x12 rect just below the door cell; `exit_mama` is 28 px under the rect's top, centred.
 
 ## Window glow at night

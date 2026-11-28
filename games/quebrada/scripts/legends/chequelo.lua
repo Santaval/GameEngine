@@ -11,20 +11,26 @@ return {
   title = "El chequelo",
   summary = "Lo que cuentan en la quebrada sobre el chequelo y la noche en que se va la luz.",
   heard_at = 0.8,                  -- fraccion para contar como escuchada
-  repeatable = false,              -- true: se puede volver a escuchar desde el prompt
-  -- Disponible solo despues de la primera charla (asi "Hablar" va primero)
-  requires = m.not_(m.mission_is("chequelo", "none")),
+  repeatable = true,               -- se puede volver a escuchar desde el prompt (issue #82)
+  -- Sin `requires`: la historia se puede escuchar desde el primer momento (issue #82)
   mission_offer = "chequelo",      -- opcional: se ofrece al empezar (idempotente)
   -- Final alcanzado (libreta, issue #80): flag con el valor y texto de cada valor
   ending_flag = "chequelo.ending",
   endings = { stayed_home = "Te quedaste en casa", failed = "Saliste mal parado", done = "Fuiste al monte",
               detour_cafetal = "Te desviaste por el cafetal", detour_door = "Te asomaste a la puerta abierta" },
+  -- Lo que paso despues, por final (libreta, issue #82). Sin entrada = no se muestra (p. ej. stayed_home)
+  lived = {
+    done = "Cruzaste el monte esa noche y llegaste a la puerta de mamá.",
+    failed = "La noche te ganó en el camino. Amaneciste donde no debías.",
+    detour_cafetal = "Te desviaste por el cafetal, y la luz te alcanzó entre los cafetos.",
+    detour_door = "Te asomaste a la puerta abierta del monte y se te fue la noche ahí.",
+  },
   greeting = {
-    { speaker = "Mamá", text = "Siéntate, mijo. La grabé para que no se perdiera." },
-    { speaker = "Mamá", text = "Escucha con calma. No hay que entenderla toda de una vez." },
+    { speaker = "Mamá", text = "Sentate, mijo. La grabé para que no se perdiera." },
+    { speaker = "Mamá", text = "Escuchá con calma. No hay que entenderla toda de una vez." },
   },
   closing = {
-    { speaker = "Mamá", text = "Eso es lo que contaban. Ahora ya la sabes." },
+    { speaker = "Mamá", text = "Eso es lo que contaban. Ahora ya la sabés. Acordate de lo que te conté." },
   },
   -- Pistas: texto corto (<= 60 caracteres). Todos los campos presentes se cumplen (AND):
   --   map, zone (id de zona), time ("day"|"night"), near = {x,y,r} (px de mundo), when (condicion)
@@ -34,6 +40,12 @@ return {
     { id = "puerta", map = "maps/house_mama.tmx", near = { x = 96, y = 134, r = 16 },
       when = m.mission_accepted("chequelo"),
       text = "La puerta del monte nunca se cierra del todo." },
+    -- Recuerdos de mama durante la noche (issue #82): remiten a lo que conto antes
+    { id = "acordate_luz", time = "night", zone = "cafetal", when = m.mission_is("chequelo", "night_active"),
+      text = "Acordate de lo que te conté: no sigás la luz." },
+    { id = "acordate_puerta", map = "maps/house_mama.tmx", near = { x = 56, y = 68, r = 20 },
+      when = m.mission_accepted("chequelo"),
+      text = "Acordate de lo que te conté, mijo." },
   },
   -- Boca en boca (#69): ver games/quebrada/docs/leads.md. Primera regla cuyo `when` se cumple.
   next = {

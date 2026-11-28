@@ -44,7 +44,7 @@ export function buildTmx() {
      Interior de la casa (issues #62, #71): 12x9 tiles de 16 px = 192x144. Capas de tiles: floor (tablones del pueblo),
      walls (ysort, pared del fondo), furniture (ysort, muebles dibujados en las posiciones de los rects). Capas de objetos
      como en #62 mas seats (asiento de mama, sin uso en codigo todavia). -->
-<map version="1.10" tiledversion="1.10.2" orientation="orthogonal" renderorder="right-down" width="${INT_W}" height="${INT_H}" tilewidth="16" tileheight="16" infinite="0" nextlayerid="10" nextobjectid="26">
+<map version="1.10" tiledversion="1.10.2" orientation="orthogonal" renderorder="right-down" width="${INT_W}" height="${INT_H}" tilewidth="16" tileheight="16" infinite="0" nextlayerid="10" nextobjectid="27">
  <properties>
   <property name="surface" value="madera"/>
  </properties>
@@ -92,9 +92,17 @@ ${layer(8, "furniture", L.furniture, ysort)}
     <property name="npc" value="mama"/>
     <property name="label" value="Hablar"/>
     <property name="target" value="mamá"/>
-    <property name="story" value="chequelo"/>
+    <property name="radius" value="20"/>
     <property name="line" value="Mamá: ¿Ya vas a salir?"/>
     <property name="figure" value="150,90,120"/>
+   </properties>
+  </object>
+  <object id="26" name="mama_historia" class="interactable" x="32" y="60" width="16" height="16">
+   <properties>
+    <property name="npc" value="mama"/>
+    <property name="story" value="chequelo"/>
+    <property name="label" value="Escuchar la historia"/>
+    <property name="radius" value="20"/>
    </properties>
   </object>
   <object id="21" name="radio" class="interactable" x="72" y="60" width="16" height="16">

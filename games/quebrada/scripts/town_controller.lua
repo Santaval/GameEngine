@@ -59,7 +59,7 @@ local emitters = require("emitters")
 local M = {}
 
 M.DEFAULTS = {
-  box = { x = 3, y = 8, w = 10, h = 8 },
+  box = { x = 5, y = 28, w = 14, h = 8 }, -- pies del muneco 24x38: igual que el box_collider del jugador
   scenes = {},
   grid = 32,
   debug_flag = "unlock.house.chayo",
