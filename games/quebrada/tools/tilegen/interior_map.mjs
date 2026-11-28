@@ -3,7 +3,7 @@
 // and buildings tilesets, and a `seats` group with seat_mama. Furniture is drawn at the pixel positions of the
 // collision / interactable rects (mesa 24,24 48x32; mama chair 48,60; radio 72,60; cama 144,24; shelf 88-136,24).
 import { TILES, SIZE, COLS, ROWS, renderSheet } from "./catalog.mjs";
-import { INTERIOR_CELLS, WALL_CELLS, B_COLS, renderBuildingSheet } from "./catalog_buildings.mjs";
+import { INTERIOR_BY_NAME, B_COLS, renderBuildingSheet } from "./catalog_buildings.mjs";
 import { Frame } from "./draw.mjs";
 
 export const INT_W = 12;
@@ -14,19 +14,23 @@ const B_FIRSTGID = COLS * ROWS + 1;
 const plank = TILES.find((t) => t.name === "plank_h");
 if (!plank) throw new Error("plank_h missing");
 
-function layers() {
-  const N = INT_W * INT_H;
+/** Tile layers (gid arrays) of an interior of the buildings sheet: plank floor, back wall cells, furniture cells. */
+export function interiorLayers(name = "casa_mama") {
+  const I = INTERIOR_BY_NAME.get(name);
+  if (!I) throw new Error(`unknown interior ${name}`);
+  const N = I.w * I.h;
   const floor = new Array(N).fill(plank.id + TOWN_FIRSTGID);
   const walls = new Array(N).fill(0);
-  for (const c of WALL_CELLS) walls[c.cx] = c.id + B_FIRSTGID;
+  for (const c of I.wallCells) walls[c.cy * I.w + c.cx] = c.id + B_FIRSTGID;
   const furniture = new Array(N).fill(0);
-  for (const c of INTERIOR_CELLS) furniture[c.cy * INT_W + c.cx] = c.id + B_FIRSTGID;
+  for (const c of I.cells) furniture[c.cy * I.w + c.cx] = c.id + B_FIRSTGID;
   return { floor, walls, furniture };
 }
+const layers = () => interiorLayers("casa_mama");
 
-const csv = (arr) => {
+export const csv = (arr, w = INT_W, h = INT_H) => {
   const rows = [];
-  for (let y = 0; y < INT_H; y++) rows.push(arr.slice(y * INT_W, (y + 1) * INT_W).join(","));
+  for (let y = 0; y < h; y++) rows.push(arr.slice(y * w, (y + 1) * w).join(","));
   return rows.join(",\n");
 };
 
@@ -138,10 +142,11 @@ ${layer(8, "furniture", L.furniture, ysort)}
 }
 
 /** Picture of the interior (floor, back wall, furniture). */
-export function renderInterior() {
+export function renderInterior(name = "casa_mama") {
   const town = renderSheet();
   const bs = renderBuildingSheet();
-  const L = layers();
+  const L = interiorLayers(name);
+  const { w: INT_W, h: INT_H } = INTERIOR_BY_NAME.get(name);
   const out = new Frame(INT_W * SIZE, INT_H * SIZE);
   for (const name of ["floor", "walls", "furniture"]) {
     for (let i = 0; i < L[name].length; i++) {

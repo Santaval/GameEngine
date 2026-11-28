@@ -475,30 +475,42 @@ for (const b of BUILDINGS) {
   if (nextLit > litEnd) throw new Error(`too many lit cells in ${b.name}`);
 }
 
-// interior furniture: drawn on a 12x9 canvas at exact pixel positions, then sliced
-const intCanvas = new Frame(INT_W * SIZE, INT_H * SIZE);
-drawInterior(intCanvas);
-export const INTERIOR_CELLS = [];
-{
-  let n = INT_BASE_ID;
-  for (let cy = 0; cy < INT_H; cy++) for (let cx = 0; cx < INT_W; cx++) {
-    if (nonEmpty(intCanvas.slice(cx * SIZE, cy * SIZE, SIZE, SIZE))) {
-      INTERIOR_CELLS.push({ cx, cy, id: n++, name: `casa_mama_int_${cx}_${cy}`, layer: "ysort" });
-    }
+// ---------------------------------------------------------------- interiors (maps/house_<name>.tmx): furniture + back wall drawn on canvases, sliced into sheet cells
+// An interior spec: { name, w, h (tiles), intBase/intEnd (id range of the furniture cells), wallBase (first id of the wall cells), wallCols, wallRows, draw(f) furniture canvas, drawWall(f) wall canvas }.
+// Furniture cells are named `${name}_int_${cx}_${cy}` (the non-empty cells of the canvas, ids handed out in reading order); wall cells `${name}_wall_${cx}` when the wall is one row tall,
+// else `${name}_wall_${cx}_${cy}` (id = wallBase + cy * B_COLS + cx). Walls are solid ysort, furniture ysort without collision (the maps add collision rects).
+const INTERIOR_SPECS = [
+  { name: "casa_mama", w: INT_W, h: INT_H, intBase: INT_BASE_ID, intEnd: id(23, 0), wallBase: WALL_BASE_ID, wallCols: WALL_COLS, wallRows: 1, draw: drawInterior, drawWall: drawBackWall },
+];
+export const INTERIORS = INTERIOR_SPECS.map((spec) => {
+  const furniture = new Frame(spec.w * SIZE, spec.h * SIZE);
+  spec.draw(furniture);
+  const wall = new Frame(spec.wallCols * SIZE, spec.wallRows * SIZE);
+  spec.drawWall(wall);
+  const cells = [];
+  let n = spec.intBase;
+  for (let cy = 0; cy < spec.h; cy++) for (let cx = 0; cx < spec.w; cx++) {
+    if (nonEmpty(furniture.slice(cx * SIZE, cy * SIZE, SIZE, SIZE))) cells.push({ cx, cy, id: n++, name: `${spec.name}_int_${cx}_${cy}`, layer: "ysort" });
   }
-  if (n > id(23, 0)) throw new Error(`too many interior cells: ${n - INT_BASE_ID}`);
-}
-const wallCanvas = new Frame(WALL_COLS * SIZE, SIZE);
-drawBackWall(wallCanvas);
-export const WALL_CELLS = Array.from({ length: WALL_COLS }, (_, cx) => ({ cx, id: WALL_BASE_ID + cx, name: `casa_mama_wall_${cx}`, layer: "ysort", solid: true }));
+  if (n > spec.intEnd) throw new Error(`too many interior cells in ${spec.name}: ${n - spec.intBase} (max ${spec.intEnd - spec.intBase})`);
+  const wallCells = [];
+  for (let cy = 0; cy < spec.wallRows; cy++) for (let cx = 0; cx < spec.wallCols; cx++) {
+    wallCells.push({ cx, cy, id: spec.wallBase + cy * B_COLS + cx, name: spec.wallRows === 1 ? `${spec.name}_wall_${cx}` : `${spec.name}_wall_${cx}_${cy}`, layer: "ysort", solid: true });
+  }
+  return { ...spec, furnitureCanvas: furniture, wallCanvas: wall, cells, wallCells };
+});
+export const INTERIOR_BY_NAME = new Map(INTERIORS.map((i) => [i.name, i]));
+// mama's house keeps its own exports (interior_map.mjs and the tests of #71 use them)
+const MAMA = INTERIOR_BY_NAME.get("casa_mama");
+export const INTERIOR_CELLS = MAMA.cells;
+export const WALL_CELLS = MAMA.wallCells;
 
 export { BUILDINGS };
 export const BUILDING_BY_NAME = new Map(BUILDINGS.map((b) => [b.name, b]));
 
 export const B_TILES = [];
 for (const b of BUILDINGS) { for (const c of b.cells) B_TILES.push(c); for (const c of b.lit) B_TILES.push(c); }
-for (const c of INTERIOR_CELLS) B_TILES.push(c);
-for (const c of WALL_CELLS) B_TILES.push(c);
+for (const i of INTERIORS) { for (const c of i.cells) B_TILES.push(c); for (const c of i.wallCells) B_TILES.push(c); }
 for (const t of hedgeTiles) B_TILES.push(t);
 B_TILES.sort((a, b) => a.id - b.id);
 
@@ -525,8 +537,10 @@ export function renderBuildingSheet() {
     for (const c of b.cells) put(c.id, day.slice(c.cx * SIZE, c.cy * SIZE, SIZE, SIZE));
     for (const c of b.lit) put(c.id, lit.slice(c.cx * SIZE, c.cy * SIZE, SIZE, SIZE));
   }
-  for (const c of INTERIOR_CELLS) put(c.id, intCanvas.slice(c.cx * SIZE, c.cy * SIZE, SIZE, SIZE));
-  for (const c of WALL_CELLS) put(c.id, wallCanvas.slice(c.cx * SIZE, 0, SIZE, SIZE));
+  for (const i of INTERIORS) {
+    for (const c of i.cells) put(c.id, i.furnitureCanvas.slice(c.cx * SIZE, c.cy * SIZE, SIZE, SIZE));
+    for (const c of i.wallCells) put(c.id, i.wallCanvas.slice(c.cx * SIZE, c.cy * SIZE, SIZE, SIZE));
+  }
   for (const t of hedgeTiles) { const f = new Frame(SIZE, SIZE); t.draw(f); put(t.id, f); }
   return sheet;
 }
