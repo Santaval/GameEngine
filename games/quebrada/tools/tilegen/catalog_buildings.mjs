@@ -12,6 +12,7 @@
 //   rows 24-28 cols 0-7    abastecedor  8x5 (yellow walls, striped awning)   cols 8-15: bar  8x5 (green walls, red sign band)
 //   rows 29-33 cols 0-7    guarderia    8x5 (pastel blue walls, painted boats)
 //   rows 36-41 cols 0-7    casa_paula   8x6 (wooden house of Abuela Paula y Abuelo Pepe, lit cells share rows 34-35)
+//   rows 42-47             casa_paula interior furniture casa_paula_int_<cx>_<cy> (max 96);  rows 48-49  its wood back wall casa_paula_wall_<cx>_<cy> (16x2)
 //   rows 34-35             lit window cells of the three shops (the casas use rows 18-19)
 //   row 23 cols 0-11       interior back wall  casa_mama_wall_<cx>;  cols 12-13 two coloured hedges
 //
@@ -25,7 +26,7 @@ import { drawText, textWidth } from "./font.mjs";
 
 export const SIZE = 16;
 export const B_COLS = 16;
-export const B_ROWS = 42;
+export const B_ROWS = 50;
 const B = C.bldg;
 const id = (row, col) => row * B_COLS + col;
 
@@ -394,6 +395,122 @@ function drawInterior(f) {
   f.vline(144, 29, 21, B.woodDark); f.vline(167, 29, 21, B.woodDark);
 }
 
+// ---------------------------------------------------------------- interior of Abuela Paula y Abuelo Pepe (16x11 cells = 256x176 px, wooden house)
+const CLAY = rgb("#a8542d"), CLAYDARK = rgb("#7c3a1e"), CLAYLIGHT = rgb("#c47440");
+const IRON = rgb("#2e2e30"), IRONLIGHT = rgb("#55575a");
+const TURQ = rgb("#4f9a9e"), TURQDARK = rgb("#357377");
+const YARN = [rgb("#c4584a"), rgb("#e8c442"), rgb("#4f9a9e"), rgb("#8d5bb5"), rgb("#f1efe4"), rgb("#6bb03a")];
+
+function stool(f, x, y) {
+  f.ellipse(x + 7, y + 13, 7, 2, D.SH);
+  f.ellipse(x + 7, y + 4, 7, 3.4, B.woodLight); f.ellipse(x + 7, y + 3.5, 5.5, 2.3, shade(B.woodLight, 1.15));
+  f.rect(x + 2, y + 6, 2, 7, B.woodDark); f.rect(x + 10, y + 6, 2, 7, B.woodDark); f.vline(x + 6, y + 7, 6, B.woodDeep);
+}
+
+function drawPaulaInterior(f) {
+  // wood stove (fogón) against the back wall at x8..44: clay body, iron top with two burners, firebox with a glow, a black pot and a blue enamel kettle
+  f.ellipse(26, 53, 20, 3, D.SH);
+  f.rect(8, 32, 36, 20, CLAY); f.hline(8, 32, 36, CLAYLIGHT); f.vline(8, 32, 20, CLAYLIGHT); f.vline(43, 32, 20, CLAYDARK); f.hline(8, 51, 36, CLAYDARK);
+  for (let y = 36; y < 51; y += 5) for (let x = 9 + ((y / 5) % 2) * 4; x < 43; x += 8) f.px(x, y, CLAYDARK);
+  f.rect(6, 28, 40, 5, IRON); f.hline(6, 28, 40, IRONLIGHT);
+  f.ellipse(18, 30, 4.5, 1.6, IRONLIGHT); f.ellipse(34, 30, 4.5, 1.6, IRONLIGHT);
+  f.rect(14, 40, 14, 10, IRON); f.rect(16, 46, 10, 3, rgb("#f08a2c")); f.rect(18, 47, 6, 2, rgb("#ffd27a")); f.hline(14, 40, 14, IRONLIGHT);
+  f.rect(31, 41, 8, 7, IRON); f.hline(31, 41, 8, IRONLIGHT); f.px(38, 44, B.metal); // ash door
+  f.rect(12, 21, 11, 8, rgb("#1f2022")); f.hline(12, 21, 11, IRONLIGHT); f.rect(11, 20, 13, 2, IRON); f.rect(23, 23, 3, 2, IRON); // black pot with its lid and handle
+  f.rect(30, 23, 8, 6, TURQ); f.hline(30, 23, 8, shade(TURQ, 1.3)); f.hline(30, 28, 8, TURQDARK); f.rect(38, 24, 3, 1, TURQ); f.vline(29, 24, 4, TURQDARK); f.rect(32, 21, 4, 2, TURQDARK); // kettle
+  // firewood stack beside the stove
+  f.hline(46, 54, 17, withAlpha([0, 0, 0, 255], 70));
+  for (let r = 0; r < 3; r++) for (let c = 0; c < 3 - (r === 2 ? 1 : 0); c++) {
+    const x = 49 + c * 5 + (r === 1 ? 2 : 0) + (r === 2 ? 2 : 0), y = 50 - r * 4;
+    f.ellipse(x, y + 1, 2.7, 2.7, B.woodDark); f.ellipse(x, y + 1, 1.7, 1.7, rgb("#c9a06a")); f.px(x, y + 1, B.woodDark);
+  }
+  // clay water jar (tinaja) on a wooden ring
+  f.ellipse(11, 85, 8, 2, D.SH);
+  f.ellipse(11, 77, 7, 9, CLAY); f.ellipse(9, 74, 3, 5, CLAYLIGHT); f.rect(7, 66, 8, 4, CLAYDARK); f.rect(6, 65, 10, 2, CLAY); f.hline(7, 67, 8, CLAYLIGHT);
+  f.rect(4, 83, 14, 2, B.woodDark);
+  // table with a red and white check oilcloth, the greca (coffee pot), cups and a bread basket
+  f.ellipse(124, 93, 31, 3, D.SH);
+  D.plank(f, 96, 64, 56, 24, B.woodLight, shade(B.woodLight, 1.2), B.wood, "ptbl");
+  for (let y = 66; y < 86; y++) for (let x = 99; x < 149; x++) f.px(x, y, ((x >> 2) + (y >> 2)) % 2 ? rgb("#f1efe4") : rgb("#c4584a"));
+  f.hline(99, 66, 50, B.clothLight); f.hline(99, 85, 50, B.clothShade);
+  f.rect(96, 88, 56, 4, B.wood); f.hline(96, 88, 56, B.woodLight); f.hline(96, 91, 56, B.woodDark);
+  for (const x of [98, 146]) f.rect(x, 92, 3, 3, B.woodDeep);
+  f.rect(106, 70, 5, 8, B.metal); f.hline(106, 70, 5, rgb("#e8eaec")); f.rect(105, 77, 7, 2, B.zincDark); f.px(111, 72, B.zincDark); f.px(112, 71, B.zincDark); f.rect(103, 71, 2, 5, B.cross); // greca
+  for (const x of [118, 123]) { f.rect(x, 73, 4, 4, [242, 239, 230, 255]); f.px(x + 4, 74, [242, 239, 230, 255]); f.hline(x, 73, 4, B.whiteTrimShade); f.px(x + 1, 74, rgb("#5a3a1e")); }
+  f.ellipse(137, 76, 6, 3.4, rgb("#c9a06a")); f.ellipse(137, 75, 4.6, 2.2, rgb("#e8cf9a")); for (const x of [134, 137, 140]) f.px(x, 75, rgb("#b78a4e"));
+  stool(f, 100, 98); stool(f, 134, 98);
+  // bed (right wall) with a crocheted granny-square blanket
+  f.ellipse(228, 77, 21, 3, D.SH);
+  f.rect(208, 30, 40, 6, B.woodDark); f.hline(208, 30, 40, B.wood);
+  f.rect(209, 36, 38, 8, B.bedSheet);
+  f.rect(212, 36, 14, 7, B.pillow); f.rect(230, 36, 14, 7, B.pillow); f.hline(212, 42, 14, B.bedSheetShade); f.hline(230, 42, 14, B.bedSheetShade);
+  f.rect(209, 44, 38, 28, B.bedSheet);
+  for (let gy = 0; gy < 3; gy++) for (let gx = 0; gx < 5; gx++) {
+    const x = 209 + gx * 7.6, y = 45 + gy * 8.6, c = YARN[(gx * 2 + gy * 3) % YARN.length];
+    f.rect(Math.round(x), Math.round(y), 7, 8, c); f.rect(Math.round(x) + 2, Math.round(y) + 2, 3, 4, YARN[(gx + gy * 2 + 3) % YARN.length]);
+    f.hline(Math.round(x), Math.round(y) + 8, 8, rgb("#3f2916")); f.vline(Math.round(x) + 7, Math.round(y), 9, rgb("#3f2916"));
+  }
+  f.hline(209, 70, 38, B.bedBlanketDark);
+  f.rect(208, 72, 40, 5, B.wood); f.hline(208, 72, 40, B.woodLight); f.hline(208, 76, 40, B.woodDark);
+  f.vline(208, 36, 36, B.woodDark); f.vline(247, 36, 36, B.woodDark);
+  // Abuela's rocking chair with a crochet basket at her feet
+  f.ellipse(62, 124, 14, 2.5, D.SH);
+  f.rect(52, 100, 18, 20, B.wood); for (let x = 54; x < 69; x += 3) f.vline(x, 101, 17, B.woodDark); f.hline(52, 100, 18, B.woodLight);
+  f.rect(50, 112, 22, 6, B.woodLight); f.hline(50, 112, 22, shade(B.woodLight, 1.2)); f.hline(50, 117, 22, B.woodDark);
+  f.rect(54, 108, 14, 5, rgb("#b04a6e")); f.hline(54, 108, 14, rgb("#d77a9a")); // her shawl
+  f.line(48, 124, 56, 126, B.woodDeep); f.hline(56, 126, 12, B.woodDeep); f.line(68, 126, 76, 123, B.woodDeep); // rocker
+  f.ellipse(86, 121, 5.5, 3, rgb("#c9a06a")); f.ellipse(86, 120, 4.2, 1.8, rgb("#e8cf9a")); f.ellipse(84, 119, 2, 1.6, YARN[0]); f.ellipse(88, 119, 2, 1.6, YARN[2]); f.line(88, 118, 94, 112, YARN[0]);
+  // Abuelo's bench and the radio on a small table
+  f.ellipse(178, 120, 14, 2.5, D.SH);
+  f.rect(166, 104, 24, 5, B.woodLight); f.hline(166, 104, 24, shade(B.woodLight, 1.2)); f.hline(166, 108, 24, B.woodDark);
+  f.rect(166, 98, 24, 6, B.wood); for (let x = 168; x < 189; x += 4) f.vline(x, 99, 5, B.woodDark);
+  f.rect(168, 109, 3, 8, B.woodDeep); f.rect(185, 109, 3, 8, B.woodDeep);
+  f.rect(196, 106, 18, 3, B.woodLight); f.hline(196, 106, 18, shade(B.woodLight, 1.2)); f.rect(198, 109, 2, 9, B.woodDeep); f.rect(210, 109, 2, 9, B.woodDeep);
+  f.ellipse(205, 120, 9, 2, D.SH);
+  f.rect(198, 96, 14, 10, B.radio); f.hline(198, 96, 14, B.radioLight); f.vline(198, 96, 10, B.radioLight); f.hline(198, 105, 14, shade(B.radio, 0.7));
+  f.rect(200, 98, 6, 4, [190, 200, 180, 255]); f.px(209, 99, B.metal); f.px(209, 101, B.metal); f.ellipse(209, 103, 1.6, 1.4, B.radioLight);
+  f.line(210, 96, 216, 86, B.metal); f.px(216, 85, B.metal);
+}
+
+function drawPaulaWall(f) {
+  // 256 x 32: old vertical planks (a few replaced, greyer ones), baseboard, shuttered window, photos, calendar, saints' shelf, machete and hat, garlic and chili strings, the stove pipe
+  for (let y = 0; y < 32; y++) for (let x = 0; x < 256; x++) {
+    const plank = Math.floor(x / 4), edge = x % 4 === 3;
+    let c = plank % 3 === 0 ? WOOD.base : plank % 3 === 1 ? shade(WOOD.base, 0.94) : shade(WOOD.base, 1.05);
+    if (plank === 11 || plank === 37 || plank === 52) c = shade(WOOD.grey, 1.04);
+    if (edge) c = WOOD.dark; else if (noise("piw", x, y) < 0.05) c = shade(c, 0.9);
+    f.px(x, y, c);
+  }
+  f.rect(0, 26, 256, 6, WOOD.dark); f.hline(0, 26, 256, WOOD.light); f.hline(0, 31, 256, WOOD.deep); // baseboard
+  // window with open turquoise shutters
+  f.rect(111, 4, 34, 20, B.doorFrame); f.rect(113, 6, 30, 16, B.glass); f.rect(113, 6, 30, 5, B.glassHi); f.vline(127, 6, 16, B.doorFrame); f.hline(113, 14, 30, B.doorFrame);
+  for (const [x0, dir] of [[110, -1], [145, 1]]) { f.rect(dir < 0 ? x0 - 8 : x0, 3, 8, 22, TURQ); f.vline(dir < 0 ? x0 - 8 : x0 + 7, 3, 22, TURQDARK); for (let j = 4; j < 24; j += 3) f.hline(dir < 0 ? x0 - 7 : x0 + 1, j, 7, TURQDARK); }
+  f.rect(109, 24, 38, 2, B.whiteTrimShade); f.hline(109, 24, 38, B.whiteTrim);
+  // old photographs and the calendar
+  D.savedPicture(f, 40, 7, 10, 9);
+  f.rect(58, 9, 10, 12, B.frameGold); f.rect(59, 10, 8, 10, rgb("#d9d2bd")); f.rect(61, 12, 4, 4, B.picSkin); f.rect(60, 16, 6, 4, rgb("#4f6fa8")); f.hline(58, 9, 10, shade(B.frameGold, 1.3));
+  f.rect(76, 8, 12, 9, B.frameGold); f.rect(77, 9, 10, 7, rgb("#c9c2ad")); f.rect(79, 11, 3, 3, B.picSkin); f.rect(83, 11, 3, 3, rgb("#8d6a4a")); f.hline(76, 8, 12, shade(B.frameGold, 1.3));
+  f.rect(176, 4, 14, 19, B.whiteTrim); f.rect(176, 4, 14, 5, rgb("#c4584a")); f.hline(176, 4, 14, rgb("#e07a68")); f.px(182, 6, rgb("#f1efe4")); f.px(183, 6, rgb("#f1efe4"));
+  for (let j = 0; j < 4; j++) for (let i = 0; i < 5; i++) f.px(178 + i * 2, 11 + j * 3, rgb("#5a4a3a"));
+  f.px(180, 14, rgb("#c4584a")); f.vline(183, 3, 1, B.zincDark);
+  // saints' shelf with two candles, a Virgen picture and a vase of flowers
+  f.rect(196, 17, 44, 3, B.wood); f.hline(196, 17, 44, B.woodLight); f.hline(196, 19, 44, B.woodDark); f.rect(199, 20, 2, 3, B.woodDeep); f.rect(236, 20, 2, 3, B.woodDeep);
+  f.rect(209, 4, 12, 13, B.frameGold); f.rect(210, 5, 10, 11, rgb("#4f6fa8")); f.rect(214, 7, 2, 3, B.picSkin); f.rect(212, 10, 6, 5, rgb("#f1efe4")); f.hline(212, 6, 6, B.picGold); f.hline(209, 4, 12, shade(B.frameGold, 1.3));
+  for (const x of [200, 226]) { f.rect(x, 11, 3, 6, B.whiteTrim); f.px(x + 1, 9, rgb("#ffd27a")); f.px(x + 1, 10, rgb("#f08a2c")); f.vline(x + 2, 11, 6, B.whiteTrimShade); }
+  f.rect(231, 12, 5, 5, B.pot); f.hline(231, 12, 5, B.potLight); for (const [x, y] of [[231, 9], [233, 8], [235, 10], [232, 11]]) f.px(x, y, [C.flower.pink, C.flower.yellow][(x + y) % 2]); f.vline(233, 9, 3, B.leaf);
+  // machete and straw hat
+  f.line(246, 6, 253, 22, B.metal); f.line(247, 6, 254, 22, B.zincDark); f.rect(244, 3, 3, 4, B.woodDeep);
+  f.ellipse(240, 24, 7, 2.4, rgb("#d9b86a")); f.ellipse(240, 22, 3.6, 3, rgb("#e8cf8a")); f.hline(236, 23, 9, rgb("#8a6e1f"));
+  // garlic and chili strings
+  f.vline(95, 2, 1, B.rope); f.vline(95, 3, 17, B.rope);
+  for (let j = 0; j < 5; j++) { f.ellipse(94, 6 + j * 3, 2.2, 1.7, rgb("#efe6d0")); f.ellipse(97, 7 + j * 3, 2.2, 1.7, rgb("#e2d6bb")); }
+  f.vline(160, 2, 18, B.rope);
+  for (let j = 0; j < 5; j++) { f.rect(158, 5 + j * 3, 2, 3, rgb("#c1272f")); f.rect(161, 6 + j * 3, 2, 3, rgb("#a81f27")); }
+  // the stove's pipe and its wall collar
+  f.rect(24, 0, 5, 28, rgb("#4a4c50")); f.vline(24, 0, 28, IRONLIGHT); f.vline(28, 0, 28, IRON); f.rect(22, 9, 9, 2, IRON); f.hline(22, 9, 9, IRONLIGHT);
+  for (let y = 0; y < 26; y += 3) f.px(26, y, rgb("#c9784a")); // rust
+}
+
 function drawBackWall(f) {
   // 192 x 16: plaster, green-grey wainscot, curtained window, two saint pictures
   D.plasterWall(f, 0, 0, 192, 16, { base: B.plaster, shade: B.plasterShade, hi: B.plaster, dark: B.plasterDark, salt: "iw", skirt: 0 });
@@ -481,6 +598,7 @@ for (const b of BUILDINGS) {
 // else `${name}_wall_${cx}_${cy}` (id = wallBase + cy * B_COLS + cx). Walls are solid ysort, furniture ysort without collision (the maps add collision rects).
 const INTERIOR_SPECS = [
   { name: "casa_mama", w: INT_W, h: INT_H, intBase: INT_BASE_ID, intEnd: id(23, 0), wallBase: WALL_BASE_ID, wallCols: WALL_COLS, wallRows: 1, draw: drawInterior, drawWall: drawBackWall },
+  { name: "casa_paula", w: 16, h: 11, intBase: id(42, 0), intEnd: id(48, 0), wallBase: id(48, 0), wallCols: 16, wallRows: 2, draw: drawPaulaInterior, drawWall: drawPaulaWall },
 ];
 export const INTERIORS = INTERIOR_SPECS.map((spec) => {
   const furniture = new Frame(spec.w * SIZE, spec.h * SIZE);

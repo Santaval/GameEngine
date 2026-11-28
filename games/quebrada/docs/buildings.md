@@ -97,3 +97,14 @@ the flashlight and charger 88-136,24). New group `seats` with `seat_mama` (class
 8x5 buildings in rows 24-35 of the sheet (plus `casa_paula` in rows 36-41), drawn by `shopBuilding()` in `catalog_buildings.mjs`. The sign band under the eave (x 6..121, y 51..57) carries the shop's name,
 painted with the shared 3x5 pixel font (`tools/tilegen/font.mjs`, 4 px advance, at most 28 characters = 112 px; a longer text throws): `ABASTECEDOR EL JARDIN`, `BAR MATA DE CAÑA` and `BARQUITOS DE ESPERANZA`
 (the word GUARDERIA goes on a name plaque, see [vida.md](vida.md) once it exists). The filler houses (`casa_1/2/3`) are shared by many places, so their names are plaques, not baked text.
+
+## Interiors as data (`INTERIORS`) and the house of Abuela Paula y Abuelo Pepe
+
+`INTERIOR_SPECS` in `catalog_buildings.mjs` lists the interiors: `{ name, w, h, intBase, intEnd, wallBase, wallCols, wallRows, draw, drawWall }`. The furniture canvas and the back-wall canvas are drawn at exact pixel positions and sliced into
+sheet cells: `<name>_int_<cx>_<cy>` (non-empty cells, ids from `intBase`, error past `intEnd`) and `<name>_wall_<cx>` (one wall row) or `<name>_wall_<cx>_<cy>` (more rows, id = `wallBase + cy*16 + cx`).
+`interior_map.mjs` builds the TMX (`interiorLayers(name)`, `renderInterior(name)`).
+
+- `casa_mama` (12x9, `maps/house_mama.tmx`): furniture ids rows 20-22, plaster wall row 23.
+- `casa_paula` (16x11 = 256x176 px, `maps/house_paula.tmx`): furniture rows 42-47 (58 cells used of 96), wood-plank back wall rows 48-49 (16x2). Wood stove with pot and kettle, firewood, clay jar, table with a check oilcloth, greca, cups and bread basket,
+  Abuela's rocking chair with a crochet basket, Abuelo's bench and the radio on a small table, a bed with a granny-square blanket; on the wall: turquoise-shuttered window, old photographs, calendar, saints' shelf with candles, machete and straw hat, garlic and chili strings, the stove pipe.
+  Objects: collision rects, `door_out` (`@return`), spawn `inside_door`, zone `casa_paula` (ambience `casa`), interactables (`abuela` = `npc abuela_paula`, `abuelo` = `npc abuelo_pepe`, fogón, fotos, altar, radio, calendario, cama (no `sleep`), greca) and two seats.

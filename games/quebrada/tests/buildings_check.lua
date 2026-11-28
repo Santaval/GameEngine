@@ -222,6 +222,47 @@ for oid in htmx:gmatch('<object id="(%d+)"') do
 end
 check(tonumber(attr(htmx:match("<map ([^>]*)>"), "nextobjectid")) > max_id, HOUSE .. ": nextobjectid debe ser mayor que " .. max_id)
 
+-- house_paula.tmx (generado): la casa de madera de Abuela Paula y Abuelo Pepe, 16x11 tiles
+do
+  local PAULA = "games/quebrada/maps/house_paula.tmx"
+  local ptmx, pl = parse_map(PAULA)
+  resolves(PAULA, pl)
+  for _, n in ipairs({ "floor", "walls", "furniture" }) do check(pl[n] ~= nil, PAULA .. ": falta la capa " .. n) end
+  check(pl.walls and pl.walls.props.ysort == "true" and pl.furniture and pl.furniture.props.ysort == "true", PAULA .. ": walls y furniture ysort")
+  check(ptmx:match('<property name="surface" value="madera"/>') ~= nil, PAULA .. ": falta surface=madera del mapa")
+  local pw_, ph_ = tonumber(attr(ptmx:match("<map ([^>]*)>"), "width")), tonumber(attr(ptmx:match("<map ([^>]*)>"), "height"))
+  check(pw_ == 16 and ph_ == 11, PAULA .. ": debe medir 16x11 tiles (" .. tostring(pw_) .. "x" .. tostring(ph_) .. ")")
+  for _, r in ipairs({ { 10, "door_out" }, { 15, "inside_door" }, { 20, "abuela" }, { 21, "abuelo" }, { 22, "fogon" }, { 16, "zone_casa_paula" }, { 5, "mesa" },
+                       { 1, "wall_top" }, { 2, "wall_bottom" }, { 3, "wall_left" }, { 4, "wall_right" }, { 30, "seat_abuela" }, { 31, "seat_abuelo" } }) do
+    check(ptmx:match('<object id="' .. r[1] .. '" name="' .. r[2] .. '"') ~= nil, PAULA .. ": falta el objeto " .. r[1] .. " " .. r[2])
+  end
+  for _, g in ipairs({ "collision", "doors", "spawns", "zones", "interactables", "seats" }) do
+    check(ptmx:match('<objectgroup id="%d+" name="' .. g .. '"') ~= nil, PAULA .. ": falta el grupo " .. g)
+  end
+  check(ptmx:match('<property name="target_map" value="@return"/>') ~= nil, PAULA .. ": door_out pierde @return")
+  check(ptmx:match('<property name="npc" value="abuela_paula"/>') ~= nil and ptmx:match('<property name="npc" value="abuelo_pepe"/>') ~= nil, PAULA .. ": faltan los npc abuela_paula / abuelo_pepe")
+  check(ptmx:match('<property name="ambience" value="casa"/>') ~= nil, PAULA .. ": la zona debe tener ambience=casa")
+  check(ptmx:match('name="cama"[^>]*>%s*<properties>[^<]*<property name="interact"[^>]*/>%s*<property name="label"[^>]*/>%s*<property name="line"') ~= nil, PAULA .. ": la cama solo se mira (sin sleep)")
+  local max_id_, seen_ = 0, {}
+  for oid in ptmx:gmatch('<object id="(%d+)"') do
+    oid = tonumber(oid)
+    check(not seen_[oid], PAULA .. ": id de objeto repetido " .. oid)
+    seen_[oid] = true
+    if oid > max_id_ then max_id_ = oid end
+  end
+  check(tonumber(attr(ptmx:match("<map ([^>]*)>"), "nextobjectid")) > max_id_, PAULA .. ": nextobjectid debe ser mayor que " .. max_id_)
+  -- tiles del interior: muro de madera solido y ysort (2 filas x 16), muebles ysort sin solid
+  local n_wall, n_int = 0, 0
+  for _, t in pairs(by_name) do
+    local n = t.props.name
+    if n:match("^casa_paula_wall_%d+_%d+$") then n_wall = n_wall + 1; check(t.props.solid == true and t.props.layer == "ysort", n .. " debe ser ysort y solid") end
+    if n:match("^casa_paula_int_") then n_int = n_int + 1; check(t.props.layer == "ysort" and not t.props.solid, n .. " debe ser ysort sin solid") end
+  end
+  check(n_wall == 32, "el muro de la casa de Paula debe tener 32 celdas (16x2), tiene " .. n_wall)
+  check(n_int >= 30 and n_int <= 96, "los muebles de la casa de Paula deben ser entre 30 y 96 celdas, hay " .. n_int)
+  check(by_name.casa_paula_wall_0_0 ~= nil and by_name.casa_paula_wall_15_1 ~= nil, "faltan las esquinas del muro de la casa de Paula")
+end
+
 if failures > 0 then
   print(failures .. " fallo(s) en buildings_check")
   os.exit(1)

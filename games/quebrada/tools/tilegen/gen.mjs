@@ -29,7 +29,7 @@ import { renderMonteSheet, M_TILES, M_COLS, M_ROWS, turbineCanvas, MONTE_TILE_CO
 import { renderRioSheet, R_TILES, R_COLS, R_ROWS, RIO_TILE_COUNT } from "./catalog_rio.mjs";
 import { renderVidaSheet, V_TILES, V_COLS, V_ROWS, VIDA_TILE_COUNT } from "./catalog_vida.mjs";
 import { buildTmx as buildBuildingsTmx, renderBuildingsMap } from "./buildings_map.mjs";
-import { buildTmx as buildInteriorTmx, renderInterior } from "./interior_map.mjs";
+import { buildTmx as buildInteriorTmx, buildPaulaTmx, renderInterior } from "./interior_map.mjs";
 import { POTRERO, MAMA_AT, BERTA_X, CALILES_X, SIDEWALK_N_Y, COL_X0, COL_Y0, COL_W, COL_H, CAF_Y0, buildTmx as buildZona1Tmx, renderZona1, baseReport, routeLength, pointAt, WALK_SPEED, RUN_SPEED, MAP_W, MAP_H, EXT_PAVER_X1, EXT_LASTRE_X1, LEFT_PAD, SCHOOL_FIRSTGID, EBAIS_FIRSTGID, MONTE_FIRSTGID, RIO_FIRSTGID, TOP_PAD, BRIDGE, RIVER, RIVER_ZONES, RIVER_CHURCH_M, RIVER_CAFETAL_M, RIVER_MAMA_M, MONTE_REPORT, MONTE_X0, MONTE_X1, MONTE_W, ROAD_X1, ROAD_Y0, TRAIL_X0, TRAIL_Y0, TRAIL_LEN, TURBINE_AT, TURBINE_BBOX, EB_X0, EB_X1, EB_Y0, EB_Y1, EB_AT, PLOT_X0, PLOT_X1, ESC_Y0, ESC_Y1, OLG_Y0, OLG_AT, ESC_A_AT, ESC_B_AT, ESC_GATE, OLG_GATE } from "./zona1_map.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -54,6 +54,7 @@ const out = {
   vtsx: join(game, "tilesets", "vida.tsx"),
   btmx: join(game, "maps", "buildings_demo.tmx"),
   house: join(game, "maps", "house_mama.tmx"),
+  housePaula: join(game, "maps", "house_paula.tmx"),
   zona1: join(game, "maps", "zona1.tmx"),
   consts: join(game, "tests", "zona1_consts.lua"),
 };
@@ -80,6 +81,7 @@ const products = () => [
   [out.consts, Buffer.from(buildZona1ConstsLua())],
   [out.btmx, Buffer.from(buildBuildingsTmx())],
   [out.house, Buffer.from(buildInteriorTmx())],
+  [out.housePaula, Buffer.from(buildPaulaTmx())],
   [out.zona1, Buffer.from(buildZona1Tmx())],
 ];
 
@@ -135,6 +137,7 @@ if (args.includes("--check")) {
   writeFileSync(join(dir, "buildings_demo_noroof.png"), pngOf(renderBuildingsMap({ night: false, roofs: false }).scaled(2)));
   writeFileSync(join(dir, "buildings_demo_night.png"), pngOf(renderBuildingsMap({ night: true, roofs: true }).scaled(2)));
   writeFileSync(join(dir, "house_mama.png"), pngOf(renderInterior().scaled(4)));
+  writeFileSync(join(dir, "house_paula.png"), pngOf(renderInterior("casa_paula").scaled(4)));
   const grass = [96, 150, 70, 255];
   writeFileSync(join(dir, "vida_sheet_x4.png"), pngOf(renderVidaSheet().onBackground([60, 60, 70, 255]).scaled(4)));
   { // every glyph of the shared font, x8
